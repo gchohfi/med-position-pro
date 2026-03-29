@@ -536,6 +536,29 @@ const Producao = () => {
           </p>
         </motion.div>
 
+        {/* Library loaded banner */}
+        {loadedFromLibrary && (
+          <motion.div
+            className="bg-accent/5 rounded-2xl border border-accent/15 p-4 mb-4 flex items-center gap-3"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <BookOpen className="h-4 w-4 text-accent shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Base carregada da sua biblioteca</p>
+              <p className="text-xs text-muted-foreground">Todos os campos foram preenchidos. Edite o que desejar ou gere novamente.</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground shrink-0"
+              onClick={() => setLoadedFromLibrary(false)}
+            >
+              Fechar
+            </Button>
+          </motion.div>
+        )}
+
         {/* LAYER 1 — Strategic Context */}
         {!contextLoading && hasContext && (
           <motion.div
