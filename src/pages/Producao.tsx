@@ -31,6 +31,9 @@ import {
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import ImageUpload from "@/components/ImageUpload";
+import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
+import { mapContentToSlides } from "@/components/carousel/mapContentToSlides";
+import type { SlideData } from "@/components/carousel/SlideRenderer";
 
 const CONTENT_TYPES = [
   { value: "educativo", label: "Educativo", icon: BookOpen, desc: "Ensinar com profundidade" },
