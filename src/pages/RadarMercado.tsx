@@ -60,12 +60,21 @@ interface RecommendationItem {
   module: "estrategia" | "series" | "calendario" | "producao";
 }
 
+interface SignalItem {
+  title: string;
+  description: string;
+  source_context: string;
+  relevance: "alta" | "media" | "baixa";
+}
+
 interface RadarData {
   segment_summary: string | null;
+  signals: SignalItem[];
   saturation: SaturationItem[];
   opportunities: OpportunityItem[];
   alerts: AlertItem[];
   recommendations: RecommendationItem[];
+  citations: string[];
   updated_at: string | null;
 }
 
@@ -97,9 +106,10 @@ const URGENCY_STYLES: Record<string, string> = {
 };
 
 const LOADING_MESSAGES = [
-  "Lendo sinais do seu segmento…",
-  "Organizando padrões de saturação e oportunidade…",
-  "Traduzindo movimentos do mercado em direção estratégica…",
+  "Pesquisando tendências reais do seu segmento…",
+  "Analisando concorrentes e padrões de conteúdo…",
+  "Identificando oportunidades de diferenciação…",
+  "Traduzindo sinais de mercado em direção estratégica…",
 ];
 
 const RadarMercado = () => {
@@ -110,10 +120,12 @@ const RadarMercado = () => {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [data, setData] = useState<RadarData>({
     segment_summary: null,
+    signals: [],
     saturation: [],
     opportunities: [],
     alerts: [],
     recommendations: [],
+    citations: [],
     updated_at: null,
   });
 
@@ -140,12 +152,15 @@ const RadarMercado = () => {
       .maybeSingle();
 
     if (radar) {
+      const signalsData = (radar.signals as any) || {};
       setData({
         segment_summary: radar.segment_summary,
+        signals: (signalsData.market_signals as unknown as SignalItem[]) || [],
         saturation: (radar.saturation as unknown as SaturationItem[]) || [],
         opportunities: (radar.opportunities as unknown as OpportunityItem[]) || [],
         alerts: (radar.alerts as unknown as AlertItem[]) || [],
         recommendations: (radar.recommendations as unknown as RecommendationItem[]) || [],
+        citations: (signalsData.citations as string[]) || [],
         updated_at: radar.updated_at,
       });
     }
@@ -176,10 +191,12 @@ const RadarMercado = () => {
       if (result.radar) {
         setData({
           segment_summary: result.radar.segment_summary,
+          signals: result.radar.signals || [],
           saturation: result.radar.saturation || [],
           opportunities: result.radar.opportunities || [],
           alerts: result.radar.alerts || [],
           recommendations: result.radar.recommendations || [],
+          citations: result.radar.citations || [],
           updated_at: new Date().toISOString(),
         });
         logStrategicEvent(STRATEGIC_EVENTS.RADAR_REFRESHED, "radar");
@@ -307,7 +324,47 @@ const RadarMercado = () => {
               </div>
             </motion.section>
 
-            {/* Section 2 — Saturation vs Opportunity */}
+            {/* Section 1.5 — Real Market Signals */}
+            {data.signals.length > 0 && (
+              <motion.section variants={fadeUp} initial="hidden" animate="visible" custom={0.5}>
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="h-4 w-4 text-accent" />
+                  <h2 className="font-heading text-lg font-medium text-foreground">
+                    Sinais reais de mercado
+                  </h2>
+                  <span className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded-full font-medium">
+                    via pesquisa web
+                  </span>
+                </div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {data.signals.map((signal, i) => {
+                    const relevanceStyle = signal.relevance === "alta"
+                      ? "border-accent/20 bg-accent/5"
+                      : signal.relevance === "media"
+                      ? "border-border"
+                      : "border-border/50";
+                    return (
+                      <div key={i} className={`bg-card rounded-2xl border ${relevanceStyle} p-5 shadow-sm`}>
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <h3 className="text-sm font-semibold text-foreground">{signal.title}</h3>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
+                            signal.relevance === "alta" ? "bg-accent/10 text-accent" :
+                            signal.relevance === "media" ? "bg-muted text-muted-foreground" :
+                            "bg-muted/50 text-muted-foreground"
+                          }`}>
+                            {signal.relevance}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">{signal.description}</p>
+                        <p className="text-[11px] text-muted-foreground/70 italic">
+                          Fonte: {signal.source_context}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.section>
+            )}
             <div className="grid md:grid-cols-2 gap-6">
               {/* Saturation */}
               <motion.section variants={fadeUp} initial="hidden" animate="visible" custom={1}>
@@ -428,18 +485,45 @@ const RadarMercado = () => {
               </motion.section>
             )}
 
+            {/* Citations */}
+            {data.citations.length > 0 && (
+              <motion.section variants={fadeUp} initial="hidden" animate="visible" custom={5.5}>
+                <details className="group">
+                  <summary className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    <Radar className="h-3 w-3" />
+                    <span>{data.citations.length} fontes consultadas na pesquisa</span>
+                  </summary>
+                  <div className="mt-3 bg-muted/20 rounded-xl border border-border p-4 space-y-1.5">
+                    {data.citations.map((url, i) => (
+                      <a
+                        key={i}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-[11px] text-muted-foreground hover:text-accent truncate transition-colors"
+                      >
+                        {url}
+                      </a>
+                    ))}
+                  </div>
+                </details>
+              </motion.section>
+            )}
+
             {/* Update presence */}
             <motion.div
               className="bg-muted/30 rounded-2xl border border-border p-4 flex items-center justify-between"
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              custom={5}
+              custom={6}
             >
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
                 <p className="text-xs text-muted-foreground">
-                  O radar é atualizado com base no seu posicionamento e segmento de atuação.
+                  {data.citations.length > 0
+                    ? "Radar alimentado por pesquisa web em tempo real + análise estratégica."
+                    : "O radar é atualizado com base no seu posicionamento e segmento de atuação."}
                 </p>
               </div>
               <Button
