@@ -61,6 +61,13 @@ interface StrategicContext {
   pillar: string | null;
 }
 
+type TransformFormat = "carrossel" | "reels" | "legenda";
+
+interface TransformResult {
+  format: TransformFormat;
+  data: any;
+}
+
 const Producao = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -77,6 +84,9 @@ const Producao = () => {
     pillar: null,
   });
   const [contextLoading, setContextLoading] = useState(true);
+  const [transforming, setTransforming] = useState<TransformFormat | null>(null);
+  const [transformResult, setTransformResult] = useState<TransformResult | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
 
   // Load strategic context from DB
   useEffect(() => {
