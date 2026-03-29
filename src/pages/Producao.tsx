@@ -585,7 +585,11 @@ const Producao = () => {
                   ) : (
                     <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                   )}
-                  {suggestingFields ? "Gerando sugestões…" : tese || percepcao ? "Gerar nova sugestão" : "Gerar sugestões inteligentes"}
+                  {suggestingFields
+                    ? "Gerando opções…"
+                    : teseOptions.length > 0
+                      ? "Gerar novas opções"
+                      : "Gerar direções estratégicas"}
                 </Button>
                 <span className="text-[10px] text-muted-foreground">
                   O MEDSHIFT propõe — você decide.
@@ -593,61 +597,92 @@ const Producao = () => {
               </div>
             )}
 
-            {/* Tese */}
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <label className="text-sm font-medium text-foreground">
+            {/* Loading state for suggestions */}
+            {suggestingFields && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-3"
+              >
+                {[1, 2].map((g) => (
+                  <div key={g} className="space-y-2">
+                    <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-16 rounded-xl border border-border bg-muted/30 animate-pulse" />
+                    ))}
+                  </div>
+                ))}
+                <p className="text-center text-xs text-muted-foreground animate-pulse">
+                  Analisando posicionamento e gerando opções…
+                </p>
+              </motion.div>
+            )}
+
+            {/* Tese cards */}
+            {teseOptions.length > 0 && !suggestingFields && (
+              <SuggestionCards
+                title="Tese central"
+                helperText="A tese define o posicionamento editorial da peça. Escolha uma direção e ajuste se necessário."
+                options={teseOptions}
+                selectedIndex={selectedTeseIndex}
+                onSelect={handleTeseSelect}
+                editingValue={tese}
+                onEditChange={setTese}
+                isEditing={editingTese}
+                onToggleEdit={() => setEditingTese(!editingTese)}
+              />
+            )}
+
+            {/* Tese manual fallback — shown when no suggestions generated */}
+            {teseOptions.length === 0 && !suggestingFields && (
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">
                   Tese central
                 </label>
-                {teseIsSuggestion && (
-                  <span className="text-[10px] font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-full">
-                    Sugestão do MEDSHIFT
-                  </span>
-                )}
+                <p className="text-xs text-muted-foreground mb-2">
+                  A tese define o posicionamento da peça. Use o botão acima para gerar direções.
+                </p>
+                <Textarea
+                  value={tese}
+                  onChange={(e) => setTese(e.target.value)}
+                  placeholder="Ex: O problema não é o produto. É a lógica."
+                  className="rounded-xl resize-none min-h-[72px] text-sm"
+                />
               </div>
-              <p className="text-xs text-muted-foreground mb-2">
-                A tese define o posicionamento da peça. Ajuste se necessário.
-              </p>
-              <Textarea
-                value={tese}
-                onChange={(e) => {
-                  setTese(e.target.value);
-                  setTeseIsSuggestion(false);
-                }}
-                placeholder="Ex: O problema não é o produto. É a lógica."
-                className={`rounded-xl resize-none min-h-[72px] text-sm transition-colors ${
-                  teseIsSuggestion ? "border-accent/40 bg-accent/[0.03]" : ""
-                }`}
-              />
-            </div>
+            )}
 
-            {/* Percepção */}
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <label className="text-sm font-medium text-foreground">
+            {/* Percepção cards */}
+            {percepcaoOptions.length > 0 && !suggestingFields && (
+              <SuggestionCards
+                title="Percepção desejada"
+                helperText="Como o público deve perceber a médica após esse conteúdo? Escolha o tom."
+                options={percepcaoOptions}
+                selectedIndex={selectedPercepcaoIndex}
+                onSelect={handlePercepcaoSelect}
+                editingValue={percepcao}
+                onEditChange={setPercepcao}
+                isEditing={editingPercepcao}
+                onToggleEdit={() => setEditingPercepcao(!editingPercepcao)}
+              />
+            )}
+
+            {/* Percepção manual fallback */}
+            {percepcaoOptions.length === 0 && !suggestingFields && (
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">
                   Percepção desejada
                 </label>
-                {percepcaoIsSuggestion && (
-                  <span className="text-[10px] font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-full">
-                    Sugestão do MEDSHIFT
-                  </span>
-                )}
+                <p className="text-xs text-muted-foreground mb-2">
+                  Como o público deve perceber a médica após esse conteúdo?
+                </p>
+                <Textarea
+                  value={percepcao}
+                  onChange={(e) => setPercepcao(e.target.value)}
+                  placeholder="Ex: Ela sabe exatamente o que está fazendo"
+                  className="rounded-xl resize-none min-h-[72px] text-sm"
+                />
               </div>
-              <p className="text-xs text-muted-foreground mb-2">
-                Como o público deve perceber a médica após esse conteúdo?
-              </p>
-              <Textarea
-                value={percepcao}
-                onChange={(e) => {
-                  setPercepcao(e.target.value);
-                  setPercepcaoIsSuggestion(false);
-                }}
-                placeholder="Ex: Ela sabe exatamente o que está fazendo"
-                className={`rounded-xl resize-none min-h-[72px] text-sm transition-colors ${
-                  percepcaoIsSuggestion ? "border-accent/40 bg-accent/[0.03]" : ""
-                }`}
-              />
-            </div>
+            )}
 
             <Button
               onClick={handleGenerate}
