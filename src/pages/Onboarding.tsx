@@ -207,12 +207,15 @@ const Onboarding = () => {
         .update({ specialty: answers.specialty as string })
         .eq("id", user.id);
 
+      // Enforce target_audience max length on save
+      const targetAudience = (answers.target_audience as string || "").slice(0, 300);
+
       await supabase.from("positioning").upsert({
         user_id: user.id,
         archetype: answers.archetype as string,
         tone: answers.tone as string,
         pillars: answers.pillars as string[],
-        target_audience: answers.target_audience as string,
+        target_audience: targetAudience,
         goals: answers.goals as string,
       });
 
@@ -601,10 +604,25 @@ const Onboarding = () => {
 
                 <Textarea
                   value={(currentValue as string) || ""}
-                  onChange={(e) => setValue(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // Enforce max length for target_audience to prevent analysis dumps
+                    if (current.key === "target_audience" && val.length > 300) return;
+                    setValue(val);
+                  }}
                   placeholder={(current as any).placeholder || "Escreva aqui..."}
                   className="min-h-[150px] rounded-xl resize-none text-sm border-border focus:border-accent/50 bg-card leading-relaxed"
+                  maxLength={current.key === "target_audience" ? 300 : undefined}
                 />
+                {current.key === "target_audience" && (
+                  <p className={`text-[11px] mt-1.5 text-right tabular-nums ${
+                    ((currentValue as string) || "").length > 250
+                      ? "text-orange-500"
+                      : "text-muted-foreground/40"
+                  }`}>
+                    {((currentValue as string) || "").length}/300
+                  </p>
+                )}
 
                 {(current as any).contextHint && (
                   <motion.p
