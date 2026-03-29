@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { logStrategicEvent, STRATEGIC_EVENTS } from "@/lib/strategic-events";
 import {
   BookOpen,
   Plus,
@@ -118,6 +119,7 @@ const Series_Page = () => {
       toast.error("Erro ao criar série.");
       return;
     }
+    logStrategicEvent(STRATEGIC_EVENTS.SERIES_CREATED, "series", { name: form.name });
     toast.success("Série criada com sucesso.");
     setShowCreate(false);
     setForm(emptyForm);
