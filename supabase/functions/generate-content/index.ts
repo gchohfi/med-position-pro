@@ -21,9 +21,9 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+    if (!PERPLEXITY_API_KEY) {
+      throw new Error("PERPLEXITY_API_KEY is not configured");
     }
 
     const systemPrompt = `Você é um estrategista de conteúdo para médicas que desejam se posicionar com autoridade no Instagram.
@@ -48,23 +48,25 @@ REGRAS:
 - Cada bloco deve ter o título exato seguido de dois pontos e o conteúdo
 - Não use emojis
 - Não use linguagem genérica de marketing
-- Adapte ao tipo de conteúdo solicitado`;
+- Adapte ao tipo de conteúdo solicitado
+- Use dados, tendências e referências reais quando possível para fundamentar o conteúdo`;
 
     const userPrompt = `Tipo de conteúdo: ${tipo}
 Objetivo: ${objetivo}
 Tese central: ${tese}
 Percepção desejada: ${percepcao}
 
+Pesquise tendências e dados reais relevantes sobre o tema para fundamentar o conteúdo.
 Gere o conteúdo estratégico seguindo a estrutura de 6 blocos.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.perplexity.ai/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "sonar-pro",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
