@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { logStrategicEvent, STRATEGIC_EVENTS } from "@/lib/strategic-events";
 import {
   Brain,
   Anchor,
@@ -128,6 +129,7 @@ const MemoriaViva = () => {
       if (!response.ok) throw new Error("Erro");
       const data = await response.json();
       setMemory(data.living_memory);
+      logStrategicEvent(STRATEGIC_EVENTS.MEMORY_REFRESHED, "memoria-viva");
       toast.success("Memória refinada com novos padrões.");
     } catch {
       toast.error("Erro ao gerar memória. Tente novamente.");
