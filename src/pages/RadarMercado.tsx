@@ -106,9 +106,10 @@ const URGENCY_STYLES: Record<string, string> = {
 };
 
 const LOADING_MESSAGES = [
-  "Lendo sinais do seu segmento…",
-  "Organizando padrões de saturação e oportunidade…",
-  "Traduzindo movimentos do mercado em direção estratégica…",
+  "Pesquisando tendências reais do seu segmento…",
+  "Analisando concorrentes e padrões de conteúdo…",
+  "Identificando oportunidades de diferenciação…",
+  "Traduzindo sinais de mercado em direção estratégica…",
 ];
 
 const RadarMercado = () => {
