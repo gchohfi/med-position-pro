@@ -93,6 +93,13 @@ const Producao = () => {
   const [visualSlides, setVisualSlides] = useState<SlideData[] | null>(null);
   const [generatingVisual, setGeneratingVisual] = useState(false);
 
+  // Suggestion system state
+  const [suggestingFields, setSuggestingFields] = useState(false);
+  const [teseIsSuggestion, setTeseIsSuggestion] = useState(false);
+  const [percepcaoIsSuggestion, setPercepcaoIsSuggestion] = useState(false);
+  const [previousTheses, setPreviousTheses] = useState<string[]>([]);
+  const [previousPerceptions, setPreviousPerceptions] = useState<string[]>([]);
+
   // Load strategic context from DB
   useEffect(() => {
     if (!user) return;
