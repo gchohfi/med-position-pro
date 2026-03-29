@@ -91,7 +91,9 @@ Regras:
 Responda APENAS com JSON válido no formato exato abaixo, sem texto adicional:
 {"teses":[{"angle":"educativa","label":"Educativa","text":"..."},{"angle":"estratégica","label":"Estratégica","text":"..."},{"angle":"manifesto","label":"Manifesto","text":"..."}],"percepcoes":[{"angle":"autoridade","label":"Autoridade","text":"..."},{"angle":"humana","label":"Humana","text":"..."},{"angle":"premium","label":"Premium","text":"..."}]}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const userPrompt = `Gere as 3 opções de tese central e as 3 opções de percepção desejada para um conteúdo "${tipo}" com objetivo: "${objetivo}".
+
+IMPORTANTE: Sua resposta DEVE conter exatamente 3 teses (educativa, estratégica, manifesto) e 3 percepções (autoridade, humana, premium) no formato JSON especificado. Cada opção deve ser genuinamente diferente das outras.`;
       method: "POST",
       headers: {
         "Content-Type": "application/json",
