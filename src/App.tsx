@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import Diagnostico from "./pages/Diagnostico";
 import Estrategia from "./pages/Estrategia";
 import Producao from "./pages/Producao";
+import Series from "./pages/Series";
+import Calendario from "./pages/Calendario";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +68,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Producao />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/series"
+        element={
+          <ProtectedRoute>
+            <Series />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/calendario"
+        element={
+          <ProtectedRoute>
+            <Calendario />
           </ProtectedRoute>
         }
       />
