@@ -14,7 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      content_outputs: {
+        Row: {
+          content_type: string
+          created_at: string
+          generated_content: Json
+          id: string
+          strategic_input: Json
+          user_id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          generated_content?: Json
+          id?: string
+          strategic_input?: Json
+          user_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          generated_content?: Json
+          id?: string
+          strategic_input?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      positioning: {
+        Row: {
+          archetype: string | null
+          created_at: string
+          goals: string | null
+          id: string
+          pillars: string[] | null
+          target_audience: string | null
+          tone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archetype?: string | null
+          created_at?: string
+          goals?: string | null
+          id?: string
+          pillars?: string[] | null
+          target_audience?: string | null
+          tone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archetype?: string | null
+          created_at?: string
+          goals?: string | null
+          id?: string
+          pillars?: string[] | null
+          target_audience?: string | null
+          tone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          onboarding_complete: boolean
+          specialty: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          onboarding_complete?: boolean
+          specialty?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          onboarding_complete?: boolean
+          specialty?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
