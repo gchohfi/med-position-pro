@@ -219,6 +219,45 @@ export type Database = {
         }
         Relationships: []
       }
+      market_radar: {
+        Row: {
+          alerts: Json
+          created_at: string
+          id: string
+          opportunities: Json
+          recommendations: Json
+          saturation: Json
+          segment_summary: string | null
+          signals: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alerts?: Json
+          created_at?: string
+          id?: string
+          opportunities?: Json
+          recommendations?: Json
+          saturation?: Json
+          segment_summary?: string | null
+          signals?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alerts?: Json
+          created_at?: string
+          id?: string
+          opportunities?: Json
+          recommendations?: Json
+          saturation?: Json
+          segment_summary?: string | null
+          signals?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       positioning: {
         Row: {
           archetype: string | null

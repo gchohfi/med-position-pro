@@ -23,6 +23,7 @@ import {
   Archive,
   Brain,
   TrendingUp,
+  Radar,
 } from "lucide-react";
 
 const navItems = [
@@ -33,6 +34,7 @@ const navItems = [
   { title: "Calendário", url: "/calendario", icon: Calendar, disabled: false },
   { title: "Criação", url: "/producao", icon: PenTool, disabled: false },
   { title: "Biblioteca", url: "/biblioteca", icon: Archive, disabled: false },
+  { title: "Radar de Mercado", url: "/radar", icon: Radar, disabled: false },
   { title: "Memória Viva", url: "/memoria-viva", icon: Brain, disabled: false },
   { title: "Evolução", url: "/evolucao", icon: TrendingUp, disabled: false },
 ];
