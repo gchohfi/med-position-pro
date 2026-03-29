@@ -571,6 +571,19 @@ const Producao = () => {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-3 pt-4">
+                {/* Visual Carousel — primary action */}
+                <Button
+                  onClick={handleGenerateVisualCarousel}
+                  disabled={generatingVisual}
+                  className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
+                >
+                  {generatingVisual ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Image className="mr-2 h-4 w-4" />
+                  )}
+                  {generatingVisual ? "Gerando slides…" : "Gerar carrossel visual (PNG)"}
+                </Button>
                 <Button
                   variant="outline"
                   className="rounded-xl"
