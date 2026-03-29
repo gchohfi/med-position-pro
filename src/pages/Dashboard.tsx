@@ -205,7 +205,15 @@ const Dashboard = () => {
     snapshotCards.push({ icon: Layers, label: "Pilares editoriais", value: data.positioning.pillars.join(" · ") });
   }
   if (data.positioning?.target_audience) {
-    snapshotCards.push({ icon: Target, label: "Público-alvo", value: data.positioning.target_audience });
+    const raw = data.positioning.target_audience;
+    // Defensive: only show concise audience summaries, not analysis dumps
+    const isCorrupted = raw.length > 200 || raw.includes("\n") || raw.split(" ").length > 40;
+    const displayValue = isCorrupted
+      ? raw.split(/[.\n]/)[0].trim().slice(0, 150) + (raw.length > 150 ? "…" : "")
+      : raw;
+    if (displayValue.length > 10) {
+      snapshotCards.push({ icon: Target, label: "Público-alvo", value: displayValue });
+    }
   }
 
   // Activity summary — only if active

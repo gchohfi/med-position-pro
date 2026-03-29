@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Diagnostico from "./pages/Diagnostico";
@@ -36,6 +37,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Index />} />
       <Route path="/auth" element={user ? <Navigate to="/dashboard" replace /> : <Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/onboarding"
         element={
