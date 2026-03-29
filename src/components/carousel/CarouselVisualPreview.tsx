@@ -45,6 +45,10 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [activeTheme, setActiveTheme] = useState<CarouselTheme>("editorial-light");
+
+  const themeColors = CAROUSEL_THEMES[activeTheme].colors;
+  const effectiveColors = brandColors || themeColors;
 
   const handleSlideEdit = (index: number, updated: SlideData) => {
     const newSlides = [...slides];
