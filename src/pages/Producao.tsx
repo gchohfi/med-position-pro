@@ -235,8 +235,16 @@ const Producao = () => {
 
       const result = await res.json();
 
-      if (result.teses?.length) setTeseOptions(result.teses);
-      if (result.percepcoes?.length) setPercepcaoOptions(result.percepcoes);
+      if (result.teses?.length) {
+        setTeseOptions(result.teses);
+        setSelectedTeseIndex(0);
+        setTese(result.teses[0].text);
+      }
+      if (result.percepcoes?.length) {
+        setPercepcaoOptions(result.percepcoes);
+        setSelectedPercepcaoIndex(0);
+        setPercepcao(result.percepcoes[0].text);
+      }
 
       toast.success("Opções estratégicas geradas. Escolha a direção.");
     } catch {
