@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   ChevronLeft,
+  Pencil,
   ChevronRight,
   Download,
   Maximize2,
@@ -225,15 +226,35 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             ))}
           </div>
 
-          {/* Slide info */}
-          <div className="text-center">
-            <p className="text-xs font-medium text-accent uppercase tracking-wide">
-              {slides[currentSlide]?.label}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Slide {currentSlide + 1} de {slides.length}
-            </p>
+          {/* Slide info + edit button */}
+          <div className="text-center flex flex-col items-center gap-2">
+            <div>
+              <p className="text-xs font-medium text-accent uppercase tracking-wide">
+                {slides[currentSlide]?.label}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Slide {currentSlide + 1} de {slides.length}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditingIndex(editingIndex === currentSlide ? null : currentSlide)}
+              className="text-xs h-7 gap-1.5"
+            >
+              <Pencil className="h-3 w-3" />
+              {editingIndex === currentSlide ? "Fechar editor" : "Editar texto"}
+            </Button>
           </div>
+
+          {/* Inline slide editor */}
+          {editingIndex === currentSlide && (
+            <SlideEditor
+              slide={slides[currentSlide]}
+              onSave={(updated) => handleSlideEdit(currentSlide, updated)}
+              onCancel={() => setEditingIndex(null)}
+            />
+          )}
         </div>
 
         {/* Slide thumbnails */}
