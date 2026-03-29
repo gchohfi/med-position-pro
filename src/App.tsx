@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
+import Diagnostico from "./pages/Diagnostico";
+import Estrategia from "./pages/Estrategia";
 import Producao from "./pages/Producao";
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +42,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/diagnostico"
+        element={
+          <ProtectedRoute>
+            <Diagnostico />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/estrategia"
+        element={
+          <ProtectedRoute>
+            <Estrategia />
           </ProtectedRoute>
         }
       />

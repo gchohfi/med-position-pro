@@ -35,7 +35,7 @@ const Dashboard = () => {
 
   const actions = [
     { label: "Gerar conteúdo", icon: PenTool, path: "/producao", primary: true },
-    { label: "Analisar posicionamento", icon: Target, path: "#", disabled: true },
+    { label: "Analisar posicionamento", icon: Target, path: "/diagnostico", disabled: false },
     { label: "Criar nova série", icon: BookOpen, path: "#", disabled: true },
   ];
 
