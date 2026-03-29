@@ -323,7 +323,47 @@ const RadarMercado = () => {
               </div>
             </motion.section>
 
-            {/* Section 2 — Saturation vs Opportunity */}
+            {/* Section 1.5 — Real Market Signals */}
+            {data.signals.length > 0 && (
+              <motion.section variants={fadeUp} initial="hidden" animate="visible" custom={0.5}>
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="h-4 w-4 text-accent" />
+                  <h2 className="font-heading text-lg font-medium text-foreground">
+                    Sinais reais de mercado
+                  </h2>
+                  <span className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded-full font-medium">
+                    via pesquisa web
+                  </span>
+                </div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {data.signals.map((signal, i) => {
+                    const relevanceStyle = signal.relevance === "alta"
+                      ? "border-accent/20 bg-accent/5"
+                      : signal.relevance === "media"
+                      ? "border-border"
+                      : "border-border/50";
+                    return (
+                      <div key={i} className={`bg-card rounded-2xl border ${relevanceStyle} p-5 shadow-sm`}>
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <h3 className="text-sm font-semibold text-foreground">{signal.title}</h3>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
+                            signal.relevance === "alta" ? "bg-accent/10 text-accent" :
+                            signal.relevance === "media" ? "bg-muted text-muted-foreground" :
+                            "bg-muted/50 text-muted-foreground"
+                          }`}>
+                            {signal.relevance}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">{signal.description}</p>
+                        <p className="text-[11px] text-muted-foreground/70 italic">
+                          Fonte: {signal.source_context}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.section>
+            )}
             <div className="grid md:grid-cols-2 gap-6">
               {/* Saturation */}
               <motion.section variants={fadeUp} initial="hidden" animate="visible" custom={1}>
