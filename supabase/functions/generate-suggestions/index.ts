@@ -62,7 +62,7 @@ Responda APENAS em JSON válido:
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Gere uma sugestão original de tese e percepção para um conteúdo ${tipo} sobre: ${objetivo}` },
