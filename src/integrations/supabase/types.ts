@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_items: {
+        Row: {
+          content_type: string
+          created_at: string
+          date: string
+          id: string
+          series_id: string | null
+          status: string
+          strategic_objective: string | null
+          thesis: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          visual_direction: string | null
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          date: string
+          id?: string
+          series_id?: string | null
+          status?: string
+          strategic_objective?: string | null
+          thesis?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          visual_direction?: string | null
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          date?: string
+          id?: string
+          series_id?: string | null
+          status?: string
+          strategic_objective?: string | null
+          thesis?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          visual_direction?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_items_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_outputs: {
         Row: {
           content_type: string
@@ -128,6 +181,54 @@ export type Database = {
           onboarding_complete?: boolean
           specialty?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      series: {
+        Row: {
+          closing_pattern: string | null
+          created_at: string
+          frequency: string
+          id: string
+          name: string
+          opening_pattern: string | null
+          status: string
+          strategic_role: string
+          subtitle: string | null
+          tone: string | null
+          updated_at: string
+          user_id: string
+          visual_identity: string | null
+        }
+        Insert: {
+          closing_pattern?: string | null
+          created_at?: string
+          frequency?: string
+          id?: string
+          name: string
+          opening_pattern?: string | null
+          status?: string
+          strategic_role: string
+          subtitle?: string | null
+          tone?: string | null
+          updated_at?: string
+          user_id: string
+          visual_identity?: string | null
+        }
+        Update: {
+          closing_pattern?: string | null
+          created_at?: string
+          frequency?: string
+          id?: string
+          name?: string
+          opening_pattern?: string | null
+          status?: string
+          strategic_role?: string
+          subtitle?: string | null
+          tone?: string | null
+          updated_at?: string
+          user_id?: string
+          visual_identity?: string | null
         }
         Relationships: []
       }
