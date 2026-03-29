@@ -31,6 +31,9 @@ import {
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import ImageUpload from "@/components/ImageUpload";
+import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
+import { mapContentToSlides } from "@/components/carousel/mapContentToSlides";
+import type { SlideData } from "@/components/carousel/SlideRenderer";
 
 const CONTENT_TYPES = [
   { value: "educativo", label: "Educativo", icon: BookOpen, desc: "Ensinar com profundidade" },
@@ -87,6 +90,8 @@ const Producao = () => {
   const [transforming, setTransforming] = useState<TransformFormat | null>(null);
   const [transformResult, setTransformResult] = useState<TransformResult | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [visualSlides, setVisualSlides] = useState<SlideData[] | null>(null);
+  const [generatingVisual, setGeneratingVisual] = useState(false);
 
   // Load strategic context from DB
   useEffect(() => {
@@ -285,6 +290,28 @@ const Producao = () => {
   const copySection = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copiado!");
+  };
+
+  const handleGenerateVisualCarousel = () => {
+    if (!output) return;
+    setGeneratingVisual(true);
+    setVisualSlides(null);
+    // Small delay to show loading state
+    setTimeout(() => {
+      try {
+        const slides = mapContentToSlides(output);
+        if (slides.length === 0) {
+          toast.error("Conteúdo insuficiente para gerar slides.");
+          return;
+        }
+        setVisualSlides(slides);
+        toast.success("Carrossel pronto para publicação!");
+      } catch {
+        toast.error("Erro ao gerar carrossel visual.");
+      } finally {
+        setGeneratingVisual(false);
+      }
+    }, 1500);
   };
 
   const copyAll = () => {
@@ -544,6 +571,19 @@ const Producao = () => {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-3 pt-4">
+                {/* Visual Carousel — primary action */}
+                <Button
+                  onClick={handleGenerateVisualCarousel}
+                  disabled={generatingVisual}
+                  className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
+                >
+                  {generatingVisual ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Image className="mr-2 h-4 w-4" />
+                  )}
+                  {generatingVisual ? "Gerando slides…" : "Gerar carrossel visual (PNG)"}
+                </Button>
                 <Button
                   variant="outline"
                   className="rounded-xl"
@@ -604,6 +644,18 @@ const Producao = () => {
                   >
                     <ImageUpload linkedModule="producao" />
                   </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Visual Carousel Preview */}
+              <AnimatePresence>
+                {visualSlides && (
+                  <CarouselVisualPreview
+                    slides={visualSlides}
+                    brandName="MEDSHIFT"
+                    onRegenerate={handleGenerateVisualCarousel}
+                    onClose={() => setVisualSlides(null)}
+                  />
                 )}
               </AnimatePresence>
 
