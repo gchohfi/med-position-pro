@@ -484,18 +484,45 @@ const RadarMercado = () => {
               </motion.section>
             )}
 
+            {/* Citations */}
+            {data.citations.length > 0 && (
+              <motion.section variants={fadeUp} initial="hidden" animate="visible" custom={5.5}>
+                <details className="group">
+                  <summary className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    <Radar className="h-3 w-3" />
+                    <span>{data.citations.length} fontes consultadas na pesquisa</span>
+                  </summary>
+                  <div className="mt-3 bg-muted/20 rounded-xl border border-border p-4 space-y-1.5">
+                    {data.citations.map((url, i) => (
+                      <a
+                        key={i}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-[11px] text-muted-foreground hover:text-accent truncate transition-colors"
+                      >
+                        {url}
+                      </a>
+                    ))}
+                  </div>
+                </details>
+              </motion.section>
+            )}
+
             {/* Update presence */}
             <motion.div
               className="bg-muted/30 rounded-2xl border border-border p-4 flex items-center justify-between"
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              custom={5}
+              custom={6}
             >
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
                 <p className="text-xs text-muted-foreground">
-                  O radar é atualizado com base no seu posicionamento e segmento de atuação.
+                  {data.citations.length > 0
+                    ? "Radar alimentado por pesquisa web em tempo real + análise estratégica."
+                    : "O radar é atualizado com base no seu posicionamento e segmento de atuação."}
                 </p>
               </div>
               <Button
