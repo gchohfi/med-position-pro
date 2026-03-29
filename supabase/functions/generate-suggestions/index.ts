@@ -149,7 +149,7 @@ Regras:
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "suggest_options" } },
+        tool_choice: "required",
         temperature: 0.9,
       }),
     });
