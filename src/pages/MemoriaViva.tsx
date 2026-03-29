@@ -109,13 +109,16 @@ const MemoriaViva = () => {
   const generateMemory = async () => {
     setGenerating(true);
     try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const accessToken = currentSession?.access_token;
+      if (!accessToken) throw new Error("Sessão expirada.");
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-memory`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({}),
         }
@@ -136,13 +139,16 @@ const MemoriaViva = () => {
   const generateInspirations = async () => {
     setGeneratingInspirations(true);
     try {
+      const { data: { session: inspSession } } = await supabase.auth.getSession();
+      const inspToken = inspSession?.access_token;
+      if (!inspToken) throw new Error("Sessão expirada.");
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-inspirations`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${inspToken}`,
           },
           body: JSON.stringify({}),
         }
