@@ -13,6 +13,9 @@ import Estrategia from "./pages/Estrategia";
 import Producao from "./pages/Producao";
 import Series from "./pages/Series";
 import Calendario from "./pages/Calendario";
+import Biblioteca from "./pages/Biblioteca";
+import MemoriaViva from "./pages/MemoriaViva";
+import Evolucao from "./pages/Evolucao";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -84,6 +87,30 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Calendario />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/biblioteca"
+        element={
+          <ProtectedRoute>
+            <Biblioteca />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/memoria-viva"
+        element={
+          <ProtectedRoute>
+            <MemoriaViva />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/evolucao"
+        element={
+          <ProtectedRoute>
+            <Evolucao />
           </ProtectedRoute>
         }
       />
