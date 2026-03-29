@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   ChevronLeft,
+  Pencil,
   ChevronRight,
   Download,
   Maximize2,
@@ -14,6 +15,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import SlideRenderer, { type SlideData } from "./SlideRenderer";
+import SlideEditor from "./SlideEditor";
 
 interface CarouselVisualPreviewProps {
   slides: SlideData[];
@@ -21,6 +23,7 @@ interface CarouselVisualPreviewProps {
   brandName?: string;
   onRegenerate?: () => void;
   onClose?: () => void;
+  onSlidesChange?: (slides: SlideData[]) => void;
 }
 
 const CAROUSEL_LOADING_MESSAGES = [
@@ -35,10 +38,19 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   brandName,
   onRegenerate,
   onClose,
+  onSlidesChange,
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  const handleSlideEdit = (index: number, updated: SlideData) => {
+    const newSlides = [...slides];
+    newSlides[index] = updated;
+    onSlidesChange?.(newSlides);
+    setEditingIndex(null);
+  };
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const exportSlide = useCallback(
@@ -214,15 +226,35 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             ))}
           </div>
 
-          {/* Slide info */}
-          <div className="text-center">
-            <p className="text-xs font-medium text-accent uppercase tracking-wide">
-              {slides[currentSlide]?.label}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Slide {currentSlide + 1} de {slides.length}
-            </p>
+          {/* Slide info + edit button */}
+          <div className="text-center flex flex-col items-center gap-2">
+            <div>
+              <p className="text-xs font-medium text-accent uppercase tracking-wide">
+                {slides[currentSlide]?.label}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Slide {currentSlide + 1} de {slides.length}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditingIndex(editingIndex === currentSlide ? null : currentSlide)}
+              className="text-xs h-7 gap-1.5"
+            >
+              <Pencil className="h-3 w-3" />
+              {editingIndex === currentSlide ? "Fechar editor" : "Editar texto"}
+            </Button>
           </div>
+
+          {/* Inline slide editor */}
+          {editingIndex === currentSlide && (
+            <SlideEditor
+              slide={slides[currentSlide]}
+              onSave={(updated) => handleSlideEdit(currentSlide, updated)}
+              onCancel={() => setEditingIndex(null)}
+            />
+          )}
         </div>
 
         {/* Slide thumbnails */}
