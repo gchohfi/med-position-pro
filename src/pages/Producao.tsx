@@ -93,6 +93,8 @@ const Producao = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [visualSlides, setVisualSlides] = useState<SlideData[] | null>(null);
   const [generatingVisual, setGeneratingVisual] = useState(false);
+  const [loadedFromLibrary, setLoadedFromLibrary] = useState(false);
+  const [loadedContentId, setLoadedContentId] = useState<string | null>(null);
 
   // Suggestion system state
   const [suggestingFields, setSuggestingFields] = useState(false);
