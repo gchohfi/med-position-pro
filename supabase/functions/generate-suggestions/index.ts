@@ -12,7 +12,10 @@ serve(async (req) => {
   }
 
   try {
-    const { tipo, objetivo, archetype, pillar, previousTheses, previousPerceptions } = await req.json();
+    const {
+      tipo, objetivo, archetype, pillar, tone, targetAudience, goals, specialty,
+      recentTheses, recentPerceptions, activeSeries, memoryHighlights, calendarContext, radarSignals,
+    } = await req.json();
 
     if (!tipo || !objetivo) {
       return new Response(
@@ -22,38 +25,45 @@ serve(async (req) => {
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const avoidTheses = (previousTheses || []).slice(0, 3);
-    const avoidPerceptions = (previousPerceptions || []).slice(0, 3);
+    const avoidTheses = (recentTheses || []).slice(0, 5);
+    const avoidPerceptions = (recentPerceptions || []).slice(0, 5);
+
+    const ctx: string[] = [];
+    if (archetype) ctx.push(`Arquétipo: ${archetype}`);
+    if (pillar) ctx.push(`Pilar: ${pillar}`);
+    if (tone) ctx.push(`Tom: ${tone}`);
+    if (targetAudience) ctx.push(`Público: ${targetAudience}`);
+    if (goals) ctx.push(`Objetivo macro: ${goals}`);
+    if (specialty) ctx.push(`Especialidade: ${specialty}`);
+    if (activeSeries?.length) ctx.push(`Séries ativas: ${activeSeries.join(", ")}`);
+    if (memoryHighlights?.length) ctx.push(`Memória: ${memoryHighlights.join("; ")}`);
+    if (calendarContext) ctx.push(`Calendário: ${calendarContext}`);
+    if (radarSignals?.length) ctx.push(`Mercado: ${radarSignals.join("; ")}`);
 
     const avoidBlock = avoidTheses.length > 0
-      ? `\n\nEVITE repetir teses similares a estas recentes:\n${avoidTheses.map((t: string, i: number) => `${i + 1}. "${t}"`).join("\n")}\n\nEVITE percepções similares a estas:\n${avoidPerceptions.map((p: string, i: number) => `${i + 1}. "${p}"`).join("\n")}`
+      ? `\nEVITE repetir:\nTeses: ${avoidTheses.map((t: string) => `"${t}"`).join("; ")}\nPercepções: ${avoidPerceptions.map((p: string) => `"${p}"`).join("; ")}`
       : "";
 
-    const systemPrompt = `Você é um estrategista de posicionamento para médicas no Instagram.
+    const prompt = `Tarefa: gerar opções estratégicas para conteúdo médico no Instagram.
 
-Gere exatamente UMA sugestão de tese central e UMA sugestão de percepção desejada.
+Contexto: ${ctx.length > 0 ? ctx.join(" | ") : "Limitado."}
+Tipo: ${tipo} | Objetivo: ${objetivo}${avoidBlock}
 
-Contexto:
-- Tipo de conteúdo: ${tipo}
-- Objetivo: ${objetivo}
-${archetype ? `- Arquétipo: ${archetype}` : ""}
-${pillar ? `- Pilar estratégico: ${pillar}` : ""}
+Retorne um JSON com duas arrays: "teses" (3 itens) e "percepcoes" (3 itens).
 
-Regras:
-- A tese deve ser uma afirmação clara, provocativa e posicionadora. Máximo 2 frases.
-- A percepção deve descrever como o público deve perceber a médica após o conteúdo. Máximo 1 frase.
-- Evite frases genéricas como "referência na área" ou "autoridade no assunto".
-- Seja específica ao nicho e ao tipo de conteúdo.
-- Nunca use clichês ou fórmulas prontas.
-- A tese define o posicionamento editorial da peça.
-- A percepção define o efeito desejado na audiência.${avoidBlock}
+Cada item de "teses" deve ter: angle, label, text
+- Item 1: angle="educativa", label="Educativa", text = tese didática (max 2 frases)
+- Item 2: angle="estratégica", label="Estratégica", text = tese posicionadora (max 2 frases)
+- Item 3: angle="manifesto", label="Manifesto", text = tese opinativa forte (max 2 frases)
 
-Responda APENAS em JSON válido:
-{"tese": "...", "percepcao": "..."}`;
+Cada item de "percepcoes" deve ter: angle, label, text
+- Item 1: angle="autoridade", label="Autoridade", text = percepção técnica (max 1 frase)
+- Item 2: angle="humana", label="Humana", text = percepção próxima (max 1 frase)
+- Item 3: angle="premium", label="Premium", text = percepção sofisticada (max 1 frase)
+
+As opções devem ser genuinamente diferentes entre si. Sem clichês genéricos. Específicas ao nicho.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -62,40 +72,43 @@ Responda APENAS em JSON válido:
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-5-mini",
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Gere uma sugestão original de tese e percepção para um conteúdo ${tipo} sobre: ${objetivo}` },
+          { role: "system", content: "You generate structured JSON with arrays. Always include the full teses and percepcoes arrays with exactly 3 items each as instructed. Respond in Portuguese (Brazil)." },
+          { role: "user", content: prompt },
         ],
-        temperature: 0.9,
-        max_tokens: 400,
+        response_format: { type: "json_object" },
+        max_completion_tokens: 1500,
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("AI API error:", errText);
+      console.error("AI API error:", response.status, errText);
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Limite atingido." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Créditos esgotados." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       throw new Error(`AI API error: ${response.status}`);
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Invalid AI response");
 
-    // Extract JSON from response
-    const jsonMatch = content.match(/\{[\s\S]*?\}/);
-    if (!jsonMatch) {
-      throw new Error("Invalid AI response format");
-    }
+    const result = JSON.parse(jsonMatch[0]);
+    if (!result.teses?.length || !result.percepcoes?.length) throw new Error("Incomplete response");
 
-    const suggestion = JSON.parse(jsonMatch[0]);
-
-    return new Response(JSON.stringify(suggestion), {
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("Error:", err);
     return new Response(
-      JSON.stringify({ error: "Erro ao gerar sugestão." }),
+      JSON.stringify({ error: "Erro ao gerar sugestões." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

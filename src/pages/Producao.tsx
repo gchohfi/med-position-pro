@@ -34,6 +34,7 @@ import ImageUpload from "@/components/ImageUpload";
 import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
 import { mapContentToSlides } from "@/components/carousel/mapContentToSlides";
 import type { SlideData } from "@/components/carousel/SlideRenderer";
+import SuggestionCards from "@/components/SuggestionCards";
 
 const CONTENT_TYPES = [
   { value: "educativo", label: "Educativo", icon: BookOpen, desc: "Ensinar com profundidade" },
@@ -95,8 +96,12 @@ const Producao = () => {
 
   // Suggestion system state
   const [suggestingFields, setSuggestingFields] = useState(false);
-  const [teseIsSuggestion, setTeseIsSuggestion] = useState(false);
-  const [percepcaoIsSuggestion, setPercepcaoIsSuggestion] = useState(false);
+  const [teseOptions, setTeseOptions] = useState<{ angle: string; label: string; text: string }[]>([]);
+  const [percepcaoOptions, setPercepcaoOptions] = useState<{ angle: string; label: string; text: string }[]>([]);
+  const [selectedTeseIndex, setSelectedTeseIndex] = useState<number | null>(null);
+  const [selectedPercepcaoIndex, setSelectedPercepcaoIndex] = useState<number | null>(null);
+  const [editingTese, setEditingTese] = useState(false);
+  const [editingPercepcao, setEditingPercepcao] = useState(false);
   const [previousTheses, setPreviousTheses] = useState<string[]>([]);
   const [previousPerceptions, setPreviousPerceptions] = useState<string[]>([]);
 
@@ -107,7 +112,7 @@ const Producao = () => {
       setContextLoading(true);
       try {
         const [posRes, diagRes] = await Promise.all([
-          supabase.from("positioning").select("archetype, pillars").eq("user_id", user.id).maybeSingle(),
+          supabase.from("positioning").select("archetype, pillars, tone, target_audience, goals").eq("user_id", user.id).maybeSingle(),
           supabase.from("diagnosis_outputs").select("estrategia").eq("user_id", user.id).maybeSingle(),
         ]);
         const pos = posRes.data;
@@ -137,7 +142,7 @@ const Producao = () => {
           .select("strategic_input")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
-          .limit(3);
+          .limit(5);
         if (data) {
           const theses = data
             .map((d) => (d.strategic_input as any)?.tese)
@@ -153,16 +158,43 @@ const Producao = () => {
     loadHistory();
   }, [user]);
 
-  // Generate AI suggestions for tese and percepção
+  // Generate AI suggestions for tese and percepção — now returns 3 options each
   const generateSuggestions = async () => {
     if (!tipo || !objetivo.trim()) {
       toast.error("Preencha o tipo e objetivo antes de gerar sugestões.");
       return;
     }
     setSuggestingFields(true);
+    setTeseOptions([]);
+    setPercepcaoOptions([]);
+    setSelectedTeseIndex(null);
+    setSelectedPercepcaoIndex(null);
+    setEditingTese(false);
+    setEditingPercepcao(false);
+    setTese("");
+    setPercepcao("");
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Sessão expirada.");
+
+      // Gather rich context
+      const [posRes, profileRes, seriesRes, calendarRes, memoryRes, radarRes] = await Promise.all([
+        supabase.from("positioning").select("archetype, pillars, tone, target_audience, goals").eq("user_id", user!.id).maybeSingle(),
+        supabase.from("profiles").select("specialty").eq("id", user!.id).maybeSingle(),
+        supabase.from("series").select("name, strategic_role").eq("user_id", user!.id).eq("status", "ativa").limit(5),
+        supabase.from("calendar_items").select("title, content_type").eq("user_id", user!.id).gte("date", new Date().toISOString().split("T")[0]).order("date").limit(5),
+        supabase.from("living_memory").select("memory").eq("user_id", user!.id).maybeSingle(),
+        supabase.from("market_radar").select("signals, opportunities").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      ]);
+
+      const pos = posRes.data;
+      const activeSeries = seriesRes.data?.map((s) => `${s.name} (${s.strategic_role})`) || [];
+      const calendarContext = calendarRes.data?.map((c) => `${c.title} (${c.content_type})`).join(", ") || "";
+      const memory = memoryRes.data?.memory as Record<string, any> | null;
+      const memoryHighlights = memory ? Object.values(memory).filter((v) => typeof v === "string").slice(0, 3) as string[] : [];
+      const radar = radarRes.data;
+      const radarSignals = radar?.signals ? (Array.isArray(radar.signals) ? radar.signals.slice(0, 3).map((s: any) => typeof s === "string" ? s : s?.title || "") : []) : [];
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-suggestions`,
@@ -175,31 +207,57 @@ const Producao = () => {
           body: JSON.stringify({
             tipo,
             objetivo,
-            archetype: context.archetype,
-            pillar: context.pillar,
-            previousTheses,
-            previousPerceptions,
+            archetype: pos?.archetype || context.archetype,
+            pillar: pos?.pillars?.[0] || context.pillar,
+            tone: pos?.tone,
+            targetAudience: pos?.target_audience,
+            goals: pos?.goals,
+            specialty: profileRes.data?.specialty,
+            recentTheses: previousTheses,
+            recentPerceptions: previousPerceptions,
+            activeSeries,
+            memoryHighlights,
+            calendarContext,
+            radarSignals,
           }),
         }
       );
 
+      if (res.status === 429) {
+        toast.error("Limite de requisições atingido. Tente novamente em instantes.");
+        return;
+      }
+      if (res.status === 402) {
+        toast.error("Créditos esgotados. Adicione créditos para continuar.");
+        return;
+      }
       if (!res.ok) throw new Error("Erro");
-      const suggestion = await res.json();
 
-      if (suggestion.tese) {
-        setTese(suggestion.tese);
-        setTeseIsSuggestion(true);
-      }
-      if (suggestion.percepcao) {
-        setPercepcao(suggestion.percepcao);
-        setPercepcaoIsSuggestion(true);
-      }
-      toast.success("Sugestões geradas. Ajuste se necessário.");
+      const result = await res.json();
+
+      if (result.teses?.length) setTeseOptions(result.teses);
+      if (result.percepcoes?.length) setPercepcaoOptions(result.percepcoes);
+
+      toast.success("Opções estratégicas geradas. Escolha a direção.");
     } catch {
       toast.error("Erro ao gerar sugestões. Tente novamente.");
     } finally {
       setSuggestingFields(false);
     }
+  };
+
+  // Handle tese selection
+  const handleTeseSelect = (index: number) => {
+    setSelectedTeseIndex(index);
+    setTese(teseOptions[index].text);
+    setEditingTese(false);
+  };
+
+  // Handle percepcao selection
+  const handlePercepcaoSelect = (index: number) => {
+    setSelectedPercepcaoIndex(index);
+    setPercepcao(percepcaoOptions[index].text);
+    setEditingPercepcao(false);
   };
 
   // Pre-fill from query params
@@ -527,7 +585,11 @@ const Producao = () => {
                   ) : (
                     <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                   )}
-                  {suggestingFields ? "Gerando sugestões…" : tese || percepcao ? "Gerar nova sugestão" : "Gerar sugestões inteligentes"}
+                  {suggestingFields
+                    ? "Gerando opções…"
+                    : teseOptions.length > 0
+                      ? "Gerar novas opções"
+                      : "Gerar direções estratégicas"}
                 </Button>
                 <span className="text-[10px] text-muted-foreground">
                   O MEDSHIFT propõe — você decide.
@@ -535,61 +597,92 @@ const Producao = () => {
               </div>
             )}
 
-            {/* Tese */}
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <label className="text-sm font-medium text-foreground">
+            {/* Loading state for suggestions */}
+            {suggestingFields && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-3"
+              >
+                {[1, 2].map((g) => (
+                  <div key={g} className="space-y-2">
+                    <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-16 rounded-xl border border-border bg-muted/30 animate-pulse" />
+                    ))}
+                  </div>
+                ))}
+                <p className="text-center text-xs text-muted-foreground animate-pulse">
+                  Analisando posicionamento e gerando opções…
+                </p>
+              </motion.div>
+            )}
+
+            {/* Tese cards */}
+            {teseOptions.length > 0 && !suggestingFields && (
+              <SuggestionCards
+                title="Tese central"
+                helperText="A tese define o posicionamento editorial da peça. Escolha uma direção e ajuste se necessário."
+                options={teseOptions}
+                selectedIndex={selectedTeseIndex}
+                onSelect={handleTeseSelect}
+                editingValue={tese}
+                onEditChange={setTese}
+                isEditing={editingTese}
+                onToggleEdit={() => setEditingTese(!editingTese)}
+              />
+            )}
+
+            {/* Tese manual fallback — shown when no suggestions generated */}
+            {teseOptions.length === 0 && !suggestingFields && (
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">
                   Tese central
                 </label>
-                {teseIsSuggestion && (
-                  <span className="text-[10px] font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-full">
-                    Sugestão do MEDSHIFT
-                  </span>
-                )}
+                <p className="text-xs text-muted-foreground mb-2">
+                  A tese define o posicionamento da peça. Use o botão acima para gerar direções.
+                </p>
+                <Textarea
+                  value={tese}
+                  onChange={(e) => setTese(e.target.value)}
+                  placeholder="Ex: O problema não é o produto. É a lógica."
+                  className="rounded-xl resize-none min-h-[72px] text-sm"
+                />
               </div>
-              <p className="text-xs text-muted-foreground mb-2">
-                A tese define o posicionamento da peça. Ajuste se necessário.
-              </p>
-              <Textarea
-                value={tese}
-                onChange={(e) => {
-                  setTese(e.target.value);
-                  setTeseIsSuggestion(false);
-                }}
-                placeholder="Ex: O problema não é o produto. É a lógica."
-                className={`rounded-xl resize-none min-h-[72px] text-sm transition-colors ${
-                  teseIsSuggestion ? "border-accent/40 bg-accent/[0.03]" : ""
-                }`}
-              />
-            </div>
+            )}
 
-            {/* Percepção */}
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <label className="text-sm font-medium text-foreground">
+            {/* Percepção cards */}
+            {percepcaoOptions.length > 0 && !suggestingFields && (
+              <SuggestionCards
+                title="Percepção desejada"
+                helperText="Como o público deve perceber a médica após esse conteúdo? Escolha o tom."
+                options={percepcaoOptions}
+                selectedIndex={selectedPercepcaoIndex}
+                onSelect={handlePercepcaoSelect}
+                editingValue={percepcao}
+                onEditChange={setPercepcao}
+                isEditing={editingPercepcao}
+                onToggleEdit={() => setEditingPercepcao(!editingPercepcao)}
+              />
+            )}
+
+            {/* Percepção manual fallback */}
+            {percepcaoOptions.length === 0 && !suggestingFields && (
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">
                   Percepção desejada
                 </label>
-                {percepcaoIsSuggestion && (
-                  <span className="text-[10px] font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-full">
-                    Sugestão do MEDSHIFT
-                  </span>
-                )}
+                <p className="text-xs text-muted-foreground mb-2">
+                  Como o público deve perceber a médica após esse conteúdo?
+                </p>
+                <Textarea
+                  value={percepcao}
+                  onChange={(e) => setPercepcao(e.target.value)}
+                  placeholder="Ex: Ela sabe exatamente o que está fazendo"
+                  className="rounded-xl resize-none min-h-[72px] text-sm"
+                />
               </div>
-              <p className="text-xs text-muted-foreground mb-2">
-                Como o público deve perceber a médica após esse conteúdo?
-              </p>
-              <Textarea
-                value={percepcao}
-                onChange={(e) => {
-                  setPercepcao(e.target.value);
-                  setPercepcaoIsSuggestion(false);
-                }}
-                placeholder="Ex: Ela sabe exatamente o que está fazendo"
-                className={`rounded-xl resize-none min-h-[72px] text-sm transition-colors ${
-                  percepcaoIsSuggestion ? "border-accent/40 bg-accent/[0.03]" : ""
-                }`}
-              />
-            </div>
+            )}
 
             <Button
               onClick={handleGenerate}
