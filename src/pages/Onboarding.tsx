@@ -129,7 +129,7 @@ const Onboarding = () => {
       <div className="container max-w-2xl mx-auto px-6 py-8">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Passo {step + 1} de {STEPS.length}</span>
-          <span className="font-heading text-lg font-semibold text-foreground">MedPositioning</span>
+          <span className="font-heading text-lg font-semibold text-foreground">MEDSHIFT</span>
         </div>
         <Progress value={progress} className="h-1.5 mb-12 rounded-full" />
       </div>

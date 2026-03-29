@@ -54,7 +54,7 @@ export function AppSidebar() {
         <div className="p-4 pb-2">
           {!collapsed && (
             <span className="font-heading text-lg font-semibold text-foreground tracking-tight">
-              MedPositioning
+              MEDSHIFT
             </span>
           )}
         </div>

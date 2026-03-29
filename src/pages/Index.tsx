@@ -20,7 +20,7 @@ const Index = () => {
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="container max-w-6xl mx-auto flex items-center justify-between h-16 px-6">
-          <span className="font-heading text-xl font-semibold text-foreground tracking-tight">MedPositioning</span>
+          <span className="font-heading text-xl font-semibold text-foreground tracking-tight">MEDSHIFT</span>
           <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
             Entrar
           </Button>
@@ -235,7 +235,7 @@ const Index = () => {
       <footer className="py-8 px-6 border-t border-border">
         <div className="container max-w-6xl mx-auto text-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} MedPositioning. Todos os direitos reservados.
+            © {new Date().getFullYear()} MEDSHIFT. Todos os direitos reservados.
           </p>
         </div>
       </footer>
