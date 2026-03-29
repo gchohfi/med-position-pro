@@ -93,6 +93,8 @@ const Producao = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [visualSlides, setVisualSlides] = useState<SlideData[] | null>(null);
   const [generatingVisual, setGeneratingVisual] = useState(false);
+  const [loadedFromLibrary, setLoadedFromLibrary] = useState(false);
+  const [loadedContentId, setLoadedContentId] = useState<string | null>(null);
 
   // Suggestion system state
   const [suggestingFields, setSuggestingFields] = useState(false);
@@ -268,16 +270,52 @@ const Producao = () => {
     setEditingPercepcao(false);
   };
 
-  // Pre-fill from query params
+  // Pre-fill from query params OR load full piece from Biblioteca
+  const autoTriggeredRef = React.useRef(false);
+  const libraryLoadedRef = React.useRef(false);
+
   useEffect(() => {
+    const contentId = searchParams.get("content_id");
+    if (contentId && user && !libraryLoadedRef.current) {
+      libraryLoadedRef.current = true;
+      autoTriggeredRef.current = true; // skip auto-suggestions
+      const loadFromLibrary = async () => {
+        try {
+          const { data } = await supabase
+            .from("content_outputs")
+            .select("*")
+            .eq("id", contentId)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (data) {
+            const si = data.strategic_input as any;
+            if (si?.tipo) setTipo(si.tipo);
+            if (si?.objetivo) setObjetivo(si.objetivo);
+            if (si?.tese) setTese(si.tese);
+            if (si?.percepcao) setPercepcao(si.percepcao);
+            const content = data.generated_content as Record<string, string> | null;
+            if (content && typeof content === "object" && Object.values(content).some((v) => v)) {
+              setOutput(content);
+            }
+            setLoadedFromLibrary(true);
+            setLoadedContentId(data.id);
+            toast.success("Peça carregada da sua biblioteca.");
+          }
+        } catch {
+          toast.error("Erro ao carregar peça.");
+        }
+      };
+      loadFromLibrary();
+      return;
+    }
+
     const obj = searchParams.get("objetivo");
     if (obj) setObjetivo(obj);
     const t = searchParams.get("tipo");
     if (t) setTipo(t);
-  }, [searchParams]);
+  }, [searchParams, user]);
 
-  // Auto-trigger suggestions when tipo + objetivo are ready
-  const autoTriggeredRef = React.useRef(false);
+  // Auto-trigger suggestions when tipo + objetivo are ready (new pieces only)
   useEffect(() => {
     if (tipo && objetivo.trim() && !autoTriggeredRef.current && !contextLoading && teseOptions.length === 0 && !suggestingFields) {
       autoTriggeredRef.current = true;
@@ -384,16 +422,26 @@ const Producao = () => {
 
       setOutput(sections);
 
-      // Save to DB
+      // Save to DB — update existing or create new
       try {
-        const { error } = await supabase.from("content_outputs").insert({
-          user_id: user!.id,
-          content_type: tipo,
-          title: tese.slice(0, 120) || objetivo.slice(0, 120),
-          strategic_input: { objetivo, tese, percepcao, tipo } as any,
-          generated_content: sections as any,
-        });
-        if (error) console.error("Erro ao salvar:", error);
+        if (loadedContentId) {
+          const { error } = await supabase.from("content_outputs").update({
+            content_type: tipo,
+            title: tese.slice(0, 120) || objetivo.slice(0, 120),
+            strategic_input: { objetivo, tese, percepcao, tipo } as any,
+            generated_content: sections as any,
+          }).eq("id", loadedContentId);
+          if (error) console.error("Erro ao atualizar:", error);
+        } else {
+          const { error } = await supabase.from("content_outputs").insert({
+            user_id: user!.id,
+            content_type: tipo,
+            title: tese.slice(0, 120) || objetivo.slice(0, 120),
+            strategic_input: { objetivo, tese, percepcao, tipo } as any,
+            generated_content: sections as any,
+          });
+          if (error) console.error("Erro ao salvar:", error);
+        }
       } catch {}
 
       logStrategicEvent(STRATEGIC_EVENTS.CONTENT_GENERATED, "producao", { content_type: tipo });
@@ -497,6 +545,29 @@ const Producao = () => {
             Nenhum conteúdo pode ser criado sem intenção estratégica definida.
           </p>
         </motion.div>
+
+        {/* Library loaded banner */}
+        {loadedFromLibrary && (
+          <motion.div
+            className="bg-accent/5 rounded-2xl border border-accent/15 p-4 mb-4 flex items-center gap-3"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <BookOpen className="h-4 w-4 text-accent shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Base carregada da sua biblioteca</p>
+              <p className="text-xs text-muted-foreground">Todos os campos foram preenchidos. Edite o que desejar ou gere novamente.</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground shrink-0"
+              onClick={() => setLoadedFromLibrary(false)}
+            >
+              Fechar
+            </Button>
+          </motion.div>
+        )}
 
         {/* LAYER 1 — Strategic Context */}
         {!contextLoading && hasContext && (

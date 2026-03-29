@@ -465,9 +465,7 @@ const Biblioteca = () => {
                           className="rounded-xl mt-3"
                           onClick={() => {
                             setSelectedItem(null);
-                            const params = new URLSearchParams();
-                            if (si.objetivo) params.set("objetivo", si.objetivo);
-                            navigate(`/producao?${params.toString()}`);
+                            navigate(`/producao?content_id=${selectedItem.id}`);
                           }}
                         >
                           <PenTool className="mr-1.5 h-3.5 w-3.5" />
@@ -493,9 +491,7 @@ const Biblioteca = () => {
                         className="rounded-xl"
                         onClick={() => {
                           setSelectedItem(null);
-                          const params = new URLSearchParams();
-                          if (si.objetivo) params.set("objetivo", si.objetivo);
-                          navigate(`/producao?${params.toString()}`);
+                          navigate(`/producao?content_id=${selectedItem.id}`);
                         }}
                       >
                         <PenTool className="mr-1.5 h-3.5 w-3.5" />
