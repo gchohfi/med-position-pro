@@ -264,7 +264,18 @@ const Producao = () => {
   useEffect(() => {
     const obj = searchParams.get("objetivo");
     if (obj) setObjetivo(obj);
+    const t = searchParams.get("tipo");
+    if (t) setTipo(t);
   }, [searchParams]);
+
+  // Auto-trigger suggestions when tipo + objetivo are ready
+  const autoTriggeredRef = React.useRef(false);
+  useEffect(() => {
+    if (tipo && objetivo.trim() && !autoTriggeredRef.current && !contextLoading && teseOptions.length === 0 && !suggestingFields) {
+      autoTriggeredRef.current = true;
+      generateSuggestions();
+    }
+  }, [tipo, objetivo, contextLoading]);
 
   // Cycle loading messages
   useEffect(() => {
