@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { logStrategicEvent, STRATEGIC_EVENTS } from "@/lib/strategic-events";
 import {
   Archive,
   Star,
@@ -110,6 +111,9 @@ const Biblioteca = () => {
     );
     if (selectedItem?.id === item.id) {
       setSelectedItem({ ...item, golden_case: newVal });
+    }
+    if (newVal) {
+      logStrategicEvent(STRATEGIC_EVENTS.GOLDEN_CASE_MARKED, "biblioteca", { content_id: item.id });
     }
     toast.success(
       newVal

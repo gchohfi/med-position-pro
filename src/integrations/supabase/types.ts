@@ -390,6 +390,78 @@ export type Database = {
         }
         Relationships: []
       }
+      recommended_actions: {
+        Row: {
+          action_path: string | null
+          action_type: string
+          consumed: boolean
+          dismissed: boolean
+          generated_at: string
+          id: string
+          priority: string
+          reason: string | null
+          related_module: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action_path?: string | null
+          action_type: string
+          consumed?: boolean
+          dismissed?: boolean
+          generated_at?: string
+          id?: string
+          priority?: string
+          reason?: string | null
+          related_module?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          action_path?: string | null
+          action_type?: string
+          consumed?: boolean
+          dismissed?: boolean
+          generated_at?: string
+          id?: string
+          priority?: string
+          reason?: string | null
+          related_module?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      refresh_logs: {
+        Row: {
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          source_module: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          event_type: string
+          id?: string
+          source_module: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          source_module?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       series: {
         Row: {
           closing_pattern: string | null
@@ -483,12 +555,80 @@ export type Database = {
         }
         Relationships: []
       }
+      uploaded_assets: {
+        Row: {
+          category: string
+          created_at: string
+          favorite: boolean
+          file_name: string
+          file_path: string
+          id: string
+          linked_calendar_item_id: string | null
+          linked_module: string | null
+          linked_series_id: string | null
+          note: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          favorite?: boolean
+          file_name: string
+          file_path: string
+          id?: string
+          linked_calendar_item_id?: string | null
+          linked_module?: string | null
+          linked_series_id?: string | null
+          note?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          favorite?: boolean
+          file_name?: string
+          file_path?: string
+          id?: string
+          linked_calendar_item_id?: string | null
+          linked_module?: string | null
+          linked_series_id?: string | null
+          note?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uploaded_assets_linked_calendar_item_id_fkey"
+            columns: ["linked_calendar_item_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "uploaded_assets_linked_series_id_fkey"
+            columns: ["linked_series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      log_strategic_event: {
+        Args: {
+          p_details?: Json
+          p_event_type: string
+          p_source_module: string
+          p_user_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

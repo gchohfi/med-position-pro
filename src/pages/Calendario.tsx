@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { logStrategicEvent, STRATEGIC_EVENTS } from "@/lib/strategic-events";
 import {
   Calendar as CalendarIcon,
   Sparkles,
@@ -108,6 +109,7 @@ const Calendario = () => {
       if (response.status === 402) { toast.error("Créditos esgotados."); return; }
       if (!response.ok) throw new Error("Erro");
 
+      logStrategicEvent(STRATEGIC_EVENTS.CALENDAR_GENERATED, "calendario");
       toast.success("Calendário estratégico gerado com sucesso.");
       loadItems();
     } catch {

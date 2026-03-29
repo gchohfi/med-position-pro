@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { logStrategicEvent, STRATEGIC_EVENTS } from "@/lib/strategic-events";
 import {
   TrendingUp,
   Sparkles,
@@ -117,6 +118,7 @@ const Evolucao = () => {
       if (response.status === 429) { toast.error("Limite de requisições."); return; }
       if (response.status === 402) { toast.error("Créditos esgotados."); return; }
       if (!response.ok) throw new Error("Erro");
+      logStrategicEvent(STRATEGIC_EVENTS.EVOLUTION_SNAPSHOT, "evolucao");
       toast.success("Evolução estratégica registrada.");
       loadSnapshots();
     } catch {
