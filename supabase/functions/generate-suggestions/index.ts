@@ -46,26 +46,24 @@ serve(async (req) => {
       ? `\nEVITE repetir:\nTeses: ${avoidTheses.map((t: string) => `"${t}"`).join("; ")}\nPercepções: ${avoidPerceptions.map((p: string) => `"${p}"`).join("; ")}`
       : "";
 
-    const prompt = `Você é um estrategista editorial sênior para médicas no Instagram.
+    const prompt = `Tarefa: gerar opções estratégicas para conteúdo médico no Instagram.
 
 Contexto: ${ctx.length > 0 ? ctx.join(" | ") : "Limitado."}
 Tipo: ${tipo} | Objetivo: ${objetivo}${avoidBlock}
 
-Gere EXATAMENTE este JSON (nada mais):
-{
-  "teses": [
-    {"angle": "educativa", "label": "Educativa", "text": "<tese didática, max 2 frases>"},
-    {"angle": "estratégica", "label": "Estratégica", "text": "<tese posicionadora, max 2 frases>"},
-    {"angle": "manifesto", "label": "Manifesto", "text": "<tese opinativa forte, max 2 frases>"}
-  ],
-  "percepcoes": [
-    {"angle": "autoridade", "label": "Autoridade", "text": "<percepção técnica, max 1 frase>"},
-    {"angle": "humana", "label": "Humana", "text": "<percepção próxima, max 1 frase>"},
-    {"angle": "premium", "label": "Premium", "text": "<percepção sofisticada, max 1 frase>"}
-  ]
-}
+Retorne um JSON com duas arrays: "teses" (3 itens) e "percepcoes" (3 itens).
 
-Regras: Cada opção GENUINAMENTE diferente. Sem clichês. Específica ao nicho médico. Responda SOMENTE o JSON.`;
+Cada item de "teses" deve ter: angle, label, text
+- Item 1: angle="educativa", label="Educativa", text = tese didática (max 2 frases)
+- Item 2: angle="estratégica", label="Estratégica", text = tese posicionadora (max 2 frases)
+- Item 3: angle="manifesto", label="Manifesto", text = tese opinativa forte (max 2 frases)
+
+Cada item de "percepcoes" deve ter: angle, label, text
+- Item 1: angle="autoridade", label="Autoridade", text = percepção técnica (max 1 frase)
+- Item 2: angle="humana", label="Humana", text = percepção próxima (max 1 frase)
+- Item 3: angle="premium", label="Premium", text = percepção sofisticada (max 1 frase)
+
+As opções devem ser genuinamente diferentes entre si. Sem clichês genéricos. Específicas ao nicho.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
