@@ -74,7 +74,7 @@ As opções devem ser genuinamente diferentes entre si. Sem clichês genéricos.
       body: JSON.stringify({
         model: "openai/gpt-5-mini",
         messages: [
-          { role: "system", content: "You are a JSON generator. Always respond with valid JSON only. No markdown, no explanations." },
+          { role: "system", content: "You generate structured JSON with arrays. Always include the full teses and percepcoes arrays with exactly 3 items each as instructed." },
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
