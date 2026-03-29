@@ -85,13 +85,16 @@ const Calendario = () => {
         supabase.from("series").select("name, frequency, strategic_role").eq("user_id", user!.id),
       ]);
 
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const accessToken = currentSession?.access_token;
+      if (!accessToken) throw new Error("Sessão expirada.");
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-calendar`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             positioning: posRes.data,
