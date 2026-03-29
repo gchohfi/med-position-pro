@@ -1,0 +1,320 @@
+import React, { useState, useRef, useCallback } from "react";
+import { toPng } from "html-to-image";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Maximize2,
+  Minimize2,
+  Loader2,
+  X,
+  RefreshCw,
+} from "lucide-react";
+import SlideRenderer, { type SlideData } from "./SlideRenderer";
+
+interface CarouselVisualPreviewProps {
+  slides: SlideData[];
+  brandColors?: { bg: string; text: string; accent: string };
+  brandName?: string;
+  onRegenerate?: () => void;
+  onClose?: () => void;
+}
+
+const CAROUSEL_LOADING_MESSAGES = [
+  "Estruturando layout visual…",
+  "Aplicando direção estética…",
+  "Gerando slides…",
+];
+
+const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
+  slides,
+  brandColors,
+  brandName,
+  onRegenerate,
+  onClose,
+}) => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [expanded, setExpanded] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const exportSlide = useCallback(
+    async (index: number) => {
+      const el = slideRefs.current[index];
+      if (!el) return;
+      try {
+        const dataUrl = await toPng(el, {
+          width: 1080,
+          height: 1350,
+          pixelRatio: 1,
+          cacheBust: true,
+        });
+        const link = document.createElement("a");
+        link.download = `slide-${index + 1}.png`;
+        link.href = dataUrl;
+        link.click();
+      } catch (err) {
+        toast.error("Erro ao exportar slide.");
+        console.error(err);
+      }
+    },
+    []
+  );
+
+  const exportAll = useCallback(async () => {
+    setExporting(true);
+    try {
+      for (let i = 0; i < slides.length; i++) {
+        const el = slideRefs.current[i];
+        if (!el) continue;
+        const dataUrl = await toPng(el, {
+          width: 1080,
+          height: 1350,
+          pixelRatio: 1,
+          cacheBust: true,
+        });
+        const link = document.createElement("a");
+        link.download = `carrossel-slide-${i + 1}.png`;
+        link.href = dataUrl;
+        link.click();
+        // Small delay between downloads
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      toast.success("Todos os slides foram baixados!");
+    } catch {
+      toast.error("Erro ao exportar carrossel.");
+    } finally {
+      setExporting(false);
+    }
+  }, [slides.length]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      className="bg-card rounded-2xl border border-accent/15 shadow-sm overflow-hidden"
+    >
+      {/* Header */}
+      <div className="bg-accent/5 px-6 py-4 flex items-center justify-between border-b border-accent/10">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-accent" />
+          <h3 className="font-heading text-base font-semibold text-foreground">
+            Carrossel visual
+          </h3>
+          <span className="text-xs text-muted-foreground">
+            {slides.length} slides · 1080×1350
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {onRegenerate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRegenerate}
+              className="text-xs h-8"
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Regerar
+            </Button>
+          )}
+          {onClose && (
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Preview area */}
+      <div className="p-6">
+        {/* Current slide preview (scaled down) */}
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className={`relative bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center ${
+              expanded ? "w-full" : ""
+            }`}
+            style={{
+              maxWidth: expanded ? "100%" : 400,
+              margin: "0 auto",
+            }}
+          >
+            {/* Scaled preview */}
+            <div
+              style={{
+                width: expanded ? 540 : 320,
+                height: expanded ? 675 : 400,
+                overflow: "hidden",
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  transform: expanded ? "scale(0.5)" : "scale(0.2963)",
+                  transformOrigin: "top left",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                }}
+              >
+                <SlideRenderer
+                  slide={slides[currentSlide]}
+                  brandColors={brandColors}
+                  brandName={brandName}
+                />
+              </div>
+            </div>
+
+            {/* Nav arrows */}
+            {currentSlide > 0 && (
+              <button
+                onClick={() => setCurrentSlide((p) => p - 1)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-background transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4 text-foreground" />
+              </button>
+            )}
+            {currentSlide < slides.length - 1 && (
+              <button
+                onClick={() => setCurrentSlide((p) => p + 1)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-background transition-colors"
+              >
+                <ChevronRight className="h-4 w-4 text-foreground" />
+              </button>
+            )}
+
+            {/* Expand/collapse */}
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-background transition-colors"
+            >
+              {expanded ? (
+                <Minimize2 className="h-3.5 w-3.5 text-foreground" />
+              ) : (
+                <Maximize2 className="h-3.5 w-3.5 text-foreground" />
+              )}
+            </button>
+          </div>
+
+          {/* Slide dots */}
+          <div className="flex items-center gap-1.5">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentSlide(i)}
+                className={`h-2 rounded-full transition-all ${
+                  i === currentSlide
+                    ? "w-6 bg-accent"
+                    : "w-2 bg-muted-foreground/20 hover:bg-muted-foreground/40"
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Slide info */}
+          <div className="text-center">
+            <p className="text-xs font-medium text-accent uppercase tracking-wide">
+              {slides[currentSlide]?.label}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Slide {currentSlide + 1} de {slides.length}
+            </p>
+          </div>
+        </div>
+
+        {/* Slide thumbnails */}
+        <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
+          {slides.map((slide, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentSlide(i)}
+              className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
+                i === currentSlide
+                  ? "border-accent shadow-md"
+                  : "border-transparent opacity-60 hover:opacity-100"
+              }`}
+              style={{ width: 64, height: 80 }}
+            >
+              <div
+                style={{
+                  width: 64,
+                  height: 80,
+                  overflow: "hidden",
+                  position: "relative",
+                }}
+              >
+                <div
+                  style={{
+                    transform: "scale(0.0593)",
+                    transformOrigin: "top left",
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                  }}
+                >
+                  <SlideRenderer
+                    slide={slide}
+                    brandColors={brandColors}
+                    brandName={brandName}
+                  />
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-border">
+          <Button
+            onClick={() => exportSlide(currentSlide)}
+            variant="outline"
+            className="rounded-xl text-sm"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Baixar slide atual
+          </Button>
+          <Button
+            onClick={exportAll}
+            disabled={exporting}
+            className="rounded-xl text-sm bg-accent text-accent-foreground hover:bg-accent/90"
+          >
+            {exporting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            {exporting ? "Exportando…" : "Baixar carrossel (PNG)"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Hidden full-size slides for export */}
+      <div
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          top: 0,
+        }}
+        aria-hidden
+      >
+        {slides.map((slide, i) => (
+          <SlideRenderer
+            key={i}
+            ref={(el) => {
+              slideRefs.current[i] = el;
+            }}
+            slide={slide}
+            brandColors={brandColors}
+            brandName={brandName}
+          />
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
+export { CAROUSEL_LOADING_MESSAGES };
+export default CarouselVisualPreview;
