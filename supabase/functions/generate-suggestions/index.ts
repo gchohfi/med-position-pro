@@ -74,10 +74,13 @@ Regras: Cada opção GENUINAMENTE diferente. Sem clichês. Específica ao nicho 
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [{ role: "user", content: prompt }],
+        model: "openai/gpt-5-mini",
+        messages: [
+          { role: "system", content: "You are a JSON generator. Always respond with valid JSON only. No markdown, no explanations." },
+          { role: "user", content: prompt },
+        ],
         response_format: { type: "json_object" },
-        temperature: 0.9,
+        temperature: 0.85,
         max_tokens: 1500,
       }),
     });
