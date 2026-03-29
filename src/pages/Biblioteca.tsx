@@ -22,8 +22,9 @@ import {
   Heart,
   TrendingUp,
   Copy,
-  Link2,
   Filter,
+  PenTool,
+  Sparkles,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 
@@ -34,6 +35,15 @@ const TYPE_META: Record<string, { label: string; color: string }> = {
   conexao: { label: "Conexão", color: "bg-pink-500/10 text-pink-600" },
   conversao: { label: "Conversão", color: "bg-green-500/10 text-green-600" },
 };
+
+const BLOCK_LABELS = [
+  "Gancho",
+  "Quebra de percepção",
+  "Explicação / visão",
+  "Método / lógica",
+  "Manifesto",
+  "Fechamento",
+];
 
 interface ContentItem {
   id: string;
@@ -101,7 +111,27 @@ const Biblioteca = () => {
     if (selectedItem?.id === item.id) {
       setSelectedItem({ ...item, golden_case: newVal });
     }
-    toast.success(newVal ? "Marcado como caso de ouro" : "Removido dos casos de ouro");
+    toast.success(
+      newVal
+        ? "Peça adicionada aos seus casos de ouro."
+        : "Removida dos casos de ouro."
+    );
+  };
+
+  const duplicateItem = async (item: ContentItem) => {
+    const { error } = await supabase.from("content_outputs").insert({
+      user_id: user!.id,
+      content_type: item.content_type,
+      title: `${getTitle(item)} (cópia)`,
+      strategic_input: item.strategic_input,
+      generated_content: item.generated_content,
+      golden_case: false,
+    });
+    if (!error) {
+      toast.success("Peça duplicada no acervo.");
+      loadItems();
+      setSelectedItem(null);
+    }
   };
 
   const filtered = items.filter((item) => {
@@ -118,14 +148,51 @@ const Biblioteca = () => {
     return input?.tese || input?.objetivo || "Peça sem título";
   };
 
-  const getThesis = (item: ContentItem) => {
+  const getStrategicInput = (item: ContentItem) => {
     const input = item.strategic_input as any;
-    return input?.tese || null;
+    return {
+      tese: input?.tese || null,
+      objetivo: input?.objetivo || null,
+      percepcao: input?.percepcao || null,
+      tipo: input?.tipo || item.content_type,
+    };
   };
 
-  const getObjective = (item: ContentItem) => {
-    const input = item.strategic_input as any;
-    return input?.objetivo || null;
+  /** Extract the 6 blocks from generated_content, handling both object and other shapes */
+  const getBlocks = (item: ContentItem): { label: string; text: string }[] => {
+    const content = item.generated_content;
+    if (!content || typeof content !== "object") return [];
+
+    const blocks: { label: string; text: string }[] = [];
+    for (const label of BLOCK_LABELS) {
+      const text = (content as Record<string, string>)[label];
+      if (text && typeof text === "string" && text.trim()) {
+        blocks.push({ label, text: text.trim() });
+      }
+    }
+
+    // If no standard blocks found, try to render any keys as blocks
+    if (blocks.length === 0 && !Array.isArray(content)) {
+      for (const [key, val] of Object.entries(content)) {
+        if (typeof val === "string" && val.trim()) {
+          blocks.push({ label: key, text: val.trim() });
+        }
+      }
+    }
+
+    return blocks;
+  };
+
+  const copyBlock = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copiado!");
+  };
+
+  const copyAll = (item: ContentItem) => {
+    const blocks = getBlocks(item);
+    const full = blocks.map((b) => `${b.label}\n${b.text}`).join("\n\n");
+    navigator.clipboard.writeText(full);
+    toast.success("Conteúdo completo copiado!");
   };
 
   return (
@@ -199,13 +266,13 @@ const Biblioteca = () => {
               Acervo estratégico vazio
             </h3>
             <p className="text-muted-foreground text-sm mb-6 text-center max-w-sm">
-              Seu acervo estratégico começa quando a primeira peça é criada no Laboratório de Conteúdo.
+              Seu acervo estratégico começa quando a primeira peça é estruturada.
             </p>
             <Button
               onClick={() => navigate("/producao")}
               className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
             >
-              Criar primeira peça
+              Iniciar nova peça
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -216,6 +283,7 @@ const Biblioteca = () => {
           <div className="space-y-3">
             {filtered.map((item, i) => {
               const meta = TYPE_META[item.content_type] || TYPE_META.hibrido;
+              const si = getStrategicInput(item);
               return (
                 <motion.button
                   key={item.id}
@@ -239,9 +307,14 @@ const Biblioteca = () => {
                       <h3 className="text-sm font-semibold text-foreground truncate">
                         {getTitle(item)}
                       </h3>
-                      {getThesis(item) && (
+                      {si.tese && (
                         <p className="text-xs text-muted-foreground mt-1 truncate">
-                          Tese: {getThesis(item)}
+                          Tese: {si.tese}
+                        </p>
+                      )}
+                      {si.objetivo && (
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                          Objetivo: {si.objetivo}
                         </p>
                       )}
                     </div>
@@ -268,10 +341,13 @@ const Biblioteca = () => {
 
         {/* Detail Dialog */}
         <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
-          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             {selectedItem && (() => {
               const meta = TYPE_META[selectedItem.content_type] || TYPE_META.hibrido;
-              const content = selectedItem.generated_content as any;
+              const si = getStrategicInput(selectedItem);
+              const blocks = getBlocks(selectedItem);
+              const hasBlocks = blocks.length > 0;
+
               return (
                 <>
                   <DialogHeader>
@@ -285,31 +361,123 @@ const Biblioteca = () => {
                           Caso de ouro
                         </span>
                       )}
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {new Date(selectedItem.created_at).toLocaleDateString("pt-BR", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </span>
                     </div>
-                    <DialogTitle className="font-heading text-lg">
+                    <DialogTitle className="font-heading text-xl">
                       {getTitle(selectedItem)}
                     </DialogTitle>
                   </DialogHeader>
 
-                  <div className="space-y-3 mt-3">
-                    {getThesis(selectedItem) && (
-                      <div className="bg-background rounded-xl border border-border p-4">
-                        <span className="text-xs text-muted-foreground uppercase tracking-wide">Tese central</span>
-                        <p className="text-sm text-foreground mt-1">{getThesis(selectedItem)}</p>
-                      </div>
-                    )}
-                    {getObjective(selectedItem) && (
-                      <div className="bg-background rounded-xl border border-border p-4">
-                        <span className="text-xs text-muted-foreground uppercase tracking-wide">Objetivo estratégico</span>
-                        <p className="text-sm text-foreground mt-1">{getObjective(selectedItem)}</p>
+                  <div className="space-y-5 mt-4">
+                    {/* Strategic Context */}
+                    {(si.tese || si.objetivo || si.percepcao) && (
+                      <div className="bg-accent/5 rounded-2xl border border-accent/15 p-5">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3 font-medium">
+                          Base estratégica
+                        </p>
+                        <div className="space-y-2">
+                          {si.objetivo && (
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Objetivo: </span>
+                              <span className="text-foreground font-medium">{si.objetivo}</span>
+                            </div>
+                          )}
+                          {si.tese && (
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Tese central: </span>
+                              <span className="text-foreground font-medium">"{si.tese}"</span>
+                            </div>
+                          )}
+                          {si.percepcao && (
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Percepção desejada: </span>
+                              <span className="text-foreground font-medium">{si.percepcao}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
 
-                    <div className="flex flex-wrap gap-2 pt-2">
+                    {/* Structured Content — 6 blocks */}
+                    {hasBlocks && (
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-heading text-base font-semibold text-foreground">
+                            Estrutura da peça
+                          </h3>
+                          <button
+                            onClick={() => copyAll(selectedItem)}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                          >
+                            <Copy className="h-3 w-3" />
+                            Copiar tudo
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          {blocks.map((block, i) => (
+                            <div
+                              key={i}
+                              className="bg-background rounded-xl border border-border p-4"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground font-mono">{i + 1}</span>
+                                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                    {block.label}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => copyBlock(block.text)}
+                                  className="text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                              <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                                {block.text}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Fallback — no blocks */}
+                    {!hasBlocks && (
+                      <div className="bg-background rounded-xl border border-border p-5 text-center">
+                        <Sparkles className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+                        <p className="text-sm text-muted-foreground mb-1">
+                          Esta peça tem base estratégica salva, mas o conteúdo completo precisa ser reaberto para nova visualização.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl mt-3"
+                          onClick={() => {
+                            setSelectedItem(null);
+                            const params = new URLSearchParams();
+                            if (si.objetivo) params.set("objetivo", si.objetivo);
+                            navigate(`/producao?${params.toString()}`);
+                          }}
+                        >
+                          <PenTool className="mr-1.5 h-3.5 w-3.5" />
+                          Reabrir na produção
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
                       <Button
                         variant={selectedItem.golden_case ? "outline" : "default"}
                         size="sm"
-                        className="rounded-xl"
+                        className={`rounded-xl ${!selectedItem.golden_case ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
                         onClick={() => toggleGolden(selectedItem)}
                       >
                         <Star className={`mr-1.5 h-3.5 w-3.5 ${selectedItem.golden_case ? "fill-accent text-accent" : ""}`} />
@@ -321,14 +489,22 @@ const Biblioteca = () => {
                         className="rounded-xl"
                         onClick={() => {
                           setSelectedItem(null);
-                          const input = selectedItem.strategic_input as any;
                           const params = new URLSearchParams();
-                          if (input?.objetivo) params.set("objetivo", input.objetivo);
+                          if (si.objetivo) params.set("objetivo", si.objetivo);
                           navigate(`/producao?${params.toString()}`);
                         }}
                       >
-                        <ArrowRight className="mr-1.5 h-3.5 w-3.5" />
+                        <PenTool className="mr-1.5 h-3.5 w-3.5" />
                         Reabrir na produção
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl"
+                        onClick={() => duplicateItem(selectedItem)}
+                      >
+                        <Copy className="mr-1.5 h-3.5 w-3.5" />
+                        Duplicar peça
                       </Button>
                     </div>
                   </div>
