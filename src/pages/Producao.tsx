@@ -90,6 +90,8 @@ const Producao = () => {
   const [transforming, setTransforming] = useState<TransformFormat | null>(null);
   const [transformResult, setTransformResult] = useState<TransformResult | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [visualSlides, setVisualSlides] = useState<SlideData[] | null>(null);
+  const [generatingVisual, setGeneratingVisual] = useState(false);
 
   // Load strategic context from DB
   useEffect(() => {
