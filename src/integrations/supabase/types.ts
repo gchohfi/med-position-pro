@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      automation_preferences: {
+        Row: {
+          calendar_check: boolean
+          created_at: string
+          id: string
+          intensity: string
+          memory_refresh: boolean
+          positioning_review: boolean
+          radar_frequency: string
+          repetition_alerts: boolean
+          territory_suggestions: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calendar_check?: boolean
+          created_at?: string
+          id?: string
+          intensity?: string
+          memory_refresh?: boolean
+          positioning_review?: boolean
+          radar_frequency?: string
+          repetition_alerts?: boolean
+          territory_suggestions?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calendar_check?: boolean
+          created_at?: string
+          id?: string
+          intensity?: string
+          memory_refresh?: boolean
+          positioning_review?: boolean
+          radar_frequency?: string
+          repetition_alerts?: boolean
+          territory_suggestions?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_items: {
         Row: {
           content_type: string
@@ -393,6 +435,51 @@ export type Database = {
           updated_at?: string
           user_id?: string
           visual_identity?: string | null
+        }
+        Relationships: []
+      }
+      strategic_updates: {
+        Row: {
+          action_label: string | null
+          action_module: string | null
+          action_path: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_read: boolean
+          severity: string
+          source_module: string | null
+          title: string
+          update_type: string
+          user_id: string
+        }
+        Insert: {
+          action_label?: string | null
+          action_module?: string | null
+          action_path?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_read?: boolean
+          severity?: string
+          source_module?: string | null
+          title: string
+          update_type: string
+          user_id: string
+        }
+        Update: {
+          action_label?: string | null
+          action_module?: string | null
+          action_path?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_read?: boolean
+          severity?: string
+          source_module?: string | null
+          title?: string
+          update_type?: string
+          user_id?: string
         }
         Relationships: []
       }
