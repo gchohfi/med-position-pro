@@ -20,6 +20,9 @@ import {
   Calendar,
   PenTool,
   LogOut,
+  Archive,
+  Brain,
+  TrendingUp,
 } from "lucide-react";
 
 const navItems = [
@@ -29,6 +32,9 @@ const navItems = [
   { title: "Séries", url: "/series", icon: BookOpen, disabled: false },
   { title: "Calendário", url: "/calendario", icon: Calendar, disabled: false },
   { title: "Criação", url: "/producao", icon: PenTool, disabled: false },
+  { title: "Biblioteca", url: "/biblioteca", icon: Archive, disabled: false },
+  { title: "Memória Viva", url: "/memoria-viva", icon: Brain, disabled: false },
+  { title: "Evolução", url: "/evolucao", icon: TrendingUp, disabled: false },
 ];
 
 export function AppSidebar() {
