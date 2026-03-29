@@ -544,27 +544,216 @@ const Producao = () => {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-3 pt-4">
-                <Button variant="outline" className="rounded-xl" disabled>
-                  <FileText className="mr-2 h-4 w-4" />
-                  Transformar em carrossel
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => handleTransform("carrossel")}
+                  disabled={!!transforming}
+                >
+                  {transforming === "carrossel" ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileText className="mr-2 h-4 w-4" />
+                  )}
+                  {transforming === "carrossel" ? "Gerando…" : "Transformar em carrossel"}
                 </Button>
-                <Button variant="outline" className="rounded-xl" disabled>
-                  <Video className="mr-2 h-4 w-4" />
-                  Gerar roteiro de reels
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => handleTransform("reels")}
+                  disabled={!!transforming}
+                >
+                  {transforming === "reels" ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Video className="mr-2 h-4 w-4" />
+                  )}
+                  {transforming === "reels" ? "Gerando…" : "Gerar roteiro de reels"}
                 </Button>
-                <Button variant="outline" className="rounded-xl" disabled>
-                  <Type className="mr-2 h-4 w-4" />
-                  Gerar legenda
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => handleTransform("legenda")}
+                  disabled={!!transforming}
+                >
+                  {transforming === "legenda" ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Type className="mr-2 h-4 w-4" />
+                  )}
+                  {transforming === "legenda" ? "Gerando…" : "Gerar legenda"}
                 </Button>
-                <Button variant="outline" className="rounded-xl" disabled>
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Salvar no calendário
-                </Button>
-                <Button variant="outline" className="rounded-xl" disabled>
-                  <Link2 className="mr-2 h-4 w-4" />
-                  Vincular a uma série
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => setShowUpload(!showUpload)}
+                >
+                  <Image className="mr-2 h-4 w-4" />
+                  {showUpload ? "Fechar upload" : "Adicionar referência visual"}
                 </Button>
               </div>
+
+              {/* Image Upload */}
+              <AnimatePresence>
+                {showUpload && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <ImageUpload linkedModule="producao" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Transform Result */}
+              <AnimatePresence>
+                {transformResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="bg-card rounded-2xl border border-accent/15 shadow-sm overflow-hidden"
+                  >
+                    <div className="bg-accent/5 px-6 py-4 flex items-center justify-between border-b border-accent/10">
+                      <div className="flex items-center gap-2">
+                        {transformResult.format === "carrossel" && <FileText className="h-4 w-4 text-accent" />}
+                        {transformResult.format === "reels" && <Video className="h-4 w-4 text-accent" />}
+                        {transformResult.format === "legenda" && <Type className="h-4 w-4 text-accent" />}
+                        <h3 className="font-heading text-base font-semibold text-foreground">
+                          {transformResult.format === "carrossel" && "Carrossel estruturado"}
+                          {transformResult.format === "reels" && "Roteiro de reels"}
+                          {transformResult.format === "legenda" && "Legenda completa"}
+                        </h3>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(JSON.stringify(transformResult.data, null, 2));
+                          toast.success("Resultado copiado!");
+                        }}
+                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                      >
+                        <Copy className="h-3 w-3" />
+                        Copiar tudo
+                      </button>
+                    </div>
+
+                    <div className="p-6 space-y-4">
+                      {/* Carousel slides */}
+                      {transformResult.format === "carrossel" && transformResult.data.slides && (
+                        <div className="space-y-3">
+                          {transformResult.data.slides.map((slide: any, i: number) => (
+                            <div key={i} className="border border-border rounded-xl p-4">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+                                  {slide.slide_number || i + 1}
+                                </span>
+                                <span className="text-[10px] uppercase tracking-wide text-accent font-medium">
+                                  {slide.type}
+                                </span>
+                              </div>
+                              <h4 className="text-sm font-semibold text-foreground mb-1">
+                                {slide.headline}
+                              </h4>
+                              <p className="text-xs text-muted-foreground mb-2">{slide.body}</p>
+                              {slide.visual_direction && (
+                                <p className="text-[11px] text-muted-foreground/70 italic">
+                                  🎨 {slide.visual_direction}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                          {transformResult.data.caption && (
+                            <div className="bg-muted/30 rounded-xl p-4">
+                              <p className="text-xs font-medium text-foreground mb-1">Legenda sugerida</p>
+                              <p className="text-xs text-muted-foreground whitespace-pre-wrap">{transformResult.data.caption}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Reels script */}
+                      {transformResult.format === "reels" && (
+                        <div className="space-y-3">
+                          {transformResult.data.hook && (
+                            <div className="border border-accent/20 rounded-xl p-4 bg-accent/3">
+                              <p className="text-[10px] uppercase tracking-wide text-accent font-medium mb-1">Hook · Primeiros 3s</p>
+                              <p className="text-sm font-medium text-foreground">{transformResult.data.hook.text}</p>
+                              {transformResult.data.hook.visual_cue && (
+                                <p className="text-[11px] text-muted-foreground/70 mt-1 italic">🎬 {transformResult.data.hook.visual_cue}</p>
+                              )}
+                            </div>
+                          )}
+                          {transformResult.data.sections?.map((section: any, i: number) => (
+                            <div key={i} className="border border-border rounded-xl p-4">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">{section.section}</span>
+                                {section.duration && <span className="text-[10px] text-muted-foreground">{section.duration}</span>}
+                              </div>
+                              <p className="text-sm text-foreground">{section.text}</p>
+                              {section.on_screen_text && (
+                                <p className="text-[11px] text-accent mt-1">📝 {section.on_screen_text}</p>
+                              )}
+                              {section.visual_cue && (
+                                <p className="text-[11px] text-muted-foreground/70 mt-1 italic">🎬 {section.visual_cue}</p>
+                              )}
+                            </div>
+                          ))}
+                          {transformResult.data.cta && (
+                            <div className="border border-accent/20 rounded-xl p-4 bg-accent/3">
+                              <p className="text-[10px] uppercase tracking-wide text-accent font-medium mb-1">CTA Final</p>
+                              <p className="text-sm font-medium text-foreground">{transformResult.data.cta.text}</p>
+                            </div>
+                          )}
+                          {transformResult.data.caption && (
+                            <div className="bg-muted/30 rounded-xl p-4">
+                              <p className="text-xs font-medium text-foreground mb-1">Legenda</p>
+                              <p className="text-xs text-muted-foreground whitespace-pre-wrap">{transformResult.data.caption}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Caption */}
+                      {transformResult.format === "legenda" && (
+                        <div className="space-y-3">
+                          {transformResult.data.hook && (
+                            <div className="border border-accent/20 rounded-xl p-4 bg-accent/3">
+                              <p className="text-[10px] uppercase tracking-wide text-accent font-medium mb-1">Hook (primeira linha visível)</p>
+                              <p className="text-sm font-semibold text-foreground">{transformResult.data.hook}</p>
+                            </div>
+                          )}
+                          {transformResult.data.body && (
+                            <div className="border border-border rounded-xl p-4">
+                              <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-2">Corpo da legenda</p>
+                              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{transformResult.data.body}</p>
+                            </div>
+                          )}
+                          {transformResult.data.cta && (
+                            <div className="border border-accent/20 rounded-xl p-4 bg-accent/3">
+                              <p className="text-[10px] uppercase tracking-wide text-accent font-medium mb-1">CTA</p>
+                              <p className="text-sm font-medium text-foreground">{transformResult.data.cta}</p>
+                            </div>
+                          )}
+                          {transformResult.data.hashtags && (
+                            <div className="bg-muted/30 rounded-xl p-4">
+                              <p className="text-xs font-medium text-foreground mb-2">Hashtags</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {transformResult.data.hashtags.map((h: string, i: number) => (
+                                  <span key={i} className="text-xs text-accent bg-accent/8 px-2 py-0.5 rounded-md">
+                                    #{h.replace(/^#/, "")}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>
