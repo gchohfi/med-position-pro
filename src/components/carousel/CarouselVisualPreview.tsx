@@ -13,8 +13,9 @@ import {
   Loader2,
   X,
   RefreshCw,
+  Palette,
 } from "lucide-react";
-import SlideRenderer, { type SlideData } from "./SlideRenderer";
+import SlideRenderer, { type SlideData, type CarouselTheme, CAROUSEL_THEMES } from "./SlideRenderer";
 import SlideEditor from "./SlideEditor";
 
 interface CarouselVisualPreviewProps {
