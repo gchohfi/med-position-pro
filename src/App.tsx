@@ -16,6 +16,7 @@ import Calendario from "./pages/Calendario";
 import Biblioteca from "./pages/Biblioteca";
 import MemoriaViva from "./pages/MemoriaViva";
 import Evolucao from "./pages/Evolucao";
+import RadarMercado from "./pages/RadarMercado";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -111,6 +112,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Evolucao />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/radar"
+        element={
+          <ProtectedRoute>
+            <RadarMercado />
           </ProtectedRoute>
         }
       />
