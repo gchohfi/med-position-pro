@@ -190,10 +190,12 @@ const RadarMercado = () => {
       if (result.radar) {
         setData({
           segment_summary: result.radar.segment_summary,
+          signals: result.radar.signals || [],
           saturation: result.radar.saturation || [],
           opportunities: result.radar.opportunities || [],
           alerts: result.radar.alerts || [],
           recommendations: result.radar.recommendations || [],
+          citations: result.radar.citations || [],
           updated_at: new Date().toISOString(),
         });
         logStrategicEvent(STRATEGIC_EVENTS.RADAR_REFRESHED, "radar");
