@@ -1,9 +1,11 @@
 import React from "react";
 
 export interface SlideData {
-  type: "hook" | "quebra" | "explicacao" | "metodo" | "manifesto" | "fechamento";
+  type: "cover" | "statement" | "editorial" | "structured" | "manifesto" | "signature";
   label: string;
-  content: string;
+  headline: string;
+  body?: string;
+  items?: string[];
   slideNumber: number;
   totalSlides: number;
 }
@@ -14,245 +16,336 @@ interface SlideRendererProps {
     bg: string;
     text: string;
     accent: string;
+    bgAlt: string;
   };
   brandName?: string;
 }
 
 const defaultColors = {
-  bg: "#F8F6F2",
-  text: "#2B2B2B",
-  accent: "#C6A97A",
+  bg: "#FAF8F5",
+  bgAlt: "#F0ECE6",
+  text: "#2E2E2E",
+  accent: "#B8A07E",
 };
 
+const SERIF = "'Playfair Display', Georgia, 'Times New Roman', serif";
+const SANS = "'Inter', -apple-system, system-ui, sans-serif";
+
 /**
- * Renders a single carousel slide as a styled HTML div.
- * Dimensions: 1080×1350 (4:5 ratio for Instagram).
- * Rendered at 540×675 in preview, scaled 2× for export.
+ * Premium editorial slide renderer.
+ * 1080×1350 (4:5 Instagram ratio).
+ * 6 layout patterns that rotate for visual rhythm.
  */
 const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
   ({ slide, brandColors, brandName }, ref) => {
-    const colors = { ...defaultColors, ...brandColors };
+    const c = { ...defaultColors, ...brandColors };
 
-    // Split content into paragraphs for structured slides
-    const paragraphs = slide.content
-      .split(/\n+/)
-      .map((p) => p.trim())
-      .filter(Boolean);
+    // Truncate body text to prevent overcrowding — max ~180 chars
+    const truncateBody = (text?: string, max = 180) => {
+      if (!text) return undefined;
+      if (text.length <= max) return text;
+      return text.slice(0, max).replace(/\s+\S*$/, "") + "…";
+    };
 
-    const baseStyle: React.CSSProperties = {
+    const base: React.CSSProperties = {
       width: 1080,
       height: 1350,
-      backgroundColor: colors.bg,
-      color: colors.text,
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
-      alignItems: "flex-start",
-      padding: "100px 90px",
       boxSizing: "border-box",
-      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+      fontFamily: SANS,
       position: "relative",
       overflow: "hidden",
     };
 
-    const accentBar: React.CSSProperties = {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: 6,
-      height: "100%",
-      backgroundColor: colors.accent,
-    };
-
-    const slideNumberStyle: React.CSSProperties = {
-      position: "absolute",
-      top: 48,
-      right: 64,
-      fontSize: 14,
-      fontWeight: 500,
-      color: colors.accent,
-      letterSpacing: "0.08em",
-      fontFamily: "'Inter', sans-serif",
-    };
-
-    const footerStyle: React.CSSProperties = {
-      position: "absolute",
-      bottom: 48,
-      left: 90,
-      right: 90,
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-    };
-
-    const labelStyle: React.CSSProperties = {
-      fontSize: 12,
-      fontWeight: 600,
-      textTransform: "uppercase" as const,
-      letterSpacing: "0.15em",
-      color: colors.accent,
-      fontFamily: "'Inter', sans-serif",
-    };
-
-    const brandStyle: React.CSSProperties = {
-      fontSize: 13,
-      fontWeight: 500,
-      color: `${colors.text}44`,
-      fontFamily: "'Inter', sans-serif",
-      letterSpacing: "0.05em",
-    };
-
-    // Divider line
-    const divider = (
+    // Slide number — top right, subtle
+    const slideNum = (color: string) => (
       <div
         style={{
-          width: 60,
-          height: 2,
-          backgroundColor: colors.accent,
-          margin: "32px 0",
-          opacity: 0.6,
+          position: "absolute",
+          top: 56,
+          right: 72,
+          fontSize: 13,
+          fontWeight: 500,
+          color,
+          letterSpacing: "0.12em",
+          fontFamily: SANS,
+          opacity: 0.4,
         }}
-      />
+      >
+        {slide.slideNumber}/{slide.totalSlides}
+      </div>
     );
 
-    const renderContent = () => {
-      switch (slide.type) {
-        case "hook":
-          return (
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              <h1
+    // Brand watermark — bottom right, very subtle
+    const watermark = (color: string) =>
+      brandName ? (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 52,
+            right: 72,
+            fontSize: 11,
+            fontWeight: 500,
+            color,
+            opacity: 0.25,
+            letterSpacing: "0.08em",
+            fontFamily: SANS,
+            textTransform: "uppercase" as const,
+          }}
+        >
+          {brandName}
+        </div>
+      ) : null;
+
+    // Section label — bottom left
+    const sectionLabel = (color: string) => (
+      <div
+        style={{
+          position: "absolute",
+          bottom: 52,
+          left: 96,
+          fontSize: 10,
+          fontWeight: 600,
+          color,
+          opacity: 0.35,
+          letterSpacing: "0.2em",
+          fontFamily: SANS,
+          textTransform: "uppercase" as const,
+        }}
+      >
+        {slide.label}
+      </div>
+    );
+
+    // ─── LAYOUT 1: COVER — Minimal, headline dominant, centered ───
+    if (slide.type === "cover") {
+      return (
+        <div ref={ref} style={{ ...base, backgroundColor: c.text }}>
+          {slideNum(`${c.bg}60`)}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              padding: "120px 96px",
+              textAlign: "center",
+            }}
+          >
+            {/* Thin accent line above headline */}
+            <div
+              style={{
+                width: 48,
+                height: 2,
+                backgroundColor: c.accent,
+                marginBottom: 48,
+              }}
+            />
+            <h1
+              style={{
+                fontFamily: SERIF,
+                fontSize: slide.headline.length > 80 ? 48 : 56,
+                fontWeight: 700,
+                lineHeight: 1.18,
+                color: c.bg,
+                margin: 0,
+                maxWidth: "92%",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              {slide.headline}
+            </h1>
+            {slide.body && (
+              <p
                 style={{
-                  fontFamily: "'Playfair Display', Georgia, serif",
-                  fontSize: 64,
-                  fontWeight: 700,
-                  lineHeight: 1.15,
-                  margin: 0,
-                  color: colors.text,
-                  maxWidth: "95%",
+                  fontSize: 20,
+                  lineHeight: 1.65,
+                  color: `${c.bg}88`,
+                  margin: "40px 0 0",
+                  maxWidth: "78%",
+                  fontWeight: 400,
                 }}
               >
-                {paragraphs[0] || slide.content}
-              </h1>
-              {paragraphs.length > 1 && (
-                <>
-                  {divider}
-                  <p
-                    style={{
-                      fontSize: 22,
-                      lineHeight: 1.6,
-                      color: `${colors.text}99`,
-                      margin: 0,
-                      maxWidth: "85%",
-                    }}
-                  >
-                    {paragraphs.slice(1).join(" ")}
-                  </p>
-                </>
-              )}
-            </div>
-          );
+                {truncateBody(slide.body, 120)}
+              </p>
+            )}
+          </div>
+          {sectionLabel(c.bg)}
+          {watermark(c.bg)}
+        </div>
+      );
+    }
 
-        case "quebra":
-          return (
+    // ─── LAYOUT 2: STATEMENT — Single strong sentence, centered ───
+    if (slide.type === "statement") {
+      return (
+        <div ref={ref} style={{ ...base, backgroundColor: c.bg }}>
+          {slideNum(`${c.text}50`)}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              padding: "120px 96px",
+            }}
+          >
+            {/* Left accent border */}
+            <div
+              style={{
+                position: "absolute",
+                left: 72,
+                top: "30%",
+                bottom: "30%",
+                width: 3,
+                backgroundColor: c.accent,
+                opacity: 0.5,
+              }}
+            />
+            <blockquote
+              style={{
+                fontFamily: SERIF,
+                fontSize: slide.headline.length > 120 ? 36 : 44,
+                fontWeight: 500,
+                lineHeight: 1.35,
+                color: c.text,
+                margin: 0,
+                paddingLeft: 48,
+                fontStyle: "italic",
+                maxWidth: "90%",
+              }}
+            >
+              {slide.headline}
+            </blockquote>
+          </div>
+          {sectionLabel(c.text)}
+          {watermark(c.text)}
+        </div>
+      );
+    }
+
+    // ─── LAYOUT 3: EDITORIAL — Headline + body, split vertical ───
+    if (slide.type === "editorial") {
+      return (
+        <div ref={ref} style={{ ...base, backgroundColor: c.bg }}>
+          {slideNum(`${c.text}50`)}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              padding: "120px 96px",
+              gap: 0,
+            }}
+          >
+            <h2
+              style={{
+                fontFamily: SERIF,
+                fontSize: slide.headline.length > 60 ? 36 : 42,
+                fontWeight: 600,
+                lineHeight: 1.22,
+                color: c.text,
+                margin: 0,
+                maxWidth: "88%",
+              }}
+            >
+              {slide.headline}
+            </h2>
+            {/* Accent divider */}
+            <div
+              style={{
+                width: 44,
+                height: 2,
+                backgroundColor: c.accent,
+                margin: "36px 0",
+                opacity: 0.7,
+              }}
+            />
+            {slide.body && (
+              <p
+                style={{
+                  fontSize: 19,
+                  lineHeight: 1.75,
+                  color: `${c.text}AA`,
+                  margin: 0,
+                  maxWidth: "82%",
+                  fontWeight: 400,
+                }}
+              >
+                {truncateBody(slide.body)}
+              </p>
+            )}
+          </div>
+          {sectionLabel(c.text)}
+          {watermark(c.text)}
+        </div>
+      );
+    }
+
+    // ─── LAYOUT 4: STRUCTURED — Headline + numbered items ───
+    if (slide.type === "structured") {
+      const items = (slide.items || []).slice(0, 4); // Max 4 items
+      return (
+        <div ref={ref} style={{ ...base, backgroundColor: c.bg }}>
+          {slideNum(`${c.text}50`)}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              padding: "120px 96px",
+            }}
+          >
+            <h2
+              style={{
+                fontFamily: SERIF,
+                fontSize: 38,
+                fontWeight: 600,
+                lineHeight: 1.22,
+                color: c.text,
+                margin: "0 0 44px",
+                maxWidth: "85%",
+              }}
+            >
+              {slide.headline}
+            </h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-              <h2
-                style={{
-                  fontFamily: "'Playfair Display', Georgia, serif",
-                  fontSize: 48,
-                  fontWeight: 600,
-                  lineHeight: 1.2,
-                  margin: 0,
-                  color: colors.text,
-                  fontStyle: "italic",
-                }}
-              >
-                {paragraphs[0] || slide.content}
-              </h2>
-              {paragraphs.length > 1 && (
-                <>
-                  {divider}
-                  <p
-                    style={{
-                      fontSize: 20,
-                      lineHeight: 1.7,
-                      color: `${colors.text}88`,
-                      margin: 0,
-                    }}
-                  >
-                    {paragraphs.slice(1).join("\n\n")}
-                  </p>
-                </>
-              )}
-            </div>
-          );
-
-        case "explicacao":
-          return (
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <h3
-                style={{
-                  fontFamily: "'Playfair Display', Georgia, serif",
-                  fontSize: 36,
-                  fontWeight: 600,
-                  lineHeight: 1.25,
-                  margin: 0,
-                  color: colors.text,
-                }}
-              >
-                {paragraphs[0] || ""}
-              </h3>
-              {divider}
-              {paragraphs.slice(1).map((p, i) => (
-                <p
-                  key={i}
-                  style={{
-                    fontSize: 19,
-                    lineHeight: 1.7,
-                    color: `${colors.text}BB`,
-                    margin: 0,
-                  }}
-                >
-                  {p}
-                </p>
-              ))}
-            </div>
-          );
-
-        case "metodo":
-          return (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <h3
-                style={{
-                  fontFamily: "'Playfair Display', Georgia, serif",
-                  fontSize: 40,
-                  fontWeight: 600,
-                  lineHeight: 1.2,
-                  margin: 0,
-                  marginBottom: 8,
-                  color: colors.text,
-                }}
-              >
-                {paragraphs[0] || ""}
-              </h3>
-              {divider}
-              {paragraphs.slice(1).map((p, i) => (
+              {items.map((item, i) => (
                 <div
                   key={i}
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
-                    gap: 16,
-                    marginBottom: 8,
+                    gap: 20,
                   }}
                 >
                   <span
                     style={{
-                      fontSize: 16,
-                      fontWeight: 700,
-                      color: colors.accent,
-                      fontFamily: "'Inter', sans-serif",
-                      minWidth: 28,
-                      marginTop: 2,
+                      fontFamily: SANS,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: c.accent,
+                      minWidth: 32,
+                      marginTop: 4,
+                      letterSpacing: "0.05em",
                     }}
                   >
                     {String(i + 1).padStart(2, "0")}
@@ -260,137 +353,169 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
                   <p
                     style={{
                       fontSize: 18,
-                      lineHeight: 1.65,
-                      color: `${colors.text}CC`,
+                      lineHeight: 1.6,
+                      color: `${c.text}BB`,
                       margin: 0,
+                      maxWidth: "88%",
                     }}
                   >
-                    {p}
+                    {item.length > 100 ? item.slice(0, 100).replace(/\s+\S*$/, "") + "…" : item}
                   </p>
                 </div>
               ))}
             </div>
-          );
+          </div>
+          {sectionLabel(c.text)}
+          {watermark(c.text)}
+        </div>
+      );
+    }
 
-        case "manifesto":
-          return (
+    // ─── LAYOUT 5: MANIFESTO — Dark bg, large italic statement ───
+    if (slide.type === "manifesto") {
+      return (
+        <div ref={ref} style={{ ...base, backgroundColor: c.text }}>
+          {slideNum(`${c.bg}40`)}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              padding: "120px 96px",
+              textAlign: "center",
+            }}
+          >
+            {/* Large opening quote mark */}
             <div
               style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                gap: 24,
+                fontFamily: SERIF,
+                fontSize: 120,
+                color: c.accent,
+                opacity: 0.3,
+                lineHeight: 0.6,
+                marginBottom: 24,
               }}
             >
-              <div
-                style={{
-                  width: 48,
-                  height: 3,
-                  backgroundColor: colors.accent,
-                }}
-              />
-              <blockquote
-                style={{
-                  fontFamily: "'Playfair Display', Georgia, serif",
-                  fontSize: 42,
-                  fontWeight: 500,
-                  lineHeight: 1.35,
-                  margin: 0,
-                  color: colors.text,
-                  fontStyle: "italic",
-                  borderLeft: `4px solid ${colors.accent}`,
-                  paddingLeft: 32,
-                }}
-              >
-                {slide.content}
-              </blockquote>
+              "
             </div>
-          );
-
-        case "fechamento":
-          return (
+            <blockquote
+              style={{
+                fontFamily: SERIF,
+                fontSize: slide.headline.length > 140 ? 34 : 40,
+                fontWeight: 500,
+                lineHeight: 1.4,
+                color: c.bg,
+                margin: 0,
+                fontStyle: "italic",
+                maxWidth: "88%",
+              }}
+            >
+              {slide.headline}
+            </blockquote>
             <div
               style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
-                width: "100%",
-                gap: 32,
+                width: 48,
+                height: 2,
+                backgroundColor: c.accent,
+                marginTop: 48,
+                opacity: 0.5,
+              }}
+            />
+          </div>
+          {sectionLabel(c.bg)}
+          {watermark(c.bg)}
+        </div>
+      );
+    }
+
+    // ─── LAYOUT 6: SIGNATURE — Closing slide, centered, calm ───
+    if (slide.type === "signature") {
+      return (
+        <div ref={ref} style={{ ...base, backgroundColor: c.bgAlt }}>
+          {slideNum(`${c.text}40`)}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              padding: "120px 96px",
+              textAlign: "center",
+            }}
+          >
+            <h2
+              style={{
+                fontFamily: SERIF,
+                fontSize: slide.headline.length > 80 ? 36 : 44,
+                fontWeight: 600,
+                lineHeight: 1.25,
+                color: c.text,
+                margin: 0,
+                maxWidth: "85%",
               }}
             >
-              <h2
-                style={{
-                  fontFamily: "'Playfair Display', Georgia, serif",
-                  fontSize: 44,
-                  fontWeight: 700,
-                  lineHeight: 1.25,
-                  margin: 0,
-                  color: colors.text,
-                  maxWidth: "90%",
-                }}
-              >
-                {paragraphs[0] || slide.content}
-              </h2>
-              {paragraphs.length > 1 && (
-                <>
-                  <div
-                    style={{
-                      width: 60,
-                      height: 2,
-                      backgroundColor: colors.accent,
-                    }}
-                  />
-                  <p
-                    style={{
-                      fontSize: 20,
-                      lineHeight: 1.6,
-                      color: `${colors.text}88`,
-                      margin: 0,
-                      maxWidth: "80%",
-                    }}
-                  >
-                    {paragraphs.slice(1).join(" ")}
-                  </p>
-                </>
-              )}
-              <div
-                style={{
-                  marginTop: 16,
-                  padding: "14px 40px",
-                  border: `2px solid ${colors.accent}`,
-                  borderRadius: 8,
-                  fontSize: 16,
-                  fontWeight: 600,
-                  color: colors.accent,
-                  textTransform: "uppercase" as const,
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Saiba mais
-              </div>
+              {slide.headline}
+            </h2>
+            {slide.body && (
+              <>
+                <div
+                  style={{
+                    width: 36,
+                    height: 2,
+                    backgroundColor: c.accent,
+                    margin: "40px 0",
+                    opacity: 0.6,
+                  }}
+                />
+                <p
+                  style={{
+                    fontSize: 18,
+                    lineHeight: 1.65,
+                    color: `${c.text}88`,
+                    margin: 0,
+                    maxWidth: "72%",
+                    fontWeight: 400,
+                  }}
+                >
+                  {truncateBody(slide.body, 120)}
+                </p>
+              </>
+            )}
+            {/* Subtle signature mark */}
+            <div
+              style={{
+                marginTop: 56,
+                fontSize: 12,
+                fontWeight: 600,
+                color: c.accent,
+                letterSpacing: "0.2em",
+                textTransform: "uppercase" as const,
+                opacity: 0.6,
+              }}
+            >
+              {brandName || "MEDSHIFT"}
             </div>
-          );
+          </div>
+          {sectionLabel(c.text)}
+        </div>
+      );
+    }
 
-        default:
-          return (
-            <p style={{ fontSize: 20, lineHeight: 1.7 }}>{slide.content}</p>
-          );
-      }
-    };
-
+    // Fallback
     return (
-      <div ref={ref} style={baseStyle}>
-        <div style={accentBar} />
-        <div style={slideNumberStyle}>
-          {slide.slideNumber}/{slide.totalSlides}
-        </div>
-        {renderContent()}
-        <div style={footerStyle}>
-          <span style={labelStyle}>{slide.label}</span>
-          {brandName && <span style={brandStyle}>{brandName}</span>}
-        </div>
+      <div ref={ref} style={{ ...base, backgroundColor: c.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: "96px" }}>
+        <p style={{ fontSize: 20, lineHeight: 1.7, color: c.text, textAlign: "center" }}>{slide.headline}</p>
       </div>
     );
   }
