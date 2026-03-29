@@ -1,53 +1,91 @@
 
 
-# MedPositioning SaaS — V1
+# V2 — Diagnóstico + Estratégia
 
-## 1. Landing Page (/)
-Premium editorial landing page in Portuguese (BR) with:
-- **Hero**: "Uma plataforma que entende seu posicionamento antes de criar qualquer conteúdo" + CTA "Começar diagnóstico"
-- **Como funciona**: 3 steps (diagnóstico → estratégia → conteúdo)
-- **Para quem é**: Medical professionals seeking strong positioning
-- **O que entrega** + **Benefícios**
-- **CTA final**
-- Design: off-white bg, warm neutrals, graphite text, muted gold accent, serif headlines, generous whitespace, 2xl rounded cards, soft shadows
+## Overview
 
-## 2. Auth (Supabase)
-- Login & Signup pages with email/password
-- Connected to Supabase auth
-- Profiles table for user data
-- Redirect to onboarding on first login, dashboard on return
+Two new AI-powered pages that read the user's onboarding data (positioning table) and generate strategic analysis via Lovable AI. This is the intelligence layer that differentiates the product.
 
-## 3. Onboarding (multi-step consultive flow)
-- Progress bar, one question per screen, calm transitions
-- Steps: specialty, target audience, archetype, tone of voice, editorial pillars, content goals
-- Card/selector/slider inputs (NOT form-like)
-- Consultive microcopy ("Vamos entender quem você realmente quer atrair")
-- Saves to Supabase positioning/profile tables
+## Architecture
 
-## 4. Dashboard
-- Strategic overview: posicionamento atual, arquétipo, tom de voz, pilares editoriais, série ativa, oportunidade estratégica
-- Action buttons: Analisar posicionamento, Criar nova série, Gerar conteúdo
-- Clean editorial grid, high whitespace
-- Mock data for V1 (populated from onboarding answers)
+Both pages fetch the user's `positioning` data from the database, then call a new edge function (`generate-diagnosis`) that uses Lovable AI to produce structured strategic output. Results are cached in a new `diagnosis_outputs` table so the analysis persists and doesn't re-generate on every page load.
 
-## 5. Produção de Conteúdo (AI-powered)
-- **Step 1 — Strategic Input**: mandatory fields before generation (objetivo, tipo do conteúdo, tese central, percepção desejada) in elegant cards. CTA disabled until all filled.
-- **Step 2 — AI Generation**: Edge function calls Lovable AI to generate structured 6-block output (Gancho → Quebra de percepção → Explicação → Método → Manifesto → Fechamento). Streaming response.
-- **Step 3 — Actions**: Gerar carrossel, Gerar roteiro de reels, Gerar legenda, Salvar no calendário, Vincular a série
-- **States**: loading (skeleton + "Estruturando raciocínio estratégico…"), empty, success
+```text
+positioning (DB) → edge function → AI analysis → diagnosis_outputs (DB)
+                                                        ↓
+                                              /diagnostico page
+                                              /estrategia page
+```
 
-## 6. Sidebar Navigation
-- Dashboard, Diagnóstico (disabled), Estratégia (disabled), Séries (disabled), Calendário (disabled), Produção
-- Clean minimal sidebar with collapse support
+## Database Changes
 
-## 7. Design System
-- Colors: off-white bg (#FAFAF7), warm sand accents, graphite text, muted gold highlights
-- Typography: serif for headlines (Playfair Display), Inter for body
-- Components: 2xl radius cards, soft shadows, subtle borders, smooth fade-in animations
-- All text in Portuguese (BR)
+**New table: `diagnosis_outputs`**
+- `id` UUID PK
+- `user_id` UUID (references auth.users, unique — one active diagnosis per user)
+- `diagnosis` JSONB (posicionamento_atual, forcas, lacunas, incoerencias, oportunidades, maturidade, arquetipo_principal, arquetipo_secundario, direcao_recomendada)
+- `estrategia` JSONB (macro_objetivo, pilares_editoriais, tom_recomendado, nivel_sofisticacao, formatos_prioritarios, diferenciacao)
+- `created_at`, `updated_at`
+- RLS: users can only read/insert/update their own row
 
-## Database Tables (Supabase)
-- `profiles` (user_id, name, specialty, created_at)
-- `positioning` (user_id, archetype, tone, pillars, target_audience, goals)
-- `content_outputs` (user_id, type, strategic_input, generated_content, created_at)
+## New Edge Function: `generate-diagnosis`
+
+- Receives `{ positioning, specialty, action: "diagnostico" | "estrategia" }`
+- Uses Lovable AI (gemini-3-flash-preview) with a detailed system prompt for strategic medical positioning analysis
+- Returns structured JSON (non-streaming, using tool calling for reliable structured output)
+- Saves result to `diagnosis_outputs` table
+
+## New Pages
+
+### `/diagnostico` — Diagnóstico Estratégico
+
+- Fetches user's positioning + existing diagnosis from DB
+- If no diagnosis exists, shows CTA "Gerar diagnóstico" with loading state ("Analisando seu posicionamento...")
+- If no onboarding complete, shows empty state directing to onboarding
+- **Blocks displayed (premium cards):**
+  1. Posicionamento atual percebido (2-3 paragraphs)
+  2. Forças do perfil (up to 5 bullet points)
+  3. Lacunas estratégicas
+  4. Incoerências (misalignments between tone/audience/content)
+  5. Oportunidades
+  6. Maturidade digital (visual progress bar: iniciante → estruturando → estratégico → avançado)
+  7. Arquétipo de Posicionamento (principal + secundário, from 5 types)
+  8. Direção recomendada (Atual vs Ideal side-by-side)
+- CTA at bottom: "Ver estratégia" → navigates to `/estrategia`
+
+### `/estrategia` — Direcionamento Estratégico
+
+- Fetches same `diagnosis_outputs` row (estrategia JSONB)
+- If no estrategia generated yet, triggers generation
+- **Blocks displayed:**
+  1. Macro-objetivo (clear phrase)
+  2. Pilares editoriais (3-5 pillars, each with name + description + content type)
+  3. Tom recomendado (explanatory text)
+  4. Nível de sofisticação (visual: básico → intermediário → premium)
+  5. Formatos prioritários (carrossel, reels, etc.)
+  6. Diferenciação estratégica
+- CTA: "Criar conteúdo com base nessa estratégia" → navigates to `/producao` with query params for pre-fill
+
+## File Changes
+
+| File | Change |
+|------|--------|
+| `supabase/functions/generate-diagnosis/index.ts` | New edge function |
+| `src/pages/Diagnostico.tsx` | New page |
+| `src/pages/Estrategia.tsx` | New page |
+| `src/App.tsx` | Add routes for `/diagnostico` and `/estrategia` |
+| `src/components/AppSidebar.tsx` | Enable Diagnóstico and Estratégia nav items |
+| `src/pages/Dashboard.tsx` | Update "Analisar posicionamento" button to link to `/diagnostico` |
+| `src/pages/Producao.tsx` | Read query params to pre-fill strategic inputs from estratégia |
+| DB migration | Create `diagnosis_outputs` table with RLS |
+
+## States (both pages)
+
+- **Loading**: Skeleton cards + "Analisando seu posicionamento..." / "Construindo sua estratégia..."
+- **Empty**: "Complete seu onboarding para gerar o diagnóstico" with link to `/onboarding`
+- **Success**: Full card layout with subtle confirmation toast
+- **Regenerate**: Button to re-run analysis (updates existing row)
+
+## Design
+
+Maintains existing V1 system: Playfair Display headings, Inter body, off-white bg, muted gold accent, 2xl rounded cards, generous whitespace. Report-like reading flow — no clutter, editorial feel.
 
