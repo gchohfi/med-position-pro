@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { logStrategicEvent, STRATEGIC_EVENTS } from "@/lib/strategic-events";
 import {
   Archive,
   Star,
