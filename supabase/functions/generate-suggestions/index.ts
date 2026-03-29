@@ -12,7 +12,22 @@ serve(async (req) => {
   }
 
   try {
-    const { tipo, objetivo, archetype, pillar, previousTheses, previousPerceptions } = await req.json();
+    const {
+      tipo,
+      objetivo,
+      archetype,
+      pillar,
+      tone,
+      targetAudience,
+      goals,
+      specialty,
+      recentTheses,
+      recentPerceptions,
+      activeSeries,
+      memoryHighlights,
+      calendarContext,
+      radarSignals,
+    } = await req.json();
 
     if (!tipo || !objetivo) {
       return new Response(
@@ -26,34 +41,55 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const avoidTheses = (previousTheses || []).slice(0, 3);
-    const avoidPerceptions = (previousPerceptions || []).slice(0, 3);
+    const avoidTheses = (recentTheses || []).slice(0, 5);
+    const avoidPerceptions = (recentPerceptions || []).slice(0, 5);
+
+    const contextBlocks: string[] = [];
+
+    if (archetype) contextBlocks.push(`Arquétipo: ${archetype}`);
+    if (pillar) contextBlocks.push(`Pilar estratégico ativo: ${pillar}`);
+    if (tone) contextBlocks.push(`Tom de voz: ${tone}`);
+    if (targetAudience) contextBlocks.push(`Público-alvo: ${targetAudience}`);
+    if (goals) contextBlocks.push(`Objetivo macro: ${goals}`);
+    if (specialty) contextBlocks.push(`Especialidade médica: ${specialty}`);
+    if (activeSeries?.length) contextBlocks.push(`Séries ativas: ${activeSeries.join(", ")}`);
+    if (memoryHighlights?.length) contextBlocks.push(`Destaques da memória viva: ${memoryHighlights.join("; ")}`);
+    if (calendarContext) contextBlocks.push(`Contexto do calendário: ${calendarContext}`);
+    if (radarSignals?.length) contextBlocks.push(`Sinais de mercado: ${radarSignals.join("; ")}`);
 
     const avoidBlock = avoidTheses.length > 0
-      ? `\n\nEVITE repetir teses similares a estas recentes:\n${avoidTheses.map((t: string, i: number) => `${i + 1}. "${t}"`).join("\n")}\n\nEVITE percepções similares a estas:\n${avoidPerceptions.map((p: string, i: number) => `${i + 1}. "${p}"`).join("\n")}`
+      ? `\n\nEVITE ABSOLUTAMENTE repetir teses similares a estas recentes:\n${avoidTheses.map((t: string, i: number) => `${i + 1}. "${t}"`).join("\n")}\n\nEVITE percepções similares a estas:\n${avoidPerceptions.map((p: string, i: number) => `${i + 1}. "${p}"`).join("\n")}`
       : "";
 
-    const systemPrompt = `Você é um estrategista de posicionamento para médicas no Instagram.
+    const systemPrompt = `Você é um estrategista editorial sênior para médicas de alto posicionamento no Instagram.
 
-Gere exatamente UMA sugestão de tese central e UMA sugestão de percepção desejada.
+Seu papel é PROPOR direções fortes, nunca impor. Você gera opções distintas e estrategicamente diferenciadas.
 
-Contexto:
-- Tipo de conteúdo: ${tipo}
-- Objetivo: ${objetivo}
-${archetype ? `- Arquétipo: ${archetype}` : ""}
-${pillar ? `- Pilar estratégico: ${pillar}` : ""}
+Contexto da profissional:
+${contextBlocks.length > 0 ? contextBlocks.map(c => `- ${c}`).join("\n") : "- Contexto limitado — baseie-se no tipo de conteúdo e objetivo."}
+
+Tipo de conteúdo: ${tipo}
+Objetivo: ${objetivo}
+
+Gere exatamente 3 opções de TESE CENTRAL, cada uma com um ângulo distinto:
+- Opção A (educativa): mais didática, que ensina algo específico
+- Opção B (estratégica): mais posicionadora, que reivindica um território
+- Opção C (manifesto): mais opinativa, que defende uma visão forte
+
+E exatamente 3 opções de PERCEPÇÃO DESEJADA, cada uma com um tom distinto:
+- Opção A (autoridade): foco em competência e domínio técnico
+- Opção B (humana): foco em proximidade e acessibilidade
+- Opção C (premium): foco em sofisticação e exclusividade
 
 Regras:
-- A tese deve ser uma afirmação clara, provocativa e posicionadora. Máximo 2 frases.
-- A percepção deve descrever como o público deve perceber a médica após o conteúdo. Máximo 1 frase.
-- Evite frases genéricas como "referência na área" ou "autoridade no assunto".
-- Seja específica ao nicho e ao tipo de conteúdo.
+- Cada tese deve ser uma afirmação clara e posicionadora. Máximo 2 frases.
+- Cada percepção deve ser concisa. Máximo 1 frase.
+- As opções devem ser GENUINAMENTE diferentes entre si, não variações da mesma ideia.
+- Evite frases genéricas como "referência na área", "autoridade no assunto", "profissional diferenciada".
+- Seja específica ao nicho médico e ao tipo de conteúdo.
 - Nunca use clichês ou fórmulas prontas.
 - A tese define o posicionamento editorial da peça.
-- A percepção define o efeito desejado na audiência.${avoidBlock}
-
-Responda APENAS em JSON válido:
-{"tese": "...", "percepcao": "..."}`;
+- A percepção define o efeito desejado na audiência.${avoidBlock}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -65,37 +101,105 @@ Responda APENAS em JSON válido:
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Gere uma sugestão original de tese e percepção para um conteúdo ${tipo} sobre: ${objetivo}` },
+          { role: "user", content: `Gere 3 opções de tese e 3 opções de percepção para um conteúdo ${tipo} sobre: ${objetivo}` },
         ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "suggest_options",
+              description: "Return 3 thesis options and 3 perception options for the content piece.",
+              parameters: {
+                type: "object",
+                properties: {
+                  teses: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        angle: { type: "string", enum: ["educativa", "estratégica", "manifesto"] },
+                        label: { type: "string", description: "Short label like 'Educativa', 'Estratégica', 'Manifesto'" },
+                        text: { type: "string", description: "The thesis statement, max 2 sentences" },
+                      },
+                      required: ["angle", "label", "text"],
+                      additionalProperties: false,
+                    },
+                    minItems: 3,
+                    maxItems: 3,
+                  },
+                  percepcoes: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        angle: { type: "string", enum: ["autoridade", "humana", "premium"] },
+                        label: { type: "string", description: "Short label like 'Autoridade', 'Humana', 'Premium'" },
+                        text: { type: "string", description: "The perception statement, max 1 sentence" },
+                      },
+                      required: ["angle", "label", "text"],
+                      additionalProperties: false,
+                    },
+                    minItems: 3,
+                    maxItems: 3,
+                  },
+                },
+                required: ["teses", "percepcoes"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "suggest_options" } },
         temperature: 0.9,
-        max_tokens: 400,
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("AI API error:", errText);
+      console.error("AI API error:", response.status, errText);
+
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em instantes." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Créditos esgotados." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       throw new Error(`AI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
 
-    // Extract JSON from response
-    const jsonMatch = content.match(/\{[\s\S]*?\}/);
-    if (!jsonMatch) {
+    // Extract tool call result
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall?.function?.arguments) {
+      // Fallback: try to parse from content
+      const content = data.choices?.[0]?.message?.content || "";
+      const jsonMatch = content.match(/\{[\s\S]*?\}/);
+      if (jsonMatch) {
+        const fallback = JSON.parse(jsonMatch[0]);
+        return new Response(JSON.stringify(fallback), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       throw new Error("Invalid AI response format");
     }
 
-    const suggestion = JSON.parse(jsonMatch[0]);
+    const result = JSON.parse(toolCall.function.arguments);
 
-    return new Response(JSON.stringify(suggestion), {
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("Error:", err);
     return new Response(
-      JSON.stringify({ error: "Erro ao gerar sugestão." }),
+      JSON.stringify({ error: "Erro ao gerar sugestões." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
