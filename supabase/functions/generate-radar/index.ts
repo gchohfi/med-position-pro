@@ -17,7 +17,21 @@ const RADAR_TOOL = {
       properties: {
         segment_summary: {
           type: "string",
-          description: "2-3 paragraph premium editorial summary of what is happening in this medical segment's content landscape right now",
+          description: "2-3 paragraph premium editorial summary of what is happening in this medical segment's content landscape right now, enriched with real market data",
+        },
+        signals: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Signal headline" },
+              description: { type: "string", description: "What was detected from real market research" },
+              source_context: { type: "string", description: "Where this insight comes from (trend, news, competitor pattern)" },
+              relevance: { type: "string", enum: ["alta", "media", "baixa"], description: "How relevant to the professional's positioning" },
+            },
+            required: ["title", "description", "source_context", "relevance"],
+          },
+          description: "3-6 real market signals detected via web research",
         },
         saturation: {
           type: "array",
@@ -73,10 +87,48 @@ const RADAR_TOOL = {
           description: "2-4 actionable strategic recommendations",
         },
       },
-      required: ["segment_summary", "saturation", "opportunities", "alerts", "recommendations"],
+      required: ["segment_summary", "signals", "saturation", "opportunities", "alerts", "recommendations"],
     },
   },
 };
+
+async function searchPerplexity(query: string, apiKey: string): Promise<{ content: string; citations: string[] }> {
+  try {
+    const response = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "sonar",
+        messages: [
+          {
+            role: "system",
+            content: "You are a market research assistant for medical professionals' digital positioning. Return insights in Portuguese (Brazil). Be specific about trends, competitors, and content patterns.",
+          },
+          { role: "user", content: query },
+        ],
+        search_recency_filter: "month",
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Perplexity error:", response.status, errText);
+      return { content: "", citations: [] };
+    }
+
+    const data = await response.json();
+    return {
+      content: data.choices?.[0]?.message?.content || "",
+      citations: data.citations || [],
+    };
+  } catch (err) {
+    console.error("Perplexity search failed:", err);
+    return { content: "", citations: [] };
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -115,6 +167,48 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+
+    const specialty = profile?.specialty || "medicina";
+    const archetype = positioning?.archetype || "";
+    const pillars = positioning?.pillars?.join(", ") || "";
+
+    // Run Perplexity searches in parallel if API key is available
+    let perplexityContext = "";
+    let allCitations: string[] = [];
+
+    if (PERPLEXITY_API_KEY) {
+      console.log("Running Perplexity market research for:", specialty);
+
+      const searches = await Promise.all([
+        searchPerplexity(
+          `Quais são as principais tendências de marketing digital e conteúdo no Instagram para médicos de ${specialty} no Brasil em 2025? Quais formatos estão performando melhor?`,
+          PERPLEXITY_API_KEY
+        ),
+        searchPerplexity(
+          `Quais médicos de ${specialty} no Brasil têm os perfis mais influentes no Instagram? Que tipo de conteúdo eles publicam? Quais padrões de saturação e oportunidades existem?`,
+          PERPLEXITY_API_KEY
+        ),
+        searchPerplexity(
+          `Tendências recentes de posicionamento digital para médicos no Brasil: novas regulamentações do CFM sobre publicidade médica, mudanças no algoritmo do Instagram, formatos de conteúdo emergentes`,
+          PERPLEXITY_API_KEY
+        ),
+      ]);
+
+      for (const search of searches) {
+        if (search.content) {
+          perplexityContext += search.content + "\n\n---\n\n";
+        }
+        allCitations.push(...search.citations);
+      }
+
+      // Deduplicate citations
+      allCitations = [...new Set(allCitations)];
+      console.log(`Perplexity returned ${allCitations.length} unique citations`);
+    } else {
+      console.log("PERPLEXITY_API_KEY not available, proceeding without web research");
+    }
+
     const contentTypes = recentContent.map((c: any) => c.content_type).join(", ");
     const seriesNames = series.map((s: any) => `${s.name} (${s.strategic_role})`).join(", ");
 
@@ -122,20 +216,26 @@ serve(async (req) => {
 
 Sua função é analisar o segmento de atuação dessa profissional e gerar uma leitura estratégica do mercado editorial médico ao redor dela.
 
+${perplexityContext ? `DADOS REAIS DE MERCADO (pesquisa web atual):
+${perplexityContext}
+
+Use estes dados reais para fundamentar sua análise. Cite tendências, concorrentes e padrões específicos encontrados na pesquisa.` : ""}
+
 Regras:
 - Linguagem consultiva, premium, editorial em português brasileiro
 - Nunca genérico — sempre contextualizado à especialidade e posicionamento
 - Foco em padrões de saturação (o que todos estão fazendo igual) e oportunidades (territórios pouco explorados)
+- Os sinais de mercado devem refletir dados REAIS da pesquisa web quando disponíveis
 - Recomendações devem ser acionáveis dentro do MEDSHIFT (estratégia, séries, calendário, produção)
 - Evite tom alarmista ou superficial
 - Pense como uma consultora editorial de alto nível
 
 Use a ferramenta save_radar para estruturar a resposta.`;
 
-    const userPrompt = `Especialidade: ${profile?.specialty || "Não informada"}
-Arquétipo: ${positioning?.archetype || "Não definido"}
+    const userPrompt = `Especialidade: ${specialty}
+Arquétipo: ${archetype || "Não definido"}
 Tom de voz: ${positioning?.tone || "Não definido"}
-Pilares editoriais: ${positioning?.pillars?.join(", ") || "Não definidos"}
+Pilares editoriais: ${pillars || "Não definidos"}
 Público-alvo: ${positioning?.target_audience || "Não definido"}
 Objetivos: ${positioning?.goals || "Não definidos"}
 Séries ativas: ${seriesNames || "Nenhuma"}
@@ -143,7 +243,7 @@ Tipos de conteúdo recentes: ${contentTypes || "Nenhum"}
 Diagnóstico existente: ${diagnosis ? "Sim" : "Não"}
 Estratégia existente: ${estrategia ? "Sim" : "Não"}
 
-Gere uma leitura estratégica completa do mercado editorial médico para esta profissional, incluindo padrões de saturação, oportunidades de diferenciação, alertas estratégicos e recomendações acionáveis.`;
+Gere uma leitura estratégica completa do mercado editorial médico para esta profissional, incluindo sinais reais de mercado, padrões de saturação, oportunidades de diferenciação, alertas estratégicos e recomendações acionáveis.`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -175,7 +275,14 @@ Gere uma leitura estratégica completa do mercado editorial médico para esta pr
 
     const radar = JSON.parse(toolCall.function.arguments);
 
-    // Upsert radar data
+    // Upsert radar data — store citations in signals JSON
+    const signalsData = {
+      generated_at: new Date().toISOString(),
+      perplexity_enabled: !!PERPLEXITY_API_KEY,
+      citations: allCitations,
+      market_signals: radar.signals || [],
+    };
+
     const { data: existing } = await supabase
       .from("market_radar")
       .select("id")
@@ -191,7 +298,7 @@ Gere uma leitura estratégica completa do mercado editorial médico para esta pr
           opportunities: radar.opportunities,
           alerts: radar.alerts,
           recommendations: radar.recommendations,
-          signals: { generated_at: new Date().toISOString() },
+          signals: signalsData,
         })
         .eq("id", existing.id);
     } else {
@@ -202,11 +309,11 @@ Gere uma leitura estratégica completa do mercado editorial médico para esta pr
         opportunities: radar.opportunities,
         alerts: radar.alerts,
         recommendations: radar.recommendations,
-        signals: { generated_at: new Date().toISOString() },
+        signals: signalsData,
       });
     }
 
-    return new Response(JSON.stringify({ success: true, radar }), {
+    return new Response(JSON.stringify({ success: true, radar: { ...radar, citations: allCitations } }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
