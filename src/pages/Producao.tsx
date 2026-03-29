@@ -422,16 +422,26 @@ const Producao = () => {
 
       setOutput(sections);
 
-      // Save to DB
+      // Save to DB — update existing or create new
       try {
-        const { error } = await supabase.from("content_outputs").insert({
-          user_id: user!.id,
-          content_type: tipo,
-          title: tese.slice(0, 120) || objetivo.slice(0, 120),
-          strategic_input: { objetivo, tese, percepcao, tipo } as any,
-          generated_content: sections as any,
-        });
-        if (error) console.error("Erro ao salvar:", error);
+        if (loadedContentId) {
+          const { error } = await supabase.from("content_outputs").update({
+            content_type: tipo,
+            title: tese.slice(0, 120) || objetivo.slice(0, 120),
+            strategic_input: { objetivo, tese, percepcao, tipo } as any,
+            generated_content: sections as any,
+          }).eq("id", loadedContentId);
+          if (error) console.error("Erro ao atualizar:", error);
+        } else {
+          const { error } = await supabase.from("content_outputs").insert({
+            user_id: user!.id,
+            content_type: tipo,
+            title: tese.slice(0, 120) || objetivo.slice(0, 120),
+            strategic_input: { objetivo, tese, percepcao, tipo } as any,
+            generated_content: sections as any,
+          });
+          if (error) console.error("Erro ao salvar:", error);
+        }
       } catch {}
 
       logStrategicEvent(STRATEGIC_EVENTS.CONTENT_GENERATED, "producao", { content_type: tipo });
