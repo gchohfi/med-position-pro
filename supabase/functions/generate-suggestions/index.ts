@@ -74,12 +74,12 @@ As opções devem ser genuinamente diferentes entre si. Sem clichês genéricos.
       body: JSON.stringify({
         model: "openai/gpt-5-mini",
         messages: [
-          { role: "system", content: "You generate structured JSON with arrays. Always include the full teses and percepcoes arrays with exactly 3 items each as instructed." },
+          { role: "system", content: "You generate structured JSON with arrays. Always include the full teses and percepcoes arrays with exactly 3 items each as instructed. Respond in Portuguese (Brazil)." },
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
         temperature: 0.85,
-        max_tokens: 1500,
+        max_completion_tokens: 1500,
       }),
     });
 
