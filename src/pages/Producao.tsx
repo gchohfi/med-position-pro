@@ -647,6 +647,18 @@ const Producao = () => {
                 )}
               </AnimatePresence>
 
+              {/* Visual Carousel Preview */}
+              <AnimatePresence>
+                {visualSlides && (
+                  <CarouselVisualPreview
+                    slides={visualSlides}
+                    brandName="MEDSHIFT"
+                    onRegenerate={handleGenerateVisualCarousel}
+                    onClose={() => setVisualSlides(null)}
+                  />
+                )}
+              </AnimatePresence>
+
               {/* Transform Result */}
               <AnimatePresence>
                 {transformResult && (
