@@ -127,6 +127,81 @@ const Producao = () => {
     load();
   }, [user]);
 
+  // Load previous theses/perceptions for variation
+  useEffect(() => {
+    if (!user) return;
+    const loadHistory = async () => {
+      try {
+        const { data } = await supabase
+          .from("content_outputs")
+          .select("strategic_input")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(3);
+        if (data) {
+          const theses = data
+            .map((d) => (d.strategic_input as any)?.tese)
+            .filter(Boolean);
+          const perceptions = data
+            .map((d) => (d.strategic_input as any)?.percepcao)
+            .filter(Boolean);
+          setPreviousTheses(theses);
+          setPreviousPerceptions(perceptions);
+        }
+      } catch {}
+    };
+    loadHistory();
+  }, [user]);
+
+  // Generate AI suggestions for tese and percepção
+  const generateSuggestions = async () => {
+    if (!tipo || !objetivo.trim()) {
+      toast.error("Preencha o tipo e objetivo antes de gerar sugestões.");
+      return;
+    }
+    setSuggestingFields(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Sessão expirada.");
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-suggestions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            tipo,
+            objetivo,
+            archetype: context.archetype,
+            pillar: context.pillar,
+            previousTheses,
+            previousPerceptions,
+          }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Erro");
+      const suggestion = await res.json();
+
+      if (suggestion.tese) {
+        setTese(suggestion.tese);
+        setTeseIsSuggestion(true);
+      }
+      if (suggestion.percepcao) {
+        setPercepcao(suggestion.percepcao);
+        setPercepcaoIsSuggestion(true);
+      }
+      toast.success("Sugestões geradas. Ajuste se necessário.");
+    } catch {
+      toast.error("Erro ao gerar sugestões. Tente novamente.");
+    } finally {
+      setSuggestingFields(false);
+    }
+  };
+
   // Pre-fill from query params
   useEffect(() => {
     const obj = searchParams.get("objetivo");
