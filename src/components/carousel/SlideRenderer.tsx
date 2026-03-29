@@ -16,7 +16,7 @@ interface SlideRendererProps {
     bg: string;
     text: string;
     accent: string;
-    bgAlt: string;
+    bgAlt?: string;
   };
   brandName?: string;
 }
