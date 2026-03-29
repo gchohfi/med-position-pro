@@ -13,20 +13,8 @@ serve(async (req) => {
 
   try {
     const {
-      tipo,
-      objetivo,
-      archetype,
-      pillar,
-      tone,
-      targetAudience,
-      goals,
-      specialty,
-      recentTheses,
-      recentPerceptions,
-      activeSeries,
-      memoryHighlights,
-      calendarContext,
-      radarSignals,
+      tipo, objetivo, archetype, pillar, tone, targetAudience, goals, specialty,
+      recentTheses, recentPerceptions, activeSeries, memoryHighlights, calendarContext, radarSignals,
     } = await req.json();
 
     if (!tipo || !objetivo) {
@@ -37,63 +25,49 @@ serve(async (req) => {
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const avoidTheses = (recentTheses || []).slice(0, 5);
     const avoidPerceptions = (recentPerceptions || []).slice(0, 5);
 
-    const contextBlocks: string[] = [];
-    if (archetype) contextBlocks.push(`Arquétipo: ${archetype}`);
-    if (pillar) contextBlocks.push(`Pilar estratégico ativo: ${pillar}`);
-    if (tone) contextBlocks.push(`Tom de voz: ${tone}`);
-    if (targetAudience) contextBlocks.push(`Público-alvo: ${targetAudience}`);
-    if (goals) contextBlocks.push(`Objetivo macro: ${goals}`);
-    if (specialty) contextBlocks.push(`Especialidade médica: ${specialty}`);
-    if (activeSeries?.length) contextBlocks.push(`Séries ativas: ${activeSeries.join(", ")}`);
-    if (memoryHighlights?.length) contextBlocks.push(`Destaques da memória: ${memoryHighlights.join("; ")}`);
-    if (calendarContext) contextBlocks.push(`Calendário próximo: ${calendarContext}`);
-    if (radarSignals?.length) contextBlocks.push(`Sinais de mercado: ${radarSignals.join("; ")}`);
+    const ctx: string[] = [];
+    if (archetype) ctx.push(`Arquétipo: ${archetype}`);
+    if (pillar) ctx.push(`Pilar: ${pillar}`);
+    if (tone) ctx.push(`Tom: ${tone}`);
+    if (targetAudience) ctx.push(`Público: ${targetAudience}`);
+    if (goals) ctx.push(`Objetivo macro: ${goals}`);
+    if (specialty) ctx.push(`Especialidade: ${specialty}`);
+    if (activeSeries?.length) ctx.push(`Séries ativas: ${activeSeries.join(", ")}`);
+    if (memoryHighlights?.length) ctx.push(`Memória: ${memoryHighlights.join("; ")}`);
+    if (calendarContext) ctx.push(`Calendário: ${calendarContext}`);
+    if (radarSignals?.length) ctx.push(`Mercado: ${radarSignals.join("; ")}`);
 
     const avoidBlock = avoidTheses.length > 0
-      ? `\n\nEVITE ABSOLUTAMENTE repetir teses similares a estas:\n${avoidTheses.map((t: string, i: number) => `${i + 1}. "${t}"`).join("\n")}\n\nEVITE percepções similares a estas:\n${avoidPerceptions.map((p: string, i: number) => `${i + 1}. "${p}"`).join("\n")}`
+      ? `\nEVITE repetir:\nTeses: ${avoidTheses.map((t: string) => `"${t}"`).join("; ")}\nPercepções: ${avoidPerceptions.map((p: string) => `"${p}"`).join("; ")}`
       : "";
 
-    const systemPrompt = `Você é um estrategista editorial sênior para médicas de alto posicionamento no Instagram.
+    const prompt = `Você é um estrategista editorial sênior para médicas no Instagram.
 
-Contexto:
-${contextBlocks.length > 0 ? contextBlocks.map(c => `- ${c}`).join("\n") : "- Contexto limitado — baseie-se no tipo e objetivo."}
+Contexto: ${ctx.length > 0 ? ctx.join(" | ") : "Limitado."}
+Tipo: ${tipo} | Objetivo: ${objetivo}${avoidBlock}
 
-Tipo de conteúdo: ${tipo}
-Objetivo: ${objetivo}
-${avoidBlock}
+Gere EXATAMENTE este JSON (nada mais):
+{
+  "teses": [
+    {"angle": "educativa", "label": "Educativa", "text": "<tese didática, max 2 frases>"},
+    {"angle": "estratégica", "label": "Estratégica", "text": "<tese posicionadora, max 2 frases>"},
+    {"angle": "manifesto", "label": "Manifesto", "text": "<tese opinativa forte, max 2 frases>"}
+  ],
+  "percepcoes": [
+    {"angle": "autoridade", "label": "Autoridade", "text": "<percepção técnica, max 1 frase>"},
+    {"angle": "humana", "label": "Humana", "text": "<percepção próxima, max 1 frase>"},
+    {"angle": "premium", "label": "Premium", "text": "<percepção sofisticada, max 1 frase>"}
+  ]
+}
 
-TAREFA: Gere EXATAMENTE 3 opções de tese central e 3 opções de percepção desejada.
+Regras: Cada opção GENUINAMENTE diferente. Sem clichês. Específica ao nicho médico. Responda SOMENTE o JSON.`;
 
-TESES — 3 ângulos obrigatórios:
-1. "educativa" (label: "Educativa") — didática, que ensina algo específico
-2. "estratégica" (label: "Estratégica") — posicionadora, que reivindica território
-3. "manifesto" (label: "Manifesto") — opinativa, que defende uma visão forte
-
-PERCEPÇÕES — 3 tons obrigatórios:
-1. "autoridade" (label: "Autoridade") — competência e domínio técnico
-2. "humana" (label: "Humana") — proximidade e acessibilidade
-3. "premium" (label: "Premium") — sofisticação e exclusividade
-
-Regras:
-- Tese: afirmação clara e posicionadora, máximo 2 frases
-- Percepção: concisa, máximo 1 frase
-- As 3 opções devem ser GENUINAMENTE diferentes, não variações da mesma ideia
-- Sem clichês: "referência na área", "autoridade no assunto", "profissional diferenciada"
-- Seja específica ao nicho médico
-
-Responda APENAS com JSON válido no formato exato abaixo, sem texto adicional:
-{"teses":[{"angle":"educativa","label":"Educativa","text":"..."},{"angle":"estratégica","label":"Estratégica","text":"..."},{"angle":"manifesto","label":"Manifesto","text":"..."}],"percepcoes":[{"angle":"autoridade","label":"Autoridade","text":"..."},{"angle":"humana","label":"Humana","text":"..."},{"angle":"premium","label":"Premium","text":"..."}]}`;
-
-    const userPrompt = `Gere as 3 opções de tese central e as 3 opções de percepção desejada para um conteúdo "${tipo}" com objetivo: "${objetivo}".
-
-IMPORTANTE: Sua resposta DEVE conter exatamente 3 teses (educativa, estratégica, manifesto) e 3 percepções (autoridade, humana, premium) no formato JSON especificado. Cada opção deve ser genuinamente diferente das outras.`;
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -101,50 +75,32 @@ IMPORTANTE: Sua resposta DEVE conter exatamente 3 teses (educativa, estratégica
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Gere as 3 opções de tese e 3 opções de percepção para: ${objetivo}` },
-        ],
+        messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
         temperature: 0.9,
-        max_tokens: 1200,
+        max_tokens: 1500,
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text();
       console.error("AI API error:", response.status, errText);
-
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Limite de requisições atingido." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Limite atingido." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos esgotados." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Créditos esgotados." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       throw new Error(`AI API error: ${response.status}`);
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
-
-    // Parse JSON from response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("Invalid AI response format");
-    }
+    if (!jsonMatch) throw new Error("Invalid AI response");
 
     const result = JSON.parse(jsonMatch[0]);
-
-    // Validate structure
-    if (!result.teses?.length || !result.percepcoes?.length) {
-      throw new Error("Incomplete AI response");
-    }
+    if (!result.teses?.length || !result.percepcoes?.length) throw new Error("Incomplete response");
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
