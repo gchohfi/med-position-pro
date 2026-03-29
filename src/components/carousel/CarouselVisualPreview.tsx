@@ -197,7 +197,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
               >
                 <SlideRenderer
                   slide={slides[currentSlide]}
-                   brandColors={effectiveColors}
+                  visualSystem={activeStyle}
                   brandName={brandName}
                 />
               </div>
@@ -312,7 +312,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                 >
                   <SlideRenderer
                     slide={slide}
-                    brandColors={effectiveColors}
+                    visualSystem={activeStyle}
                     brandName={brandName}
                   />
                 </div>
@@ -362,7 +362,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
               slideRefs.current[i] = el;
             }}
             slide={slide}
-            brandColors={effectiveColors}
+            visualSystem={activeStyle}
             brandName={brandName}
           />
         ))}
