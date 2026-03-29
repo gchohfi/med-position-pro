@@ -15,13 +15,14 @@ import {
   RefreshCw,
   Palette,
 } from "lucide-react";
-import SlideRenderer, { type SlideData, type CarouselTheme, CAROUSEL_THEMES } from "./SlideRenderer";
+import SlideRenderer, { type SlideData, type ArchetypeStyle, VISUAL_SYSTEMS, getStyleForArchetype } from "./SlideRenderer";
 import SlideEditor from "./SlideEditor";
 
 interface CarouselVisualPreviewProps {
   slides: SlideData[];
   brandColors?: { bg: string; text: string; accent: string };
   brandName?: string;
+  archetype?: string | null;
   onRegenerate?: () => void;
   onClose?: () => void;
   onSlidesChange?: (slides: SlideData[]) => void;
@@ -37,18 +38,17 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   slides,
   brandColors,
   brandName,
+  archetype,
   onRegenerate,
   onClose,
   onSlidesChange,
 }) => {
+  const autoStyle = getStyleForArchetype(archetype);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [activeTheme, setActiveTheme] = useState<CarouselTheme>("editorial-light");
-
-  const themeColors = CAROUSEL_THEMES[activeTheme].colors;
-  const effectiveColors = brandColors || themeColors;
+  const [activeStyle, setActiveStyle] = useState<ArchetypeStyle>(autoStyle);
 
   const handleSlideEdit = (index: number, updated: SlideData) => {
     const newSlides = [...slides];
