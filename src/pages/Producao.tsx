@@ -874,6 +874,7 @@ const Producao = () => {
                   <CarouselVisualPreview
                     slides={visualSlides}
                     brandName="MEDSHIFT"
+                    archetype={context.archetype}
                     onRegenerate={handleGenerateVisualCarousel}
                     onClose={() => setVisualSlides(null)}
                     onSlidesChange={(updated) => setVisualSlides(updated)}

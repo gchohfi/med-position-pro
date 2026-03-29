@@ -15,13 +15,14 @@ import {
   RefreshCw,
   Palette,
 } from "lucide-react";
-import SlideRenderer, { type SlideData, type CarouselTheme, CAROUSEL_THEMES } from "./SlideRenderer";
+import SlideRenderer, { type SlideData, type ArchetypeStyle, VISUAL_SYSTEMS, getStyleForArchetype } from "./SlideRenderer";
 import SlideEditor from "./SlideEditor";
 
 interface CarouselVisualPreviewProps {
   slides: SlideData[];
   brandColors?: { bg: string; text: string; accent: string };
   brandName?: string;
+  archetype?: string | null;
   onRegenerate?: () => void;
   onClose?: () => void;
   onSlidesChange?: (slides: SlideData[]) => void;
@@ -37,18 +38,17 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   slides,
   brandColors,
   brandName,
+  archetype,
   onRegenerate,
   onClose,
   onSlidesChange,
 }) => {
+  const autoStyle = getStyleForArchetype(archetype);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [activeTheme, setActiveTheme] = useState<CarouselTheme>("editorial-light");
-
-  const themeColors = CAROUSEL_THEMES[activeTheme].colors;
-  const effectiveColors = brandColors || themeColors;
+  const [activeStyle, setActiveStyle] = useState<ArchetypeStyle>(autoStyle);
 
   const handleSlideEdit = (index: number, updated: SlideData) => {
     const newSlides = [...slides];
@@ -129,18 +129,18 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
         {/* Theme selector */}
         <div className="flex items-center gap-1.5 ml-2">
           <Palette className="h-3.5 w-3.5 text-muted-foreground" />
-          {(Object.entries(CAROUSEL_THEMES) as [CarouselTheme, typeof CAROUSEL_THEMES[CarouselTheme]][]).map(([key, theme]) => (
+          {(Object.entries(VISUAL_SYSTEMS) as [ArchetypeStyle, typeof VISUAL_SYSTEMS[ArchetypeStyle]][]).map(([key, system]) => (
             <button
               key={key}
-              onClick={() => setActiveTheme(key)}
-              title={theme.label}
+              onClick={() => setActiveStyle(key)}
+              title={system.description}
               className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all ${
-                activeTheme === key
+                activeStyle === key
                   ? "bg-accent text-accent-foreground shadow-sm"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"
               }`}
             >
-              {theme.label}
+              {system.label}
             </button>
           ))}
         </div>
@@ -197,7 +197,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
               >
                 <SlideRenderer
                   slide={slides[currentSlide]}
-                   brandColors={effectiveColors}
+                  visualSystem={activeStyle}
                   brandName={brandName}
                 />
               </div>
@@ -312,7 +312,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                 >
                   <SlideRenderer
                     slide={slide}
-                    brandColors={effectiveColors}
+                    visualSystem={activeStyle}
                     brandName={brandName}
                   />
                 </div>
@@ -362,7 +362,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
               slideRefs.current[i] = el;
             }}
             slide={slide}
-            brandColors={effectiveColors}
+            visualSystem={activeStyle}
             brandName={brandName}
           />
         ))}
