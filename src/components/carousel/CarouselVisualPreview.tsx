@@ -14,6 +14,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import SlideRenderer, { type SlideData } from "./SlideRenderer";
+import SlideEditor from "./SlideEditor";
 
 interface CarouselVisualPreviewProps {
   slides: SlideData[];
@@ -21,6 +22,7 @@ interface CarouselVisualPreviewProps {
   brandName?: string;
   onRegenerate?: () => void;
   onClose?: () => void;
+  onSlidesChange?: (slides: SlideData[]) => void;
 }
 
 const CAROUSEL_LOADING_MESSAGES = [
@@ -35,10 +37,19 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   brandName,
   onRegenerate,
   onClose,
+  onSlidesChange,
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  const handleSlideEdit = (index: number, updated: SlideData) => {
+    const newSlides = [...slides];
+    newSlides[index] = updated;
+    onSlidesChange?.(newSlides);
+    setEditingIndex(null);
+  };
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const exportSlide = useCallback(
