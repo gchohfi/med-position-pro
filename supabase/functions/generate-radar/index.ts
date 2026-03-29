@@ -145,7 +145,7 @@ Estratégia existente: ${estrategia ? "Sim" : "Não"}
 
 Gere uma leitura estratégica completa do mercado editorial médico para esta profissional, incluindo padrões de saturação, oportunidades de diferenciação, alertas estratégicos e recomendações acionáveis.`;
 
-    const aiRes = await fetch("https://api.lovable.dev/v1/chat/completions", {
+    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
