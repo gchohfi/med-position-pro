@@ -28,7 +28,7 @@ const navItems = [
   { title: "Estratégia", url: "/estrategia", icon: Lightbulb, disabled: false },
   { title: "Séries", url: "#", icon: BookOpen, disabled: true },
   { title: "Calendário", url: "#", icon: Calendar, disabled: true },
-  { title: "Produção", url: "/producao", icon: PenTool, disabled: false },
+  { title: "Criação", url: "/producao", icon: PenTool, disabled: false },
 ];
 
 export function AppSidebar() {
