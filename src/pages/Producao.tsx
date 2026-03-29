@@ -655,6 +655,7 @@ const Producao = () => {
                     brandName="MEDSHIFT"
                     onRegenerate={handleGenerateVisualCarousel}
                     onClose={() => setVisualSlides(null)}
+                    onSlidesChange={(updated) => setVisualSlides(updated)}
                   />
                 )}
               </AnimatePresence>
