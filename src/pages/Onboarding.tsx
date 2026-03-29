@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
+import { logStrategicEvent, STRATEGIC_EVENTS } from "@/lib/strategic-events";
 
 const STEPS = [
   {
@@ -168,6 +169,10 @@ const Onboarding = () => {
         .update({ onboarding_complete: true })
         .eq("id", user.id);
 
+      await logStrategicEvent(STRATEGIC_EVENTS.ONBOARDING_COMPLETED, "onboarding", {
+        specialty: answers.specialty,
+        archetype: answers.archetype,
+      });
       toast.success("Direção estratégica definida. Seu sistema está pronto.");
       navigate("/dashboard");
     } catch {
