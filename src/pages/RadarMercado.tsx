@@ -119,10 +119,12 @@ const RadarMercado = () => {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [data, setData] = useState<RadarData>({
     segment_summary: null,
+    signals: [],
     saturation: [],
     opportunities: [],
     alerts: [],
     recommendations: [],
+    citations: [],
     updated_at: null,
   });
 
