@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { logStrategicEvent, STRATEGIC_EVENTS } from "@/lib/strategic-events";
 import {
   Sparkles,
   Copy,
@@ -216,6 +217,7 @@ const Producao = () => {
         if (error) console.error("Erro ao salvar:", error);
       } catch {}
 
+      logStrategicEvent(STRATEGIC_EVENTS.CONTENT_GENERATED, "producao", { content_type: tipo });
       toast.success("Conteúdo estruturado e salvo no seu acervo.");
     } catch (err: any) {
       toast.error("Erro ao gerar conteúdo. Tente novamente.");

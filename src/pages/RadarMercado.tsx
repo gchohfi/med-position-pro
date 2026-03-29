@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { logStrategicEvent, STRATEGIC_EVENTS } from "@/lib/strategic-events";
 import {
   Radar,
   AlertTriangle,
@@ -181,6 +182,7 @@ const RadarMercado = () => {
           recommendations: result.radar.recommendations || [],
           updated_at: new Date().toISOString(),
         });
+        logStrategicEvent(STRATEGIC_EVENTS.RADAR_REFRESHED, "radar");
         toast.success("Radar de mercado atualizado com base no seu segmento.");
       }
     } catch {
