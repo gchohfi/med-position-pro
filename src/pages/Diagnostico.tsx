@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { logStrategicEvent, STRATEGIC_EVENTS } from "@/lib/strategic-events";
 import {
   Target,
   Shield,
@@ -139,6 +140,7 @@ const Diagnostico = () => {
 
       const data = await response.json();
       setDiagnosis(data.diagnosis);
+      logStrategicEvent(STRATEGIC_EVENTS.DIAGNOSIS_GENERATED, "diagnostico");
       toast.success("Diagnóstico concluído com base nas suas respostas");
     } catch {
       toast.error("Erro ao gerar diagnóstico. Tente novamente.");
