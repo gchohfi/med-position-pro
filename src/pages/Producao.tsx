@@ -241,7 +241,47 @@ const Producao = () => {
     }
   };
 
-  const copySection = (text: string) => {
+  const handleTransform = async (format: TransformFormat) => {
+    if (!output) return;
+    setTransforming(format);
+    setTransformResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Sessão expirada.");
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transform-content`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            format,
+            content: output,
+            strategic_input: { tipo, objetivo, tese, percepcao },
+          }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Erro na transformação");
+      const data = await res.json();
+      setTransformResult({ format, data: data.result });
+      toast.success(
+        format === "carrossel"
+          ? "Carrossel estruturado com sucesso."
+          : format === "reels"
+            ? "Roteiro de reels gerado."
+            : "Legenda completa gerada."
+      );
+    } catch {
+      toast.error("Erro ao transformar conteúdo. Tente novamente.");
+    } finally {
+      setTransforming(null);
+    }
+  };
+
     navigator.clipboard.writeText(text);
     toast.success("Copiado!");
   };
