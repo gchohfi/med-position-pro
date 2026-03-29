@@ -151,12 +151,15 @@ const RadarMercado = () => {
       .maybeSingle();
 
     if (radar) {
+      const signalsData = (radar.signals as any) || {};
       setData({
         segment_summary: radar.segment_summary,
+        signals: (signalsData.market_signals as unknown as SignalItem[]) || [],
         saturation: (radar.saturation as unknown as SaturationItem[]) || [],
         opportunities: (radar.opportunities as unknown as OpportunityItem[]) || [],
         alerts: (radar.alerts as unknown as AlertItem[]) || [],
         recommendations: (radar.recommendations as unknown as RecommendationItem[]) || [],
+        citations: (signalsData.citations as string[]) || [],
         updated_at: radar.updated_at,
       });
     }
