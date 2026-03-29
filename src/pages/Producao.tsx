@@ -203,7 +203,20 @@ const Producao = () => {
       }
 
       setOutput(sections);
-      toast.success("Conteúdo estruturado com base no seu posicionamento.");
+
+      // Save to DB
+      try {
+        const { error } = await supabase.from("content_outputs").insert({
+          user_id: user!.id,
+          content_type: tipo,
+          title: tese.slice(0, 120) || objetivo.slice(0, 120),
+          strategic_input: { objetivo, tese, percepcao, tipo } as any,
+          generated_content: sections as any,
+        });
+        if (error) console.error("Erro ao salvar:", error);
+      } catch {}
+
+      toast.success("Conteúdo estruturado e salvo no seu acervo.");
     } catch (err: any) {
       toast.error("Erro ao gerar conteúdo. Tente novamente.");
     } finally {
