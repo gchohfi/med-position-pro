@@ -126,6 +126,24 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             {slides.length} slides · 1080×1350
           </span>
         </div>
+        {/* Theme selector */}
+        <div className="flex items-center gap-1.5 ml-2">
+          <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+          {(Object.entries(CAROUSEL_THEMES) as [CarouselTheme, typeof CAROUSEL_THEMES[CarouselTheme]][]).map(([key, theme]) => (
+            <button
+              key={key}
+              onClick={() => setActiveTheme(key)}
+              title={theme.label}
+              className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all ${
+                activeTheme === key
+                  ? "bg-accent text-accent-foreground shadow-sm"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {theme.label}
+            </button>
+          ))}
+        </div>
         <div className="flex items-center gap-2">
           {onRegenerate && (
             <Button
