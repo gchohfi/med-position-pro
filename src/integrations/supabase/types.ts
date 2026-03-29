@@ -141,6 +141,60 @@ export type Database = {
         }
         Relationships: []
       }
+      inspiration_references: {
+        Row: {
+          adherence_level: string
+          assimilated: boolean
+          category: string
+          created_at: string
+          feedback: string | null
+          id: string
+          segment: string | null
+          source: string
+          strategic_pattern: string | null
+          suggestion_reason: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          what_to_absorb: string | null
+          what_to_avoid: string | null
+        }
+        Insert: {
+          adherence_level?: string
+          assimilated?: boolean
+          category: string
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          segment?: string | null
+          source?: string
+          strategic_pattern?: string | null
+          suggestion_reason?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          what_to_absorb?: string | null
+          what_to_avoid?: string | null
+        }
+        Update: {
+          adherence_level?: string
+          assimilated?: boolean
+          category?: string
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          segment?: string | null
+          source?: string
+          strategic_pattern?: string | null
+          suggestion_reason?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          what_to_absorb?: string | null
+          what_to_avoid?: string | null
+        }
+        Relationships: []
+      }
       living_memory: {
         Row: {
           created_at: string
