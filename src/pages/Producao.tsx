@@ -96,8 +96,12 @@ const Producao = () => {
 
   // Suggestion system state
   const [suggestingFields, setSuggestingFields] = useState(false);
-  const [teseIsSuggestion, setTeseIsSuggestion] = useState(false);
-  const [percepcaoIsSuggestion, setPercepcaoIsSuggestion] = useState(false);
+  const [teseOptions, setTeseOptions] = useState<{ angle: string; label: string; text: string }[]>([]);
+  const [percepcaoOptions, setPercepcaoOptions] = useState<{ angle: string; label: string; text: string }[]>([]);
+  const [selectedTeseIndex, setSelectedTeseIndex] = useState<number | null>(null);
+  const [selectedPercepcaoIndex, setSelectedPercepcaoIndex] = useState<number | null>(null);
+  const [editingTese, setEditingTese] = useState(false);
+  const [editingPercepcao, setEditingPercepcao] = useState(false);
   const [previousTheses, setPreviousTheses] = useState<string[]>([]);
   const [previousPerceptions, setPreviousPerceptions] = useState<string[]>([]);
 
@@ -108,7 +112,7 @@ const Producao = () => {
       setContextLoading(true);
       try {
         const [posRes, diagRes] = await Promise.all([
-          supabase.from("positioning").select("archetype, pillars").eq("user_id", user.id).maybeSingle(),
+          supabase.from("positioning").select("archetype, pillars, tone, target_audience, goals").eq("user_id", user.id).maybeSingle(),
           supabase.from("diagnosis_outputs").select("estrategia").eq("user_id", user.id).maybeSingle(),
         ]);
         const pos = posRes.data;
@@ -138,7 +142,7 @@ const Producao = () => {
           .select("strategic_input")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
-          .limit(3);
+          .limit(5);
         if (data) {
           const theses = data
             .map((d) => (d.strategic_input as any)?.tese)
@@ -154,16 +158,43 @@ const Producao = () => {
     loadHistory();
   }, [user]);
 
-  // Generate AI suggestions for tese and percepção
+  // Generate AI suggestions for tese and percepção — now returns 3 options each
   const generateSuggestions = async () => {
     if (!tipo || !objetivo.trim()) {
       toast.error("Preencha o tipo e objetivo antes de gerar sugestões.");
       return;
     }
     setSuggestingFields(true);
+    setTeseOptions([]);
+    setPercepcaoOptions([]);
+    setSelectedTeseIndex(null);
+    setSelectedPercepcaoIndex(null);
+    setEditingTese(false);
+    setEditingPercepcao(false);
+    setTese("");
+    setPercepcao("");
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Sessão expirada.");
+
+      // Gather rich context
+      const [posRes, profileRes, seriesRes, calendarRes, memoryRes, radarRes] = await Promise.all([
+        supabase.from("positioning").select("archetype, pillars, tone, target_audience, goals").eq("user_id", user!.id).maybeSingle(),
+        supabase.from("profiles").select("specialty").eq("id", user!.id).maybeSingle(),
+        supabase.from("series").select("name, strategic_role").eq("user_id", user!.id).eq("status", "ativa").limit(5),
+        supabase.from("calendar_items").select("title, content_type").eq("user_id", user!.id).gte("date", new Date().toISOString().split("T")[0]).order("date").limit(5),
+        supabase.from("living_memory").select("memory").eq("user_id", user!.id).maybeSingle(),
+        supabase.from("market_radar").select("signals, opportunities").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      ]);
+
+      const pos = posRes.data;
+      const activeSeries = seriesRes.data?.map((s) => `${s.name} (${s.strategic_role})`) || [];
+      const calendarContext = calendarRes.data?.map((c) => `${c.title} (${c.content_type})`).join(", ") || "";
+      const memory = memoryRes.data?.memory as Record<string, any> | null;
+      const memoryHighlights = memory ? Object.values(memory).filter((v) => typeof v === "string").slice(0, 3) as string[] : [];
+      const radar = radarRes.data;
+      const radarSignals = radar?.signals ? (Array.isArray(radar.signals) ? radar.signals.slice(0, 3).map((s: any) => typeof s === "string" ? s : s?.title || "") : []) : [];
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-suggestions`,
@@ -176,31 +207,57 @@ const Producao = () => {
           body: JSON.stringify({
             tipo,
             objetivo,
-            archetype: context.archetype,
-            pillar: context.pillar,
-            previousTheses,
-            previousPerceptions,
+            archetype: pos?.archetype || context.archetype,
+            pillar: pos?.pillars?.[0] || context.pillar,
+            tone: pos?.tone,
+            targetAudience: pos?.target_audience,
+            goals: pos?.goals,
+            specialty: profileRes.data?.specialty,
+            recentTheses: previousTheses,
+            recentPerceptions: previousPerceptions,
+            activeSeries,
+            memoryHighlights,
+            calendarContext,
+            radarSignals,
           }),
         }
       );
 
+      if (res.status === 429) {
+        toast.error("Limite de requisições atingido. Tente novamente em instantes.");
+        return;
+      }
+      if (res.status === 402) {
+        toast.error("Créditos esgotados. Adicione créditos para continuar.");
+        return;
+      }
       if (!res.ok) throw new Error("Erro");
-      const suggestion = await res.json();
 
-      if (suggestion.tese) {
-        setTese(suggestion.tese);
-        setTeseIsSuggestion(true);
-      }
-      if (suggestion.percepcao) {
-        setPercepcao(suggestion.percepcao);
-        setPercepcaoIsSuggestion(true);
-      }
-      toast.success("Sugestões geradas. Ajuste se necessário.");
+      const result = await res.json();
+
+      if (result.teses?.length) setTeseOptions(result.teses);
+      if (result.percepcoes?.length) setPercepcaoOptions(result.percepcoes);
+
+      toast.success("Opções estratégicas geradas. Escolha a direção.");
     } catch {
       toast.error("Erro ao gerar sugestões. Tente novamente.");
     } finally {
       setSuggestingFields(false);
     }
+  };
+
+  // Handle tese selection
+  const handleTeseSelect = (index: number) => {
+    setSelectedTeseIndex(index);
+    setTese(teseOptions[index].text);
+    setEditingTese(false);
+  };
+
+  // Handle percepcao selection
+  const handlePercepcaoSelect = (index: number) => {
+    setSelectedPercepcaoIndex(index);
+    setPercepcao(percepcaoOptions[index].text);
+    setEditingPercepcao(false);
   };
 
   // Pre-fill from query params
