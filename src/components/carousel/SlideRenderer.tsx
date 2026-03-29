@@ -10,6 +10,23 @@ export interface SlideData {
   totalSlides: number;
 }
 
+export type CarouselTheme = "editorial-light" | "editorial-dark" | "bold-minimal";
+
+export const CAROUSEL_THEMES: Record<CarouselTheme, { label: string; colors: { bg: string; bgAlt: string; text: string; accent: string } }> = {
+  "editorial-light": {
+    label: "Editorial Claro",
+    colors: { bg: "#FAF8F5", bgAlt: "#F0ECE6", text: "#2E2E2E", accent: "#B8A07E" },
+  },
+  "editorial-dark": {
+    label: "Editorial Escuro",
+    colors: { bg: "#1A1A1A", bgAlt: "#252525", text: "#F5F0EB", accent: "#D4B896" },
+  },
+  "bold-minimal": {
+    label: "Bold Minimalista",
+    colors: { bg: "#FFFFFF", bgAlt: "#F2F2F2", text: "#111111", accent: "#111111" },
+  },
+};
+
 interface SlideRendererProps {
   slide: SlideData;
   brandColors?: {
@@ -21,12 +38,7 @@ interface SlideRendererProps {
   brandName?: string;
 }
 
-const defaultColors = {
-  bg: "#FAF8F5",
-  bgAlt: "#F0ECE6",
-  text: "#2E2E2E",
-  accent: "#B8A07E",
-};
+const defaultColors = CAROUSEL_THEMES["editorial-light"].colors;
 
 const SERIF = "'Playfair Display', Georgia, 'Times New Roman', serif";
 const SANS = "'Inter', -apple-system, system-ui, sans-serif";
