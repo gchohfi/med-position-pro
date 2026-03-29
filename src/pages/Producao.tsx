@@ -24,8 +24,13 @@ import {
   Shuffle,
   Heart,
   TrendingUp,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Image,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import ImageUpload from "@/components/ImageUpload";
 
 const CONTENT_TYPES = [
   { value: "educativo", label: "Educativo", icon: BookOpen, desc: "Ensinar com profundidade" },
