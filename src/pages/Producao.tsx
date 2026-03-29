@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -28,12 +29,18 @@ const OUTPUT_SECTIONS = [
 
 const Producao = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [tipo, setTipo] = useState("");
   const [objetivo, setObjetivo] = useState("");
   const [tese, setTese] = useState("");
   const [percepcao, setPercepcao] = useState("");
   const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState<Record<string, string> | null>(null);
+
+  useEffect(() => {
+    const obj = searchParams.get("objetivo");
+    if (obj) setObjetivo(obj);
+  }, [searchParams]);
 
   const allFilled = tipo && objetivo.trim() && tese.trim() && percepcao.trim();
 

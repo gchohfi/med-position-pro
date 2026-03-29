@@ -24,8 +24,8 @@ import {
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, disabled: false },
-  { title: "Diagnóstico", url: "#", icon: Target, disabled: true },
-  { title: "Estratégia", url: "#", icon: Lightbulb, disabled: true },
+  { title: "Diagnóstico", url: "/diagnostico", icon: Target, disabled: false },
+  { title: "Estratégia", url: "/estrategia", icon: Lightbulb, disabled: false },
   { title: "Séries", url: "#", icon: BookOpen, disabled: true },
   { title: "Calendário", url: "#", icon: Calendar, disabled: true },
   { title: "Produção", url: "/producao", icon: PenTool, disabled: false },

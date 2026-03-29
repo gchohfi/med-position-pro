@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      diagnosis_outputs: {
+        Row: {
+          created_at: string
+          diagnosis: Json
+          estrategia: Json
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          diagnosis?: Json
+          estrategia?: Json
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          diagnosis?: Json
+          estrategia?: Json
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       positioning: {
         Row: {
           archetype: string | null
