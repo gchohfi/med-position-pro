@@ -270,16 +270,52 @@ const Producao = () => {
     setEditingPercepcao(false);
   };
 
-  // Pre-fill from query params
+  // Pre-fill from query params OR load full piece from Biblioteca
+  const autoTriggeredRef = React.useRef(false);
+  const libraryLoadedRef = React.useRef(false);
+
   useEffect(() => {
+    const contentId = searchParams.get("content_id");
+    if (contentId && user && !libraryLoadedRef.current) {
+      libraryLoadedRef.current = true;
+      autoTriggeredRef.current = true; // skip auto-suggestions
+      const loadFromLibrary = async () => {
+        try {
+          const { data } = await supabase
+            .from("content_outputs")
+            .select("*")
+            .eq("id", contentId)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (data) {
+            const si = data.strategic_input as any;
+            if (si?.tipo) setTipo(si.tipo);
+            if (si?.objetivo) setObjetivo(si.objetivo);
+            if (si?.tese) setTese(si.tese);
+            if (si?.percepcao) setPercepcao(si.percepcao);
+            const content = data.generated_content as Record<string, string> | null;
+            if (content && typeof content === "object" && Object.values(content).some((v) => v)) {
+              setOutput(content);
+            }
+            setLoadedFromLibrary(true);
+            setLoadedContentId(data.id);
+            toast.success("Peça carregada da sua biblioteca.");
+          }
+        } catch {
+          toast.error("Erro ao carregar peça.");
+        }
+      };
+      loadFromLibrary();
+      return;
+    }
+
     const obj = searchParams.get("objetivo");
     if (obj) setObjetivo(obj);
     const t = searchParams.get("tipo");
     if (t) setTipo(t);
-  }, [searchParams]);
+  }, [searchParams, user]);
 
-  // Auto-trigger suggestions when tipo + objetivo are ready
-  const autoTriggeredRef = React.useRef(false);
+  // Auto-trigger suggestions when tipo + objetivo are ready (new pieces only)
   useEffect(() => {
     if (tipo && objetivo.trim() && !autoTriggeredRef.current && !contextLoading && teseOptions.length === 0 && !suggestingFields) {
       autoTriggeredRef.current = true;
