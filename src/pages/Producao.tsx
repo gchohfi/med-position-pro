@@ -292,6 +292,28 @@ const Producao = () => {
     toast.success("Copiado!");
   };
 
+  const handleGenerateVisualCarousel = () => {
+    if (!output) return;
+    setGeneratingVisual(true);
+    setVisualSlides(null);
+    // Small delay to show loading state
+    setTimeout(() => {
+      try {
+        const slides = mapContentToSlides(output);
+        if (slides.length === 0) {
+          toast.error("Conteúdo insuficiente para gerar slides.");
+          return;
+        }
+        setVisualSlides(slides);
+        toast.success("Carrossel pronto para publicação!");
+      } catch {
+        toast.error("Erro ao gerar carrossel visual.");
+      } finally {
+        setGeneratingVisual(false);
+      }
+    }, 1500);
+  };
+
   const copyAll = () => {
     if (!output) return;
     const full = OUTPUT_SECTIONS.map((s) => `${s}\n${output[s] || "—"}`).join("\n\n");
