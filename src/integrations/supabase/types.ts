@@ -72,27 +72,47 @@ export type Database = {
           content_type: string
           created_at: string
           generated_content: Json
+          golden_case: boolean
+          golden_reason: string | null
           id: string
+          series_id: string | null
           strategic_input: Json
+          title: string | null
           user_id: string
         }
         Insert: {
           content_type: string
           created_at?: string
           generated_content?: Json
+          golden_case?: boolean
+          golden_reason?: string | null
           id?: string
+          series_id?: string | null
           strategic_input?: Json
+          title?: string | null
           user_id: string
         }
         Update: {
           content_type?: string
           created_at?: string
           generated_content?: Json
+          golden_case?: boolean
+          golden_reason?: string | null
           id?: string
+          series_id?: string | null
           strategic_input?: Json
+          title?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "content_outputs_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       diagnosis_outputs: {
         Row: {
@@ -116,6 +136,30 @@ export type Database = {
           diagnosis?: Json
           estrategia?: Json
           id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      living_memory: {
+        Row: {
+          created_at: string
+          id: string
+          memory: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          memory?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          memory?: Json
           updated_at?: string
           user_id?: string
         }
@@ -153,6 +197,33 @@ export type Database = {
           target_audience?: string | null
           tone?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      positioning_snapshots: {
+        Row: {
+          created_at: string
+          cycle_number: number
+          id: string
+          recommendation: string | null
+          snapshot: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cycle_number?: number
+          id?: string
+          recommendation?: string | null
+          snapshot?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cycle_number?: number
+          id?: string
+          recommendation?: string | null
+          snapshot?: Json
           user_id?: string
         }
         Relationships: []
