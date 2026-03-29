@@ -12,12 +12,12 @@ export async function logStrategicEvent(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase.from("refresh_logs").insert({
+  await supabase.from("refresh_logs").insert([{
     user_id: user.id,
     event_type: eventType,
     source_module: sourceModule,
-    details,
-  });
+    details: details as any,
+  }]);
 }
 
 /**
