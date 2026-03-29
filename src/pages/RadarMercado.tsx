@@ -60,12 +60,21 @@ interface RecommendationItem {
   module: "estrategia" | "series" | "calendario" | "producao";
 }
 
+interface SignalItem {
+  title: string;
+  description: string;
+  source_context: string;
+  relevance: "alta" | "media" | "baixa";
+}
+
 interface RadarData {
   segment_summary: string | null;
+  signals: SignalItem[];
   saturation: SaturationItem[];
   opportunities: OpportunityItem[];
   alerts: AlertItem[];
   recommendations: RecommendationItem[];
+  citations: string[];
   updated_at: string | null;
 }
 
