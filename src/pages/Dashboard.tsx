@@ -141,6 +141,13 @@ const Dashboard = () => {
 
   const stage = resolveStage(data);
 
+  // Redirect new users to onboarding
+  useEffect(() => {
+    if (!loading && stage === "pre_onboarding") {
+      navigate("/onboarding", { replace: true });
+    }
+  }, [loading, stage, navigate]);
+
   if (loading) {
     return (
       <AppLayout>
