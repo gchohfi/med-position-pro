@@ -513,35 +513,81 @@ const Producao = () => {
               />
             </div>
 
+            {/* Suggestion trigger */}
+            {tipo && objetivo.trim() && (
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={generateSuggestions}
+                  disabled={suggestingFields}
+                  variant="outline"
+                  className="rounded-xl text-xs h-9 border-accent/30 text-accent hover:bg-accent/5"
+                >
+                  {suggestingFields ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  {suggestingFields ? "Gerando sugestões…" : tese || percepcao ? "Gerar nova sugestão" : "Gerar sugestões inteligentes"}
+                </Button>
+                <span className="text-[10px] text-muted-foreground">
+                  O MEDSHIFT propõe — você decide.
+                </span>
+              </div>
+            )}
+
             {/* Tese */}
             <div>
-              <label className="text-sm font-medium text-foreground mb-1 block">
-                Tese central
-              </label>
+              <div className="flex items-center gap-2 mb-1">
+                <label className="text-sm font-medium text-foreground">
+                  Tese central
+                </label>
+                {teseIsSuggestion && (
+                  <span className="text-[10px] font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-full">
+                    Sugestão do MEDSHIFT
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground mb-2">
-                Qual é a ideia que você quer defender?
+                A tese define o posicionamento da peça. Ajuste se necessário.
               </p>
               <Textarea
                 value={tese}
-                onChange={(e) => setTese(e.target.value)}
+                onChange={(e) => {
+                  setTese(e.target.value);
+                  setTeseIsSuggestion(false);
+                }}
                 placeholder="Ex: O problema não é o produto. É a lógica."
-                className="rounded-xl resize-none min-h-[72px] text-sm"
+                className={`rounded-xl resize-none min-h-[72px] text-sm transition-colors ${
+                  teseIsSuggestion ? "border-accent/40 bg-accent/[0.03]" : ""
+                }`}
               />
             </div>
 
             {/* Percepção */}
             <div>
-              <label className="text-sm font-medium text-foreground mb-1 block">
-                Percepção desejada
-              </label>
+              <div className="flex items-center gap-2 mb-1">
+                <label className="text-sm font-medium text-foreground">
+                  Percepção desejada
+                </label>
+                {percepcaoIsSuggestion && (
+                  <span className="text-[10px] font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-full">
+                    Sugestão do MEDSHIFT
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground mb-2">
-                Como você quer que a médica seja percebida após esse conteúdo?
+                Como o público deve perceber a médica após esse conteúdo?
               </p>
               <Textarea
                 value={percepcao}
-                onChange={(e) => setPercepcao(e.target.value)}
+                onChange={(e) => {
+                  setPercepcao(e.target.value);
+                  setPercepcaoIsSuggestion(false);
+                }}
                 placeholder="Ex: Ela sabe exatamente o que está fazendo"
-                className="rounded-xl resize-none min-h-[72px] text-sm"
+                className={`rounded-xl resize-none min-h-[72px] text-sm transition-colors ${
+                  percepcaoIsSuggestion ? "border-accent/40 bg-accent/[0.03]" : ""
+                }`}
               />
             </div>
 
