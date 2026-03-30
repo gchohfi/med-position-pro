@@ -518,71 +518,110 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       const hSize = headlineSize(slide.headline.length, {
         xl: 46, lg: 40, md: 34, sm: 30,
       });
+      const hasImage = !!doctorImageUrl;
 
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.bgAlt }}>
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0,
             bottom: 100,
-            display: "flex", flexDirection: "column",
-            justifyContent: "center", alignItems: "center",
-            padding: `${PAD}px`, textAlign: "center",
+            display: "flex", flexDirection: hasImage ? "row" : "column",
+            justifyContent: "center", alignItems: hasImage ? "flex-end" : "center",
+            padding: hasImage ? `${PAD}px ${PAD}px ${PAD}px ${PAD}px` : `${PAD}px`,
+            textAlign: hasImage ? "left" : "center",
+            gap: hasImage ? 0 : undefined,
           }}>
-            {/* Accent divider above headline */}
-            <div style={{ marginBottom: 48 }}>
-              {accentLine(40, 0.2)}
-            </div>
-            <h2 style={{
-              fontFamily: vs.headlineFont,
-              fontSize: hSize,
-              fontWeight: mod.headlineWeight >= 700 ? 600 : 500,
-              lineHeight: 1.25,
-              color: c.text,
-              margin: 0,
-              maxWidth: "74%",
-              letterSpacing: "-0.01em",
-            }}>
-              {slide.headline}
-            </h2>
-            {/* Soft CTA */}
-            <p style={{
-              marginTop: 48,
-              fontSize: vs.bodySize - 2,
-              fontWeight: 400,
-              lineHeight: 1.6,
-              color: c.textMuted,
-              maxWidth: "60%",
-              letterSpacing: "0.01em",
-            }}>
-              Agende sua avaliação pelo link na bio
-            </p>
-            {/* Brand signature — stronger on final slide */}
+            {/* Text column */}
             <div style={{
-              marginTop: 64,
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+              display: "flex", flexDirection: "column",
+              justifyContent: "center",
+              alignItems: hasImage ? "flex-start" : "center",
+              flex: hasImage ? "1 1 55%" : undefined,
+              zIndex: 1,
             }}>
-              <div style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: c.text,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase" as const,
-                opacity: 0.35,
-              }}>
-                {name}
+              {/* Accent divider */}
+              <div style={{ marginBottom: 48 }}>
+                {accentLine(40, 0.2)}
               </div>
-              <div style={{
-                fontSize: 12,
-                fontWeight: 400,
-                color: c.accent,
-                letterSpacing: "0.04em",
-                opacity: 0.4,
+              <h2 style={{
+                fontFamily: vs.headlineFont,
+                fontSize: hSize,
+                fontWeight: mod.headlineWeight >= 700 ? 600 : 500,
+                lineHeight: 1.25,
+                color: c.text,
+                margin: 0,
+                maxWidth: hasImage ? "95%" : "74%",
+                letterSpacing: "-0.01em",
               }}>
-                {handle}
+                {slide.headline}
+              </h2>
+              {/* Soft CTA */}
+              <p style={{
+                marginTop: 40,
+                fontSize: vs.bodySize - 2,
+                fontWeight: 400,
+                lineHeight: 1.6,
+                color: c.textMuted,
+                maxWidth: hasImage ? "90%" : "60%",
+                letterSpacing: "0.01em",
+              }}>
+                Agende sua avaliação pelo link na bio
+              </p>
+              {/* Brand signature */}
+              <div style={{
+                marginTop: 48,
+                display: "flex", flexDirection: "column",
+                alignItems: hasImage ? "flex-start" : "center", gap: 6,
+              }}>
+                <div style={{
+                  fontSize: 14, fontWeight: 700, color: c.text,
+                  letterSpacing: "0.18em", textTransform: "uppercase" as const, opacity: 0.35,
+                }}>
+                  {name}
+                </div>
+                <div style={{
+                  fontSize: 12, fontWeight: 400, color: c.accent,
+                  letterSpacing: "0.04em", opacity: 0.4,
+                }}>
+                  {handle}
+                </div>
               </div>
             </div>
+
+            {/* Doctor image — right side, clean crop */}
+            {hasImage && (
+              <div style={{
+                flex: "0 0 40%",
+                position: "relative",
+                height: "100%",
+                display: "flex",
+                alignItems: "flex-end",
+                justifyContent: "center",
+                overflow: "hidden",
+              }}>
+                <img
+                  src={doctorImageUrl}
+                  alt=""
+                  style={{
+                    height: "85%",
+                    width: "auto",
+                    maxWidth: "100%",
+                    objectFit: "cover",
+                    objectPosition: "center top",
+                    filter: "grayscale(20%)",
+                    borderRadius: "4px 4px 0 0",
+                  }}
+                />
+                {/* Subtle gradient fade at bottom */}
+                <div style={{
+                  position: "absolute", bottom: 0, left: 0, right: 0,
+                  height: 80,
+                  background: `linear-gradient(180deg, transparent, ${c.bgAlt})`,
+                }} />
+              </div>
+            )}
           </div>
-          {/* Final slide: stronger anchor */}
+          {/* Final slide anchor */}
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0,
             padding: `0 ${PAD}px ${44}px`,
@@ -590,8 +629,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
           }}>
             <span style={{
               fontSize: 10, fontWeight: 500, color: c.text,
-              letterSpacing: "0.12em", fontFamily: vs.bodyFont,
-              opacity: 0.15,
+              letterSpacing: "0.12em", fontFamily: vs.bodyFont, opacity: 0.15,
             }}>
               {String(slide.slideNumber).padStart(2, "0")}/{String(slide.totalSlides).padStart(2, "0")}
             </span>
