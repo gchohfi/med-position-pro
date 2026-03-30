@@ -438,8 +438,9 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // MANIFESTO — THE DOMINANT SLIDE. Largest type in the carousel.
-    // Inverted colors. Cinematic. This is the climax.
+    // MANIFESTO — FULL-BACKGROUND ATMOSPHERIC PHOTO.
+    // Photo fills entire slide. Directional overlay keeps text sharp.
+    // Without photo: dark cinematic slide with dominant typography.
     // ═══════════════════════════════════════════════════════════════════════
     if (slide.type === "manifesto") {
       const wordCount = slide.headline.split(/\s+/).length;
@@ -448,36 +449,64 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
 
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.coverBg }}>
-          {/* Doctor image — ghostly background presence */}
+          {/* EDITORIAL PHOTO LAYER — full bleed, off-center crop */}
           {hasImage && (
             <>
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
                 backgroundImage: `url(${doctorImageUrl})`,
                 backgroundSize: "cover",
-                backgroundPosition: "center 20%",
-                opacity: 0.1,
-                filter: "grayscale(100%) contrast(1.1)",
+                backgroundPosition: "60% 15%", // Off-center: face slightly right, room for text left
+                filter: "grayscale(30%) contrast(1.08) brightness(0.85)",
               }} />
+              {/* Directional overlay: dark from left (text side) to transparent on right (image side) */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: `linear-gradient(180deg, ${c.coverBg}F0 0%, ${c.coverBg}D0 40%, ${c.coverBg}F5 100%)`,
+                background: `linear-gradient(105deg, ${c.coverBg}F2 0%, ${c.coverBg}CC 35%, ${c.coverBg}66 60%, ${c.coverBg}33 100%)`,
+              }} />
+              {/* Top vignette */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, height: "30%",
+                background: `linear-gradient(180deg, ${c.coverBg}AA 0%, transparent 100%)`,
+              }} />
+              {/* Bottom vignette */}
+              <div style={{
+                position: "absolute", bottom: 0, left: 0, right: 0, height: "25%",
+                background: `linear-gradient(0deg, ${c.coverBg}CC 0%, transparent 100%)`,
+              }} />
+              {/* Subtle warm glow near accent area */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                background: `radial-gradient(ellipse 50% 40% at 25% 55%, ${c.accent}18 0%, transparent 70%)`,
               }} />
             </>
           )}
-          {/* Dramatic accent glow */}
-          <div style={{
-            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-            background: `radial-gradient(ellipse 70% 50% at 50% 55%, ${c.accent}12 0%, transparent 70%)`,
-          }} />
+          {/* No-image: subtle accent glow */}
+          {!hasImage && (
+            <div style={{
+              position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+              background: `radial-gradient(ellipse 70% 50% at 50% 55%, ${c.accent}12 0%, transparent 70%)`,
+            }} />
+          )}
+          {/* TEXT — anchored left for image mode, centered without */}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 80,
             display: "flex", flexDirection: "column",
-            justifyContent: "center", alignItems: "center",
-            padding: `${PAD * 1.3}px ${PAD * 0.7}px`,
-            textAlign: "center",
-            zIndex: 1,
+            justifyContent: "center",
+            alignItems: hasImage ? "flex-start" : "center",
+            padding: hasImage
+              ? `${PAD * 1.3}px ${PAD * 2}px ${PAD * 2}px ${PAD}px`
+              : `${PAD * 1.3}px ${PAD * 0.7}px`,
+            textAlign: hasImage ? "left" : "center",
+            zIndex: 2,
           }}>
+            {/* Accent dash */}
+            <div style={{
+              width: 36, height: 2,
+              backgroundColor: c.accent,
+              opacity: hasImage ? 0.5 : 0.35,
+              marginBottom: 48, borderRadius: 1,
+            }} />
             <blockquote style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize,
@@ -485,9 +514,10 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
               lineHeight: 1.05,
               color: c.coverText,
               margin: 0,
-              maxWidth: "85%",
+              maxWidth: hasImage ? "70%" : "85%",
               letterSpacing: "-0.03em",
               textTransform: "uppercase" as const,
+              textShadow: hasImage ? `0 2px 40px ${c.coverBg}80` : "none",
             }}>
               {slide.headline}
             </blockquote>
