@@ -457,15 +457,33 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       );
     }
 
-    // ─── MANIFESTO — HERO slide. Iconic. Maximum dominance. ──────────────
+    // ─── MANIFESTO — HERO slide. Optional doctor image as background. ────
     if (slide.type === "manifesto") {
-      // DRAMATICALLY larger for manifesto — this is the hero
       const hSize = headlineSize(slide.headline.length, {
         xl: 68, lg: 56, md: 48, sm: 40,
       });
+      const hasImage = !!(doctorImageUrl && slide.showImage);
 
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.coverBg }}>
+          {/* Optional doctor image — subtle, low opacity background */}
+          {hasImage && (
+            <div style={{
+              position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+              backgroundImage: `url(${doctorImageUrl})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center 20%",
+              opacity: 0.12,
+              filter: "grayscale(100%)",
+            }} />
+          )}
+          {/* Dark overlay for text readability when image present */}
+          {hasImage && (
+            <div style={{
+              position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+              background: `linear-gradient(180deg, ${c.coverBg}E6 0%, ${c.coverBg}CC 50%, ${c.coverBg}F0 100%)`,
+            }} />
+          )}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0,
             bottom: 100,
@@ -473,6 +491,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
             justifyContent: "center", alignItems: "center",
             padding: `${PAD}px ${PAD * 0.8}px`,
             textAlign: "center",
+            zIndex: 1,
           }}>
             <blockquote style={{
               fontFamily: vs.headlineFont,
