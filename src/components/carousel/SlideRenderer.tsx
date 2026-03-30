@@ -181,35 +181,35 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
     // ═════════════════════════════════════════════════════════════════════════
     if (slide.type === "cover") {
       const wc = slide.headline.split(/\s+/).length;
-      const fontSize = wc <= 3 ? 128 : wc <= 4 ? 108 : 92;
+      const fontSize = wc <= 3 ? 138 : wc <= 4 ? 116 : 96;
       const hasImage = !!doctorImageUrl;
 
       return (
-        <div ref={ref} style={{ ...base, backgroundColor: "#0A0A0A" }}>
+        <div ref={ref} style={{ ...base, backgroundColor: "#080808" }}>
           {hasImage && (
             <>
-              {/* Full-bleed doctor image — off-center for editorial crop */}
+              {/* Full-bleed — aggressive crop: face/upper body, off-center right */}
               <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                position: "absolute", top: "-12%", left: "15%", right: "-8%", bottom: "-8%",
                 backgroundImage: `url(${doctorImageUrl})`,
                 backgroundSize: "cover",
-                backgroundPosition: "55% 15%",
-                filter: "contrast(1.08) brightness(0.65) saturate(0.8)",
+                backgroundPosition: "45% 8%",
+                filter: "contrast(1.15) brightness(0.5) saturate(0.7)",
               }} />
-              {/* Dark directional overlay — heavier left for text */}
+              {/* Heavy directional overlay — 80% left for text dominance */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: "linear-gradient(115deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.6) 35%, rgba(0,0,0,0.35) 65%, rgba(0,0,0,0.2) 100%)",
+                background: "linear-gradient(105deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.72) 30%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.15) 75%, rgba(0,0,0,0.25) 100%)",
               }} />
-              {/* Vignette for depth */}
+              {/* Strong vignette — cinematic */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: "radial-gradient(ellipse 65% 65% at 50% 45%, transparent 25%, rgba(0,0,0,0.5) 100%)",
+                background: "radial-gradient(ellipse 55% 55% at 60% 35%, transparent 15%, rgba(0,0,0,0.6) 100%)",
               }} />
-              {/* Bottom gradient for footer */}
+              {/* Bottom crush */}
               <div style={{
-                position: "absolute", bottom: 0, left: 0, right: 0, height: "30%",
-                background: "linear-gradient(0deg, rgba(0,0,0,0.7) 0%, transparent 100%)",
+                position: "absolute", bottom: 0, left: 0, right: 0, height: "35%",
+                background: "linear-gradient(0deg, rgba(0,0,0,0.85) 0%, transparent 100%)",
               }} />
             </>
           )}
@@ -219,32 +219,32 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
               background: `radial-gradient(ellipse 80% 60% at 25% 65%, ${c.accent}10 0%, transparent 70%)`,
             }} />
           )}
-          <div style={grain(0.04)} />
+          <div style={grain(0.045)} />
 
-          {/* Typography — bottom-anchored, massive, uppercase */}
+          {/* Typography — overlaps image zone, massive, anchored bottom-left */}
           <div style={{
-            position: "absolute", top: 0, left: 0, right: 0, bottom: 80,
+            position: "absolute", top: 0, left: 0, right: 0, bottom: 60,
             display: "flex", flexDirection: "column",
             justifyContent: "flex-end",
-            padding: `${PAD * 1.5}px ${PAD}px ${PAD * 2.2}px`,
+            padding: `${PAD}px ${PAD * 0.8}px ${PAD * 2.5}px`,
             zIndex: 2,
           }}>
             <div style={{
-              width: 40, height: 2.5, backgroundColor: c.accent,
-              opacity: 0.45, marginBottom: 56, borderRadius: 1,
+              width: 48, height: 3, backgroundColor: c.accent,
+              opacity: 0.5, marginBottom: 64, borderRadius: 1,
             }} />
             <h1 style={{
               fontFamily: SERIF,
               fontSize,
               fontWeight: 700,
-              lineHeight: 0.92,
+              lineHeight: 0.88,
               color: "#FFFFFF",
               margin: 0,
-              maxWidth: "92%",
-              letterSpacing: "-0.045em",
+              maxWidth: "95%",
+              letterSpacing: "-0.05em",
               textTransform: "uppercase",
               textShadow: hasImage
-                ? "0 4px 40px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.4)"
+                ? "0 6px 50px rgba(0,0,0,0.6), 0 2px 6px rgba(0,0,0,0.5)"
                 : "none",
             }}>
               {slide.headline}
