@@ -22,6 +22,7 @@ interface CarouselVisualPreviewProps {
   slides: SlideData[];
   brandColors?: { bg: string; text: string; accent: string };
   brandName?: string;
+  brandHandle?: string;
   archetype?: string | null;
   contentType?: string;
   onRegenerate?: () => void;
@@ -39,6 +40,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   slides,
   brandColors,
   brandName,
+  brandHandle,
   archetype,
   contentType,
   onRegenerate,
