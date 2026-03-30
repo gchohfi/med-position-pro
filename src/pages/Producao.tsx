@@ -95,6 +95,7 @@ const Producao = () => {
   const [generatingVisual, setGeneratingVisual] = useState(false);
   const [loadedFromLibrary, setLoadedFromLibrary] = useState(false);
   const [loadedContentId, setLoadedContentId] = useState<string | null>(null);
+  const [doctorPhotoUrl, setDoctorPhotoUrl] = useState<string | null>(null);
 
   // Suggestion system state
   const [suggestingFields, setSuggestingFields] = useState(false);
