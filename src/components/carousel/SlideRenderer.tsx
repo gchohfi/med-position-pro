@@ -438,9 +438,8 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // MANIFESTO — FULL-BACKGROUND ATMOSPHERIC PHOTO.
-    // Photo fills entire slide. Directional overlay keeps text sharp.
-    // Without photo: dark cinematic slide with dominant typography.
+    // MANIFESTO — ATMOSPHERIC FULL-BLEED PHOTO.
+    // Image IS the slide. Text floats on top with cinematic overlays.
     // ═══════════════════════════════════════════════════════════════════════
     if (slide.type === "manifesto") {
       const wordCount = slide.headline.split(/\s+/).length;
@@ -449,87 +448,95 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
 
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.coverBg }}>
-          {/* EDITORIAL PHOTO LAYER — full bleed, off-center crop */}
-          {hasImage && (
+          {hasImage ? (
             <>
+              {/* FULL-BLEED PHOTO — covers entire slide, off-center crop */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
                 backgroundImage: `url(${doctorImageUrl})`,
                 backgroundSize: "cover",
-                backgroundPosition: "60% 15%", // Off-center: face slightly right, room for text left
-                filter: "grayscale(30%) contrast(1.08) brightness(0.85)",
+                backgroundPosition: "55% 10%",
+                filter: "contrast(1.1) brightness(0.7) saturate(0.85)",
               }} />
-              {/* Directional overlay: dark from left (text side) to transparent on right (image side) */}
+              {/* DIRECTIONAL OVERLAY — heavier on text side, lighter on image */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: `linear-gradient(105deg, ${c.coverBg}F2 0%, ${c.coverBg}CC 35%, ${c.coverBg}66 60%, ${c.coverBg}33 100%)`,
+                background: "linear-gradient(110deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.25) 70%, rgba(0,0,0,0.15) 100%)",
               }} />
-              {/* Top vignette */}
-              <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, height: "30%",
-                background: `linear-gradient(180deg, ${c.coverBg}AA 0%, transparent 100%)`,
-              }} />
-              {/* Bottom vignette */}
-              <div style={{
-                position: "absolute", bottom: 0, left: 0, right: 0, height: "25%",
-                background: `linear-gradient(0deg, ${c.coverBg}CC 0%, transparent 100%)`,
-              }} />
-              {/* Subtle warm glow near accent area */}
+              {/* VIGNETTE — depth and focus */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: `radial-gradient(ellipse 50% 40% at 25% 55%, ${c.accent}18 0%, transparent 70%)`,
+                background: "radial-gradient(ellipse 70% 70% at 50% 50%, transparent 30%, rgba(0,0,0,0.4) 100%)",
+              }} />
+              {/* BOTTOM GRADIENT — footer legibility */}
+              <div style={{
+                position: "absolute", bottom: 0, left: 0, right: 0, height: "35%",
+                background: "linear-gradient(0deg, rgba(0,0,0,0.65) 0%, transparent 100%)",
+              }} />
+              {/* WARM ACCENT GLOW — editorial atmosphere */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                background: `radial-gradient(ellipse 45% 35% at 20% 60%, ${c.accent}20 0%, transparent 70%)`,
+                mixBlendMode: "soft-light" as React.CSSProperties["mixBlendMode"],
+              }} />
+              {/* GRAIN TEXTURE — subtle editorial noise */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                opacity: 0.04,
+                backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+                backgroundSize: "128px 128px",
               }} />
             </>
-          )}
-          {/* No-image: subtle accent glow */}
-          {!hasImage && (
+          ) : (
             <div style={{
               position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
               background: `radial-gradient(ellipse 70% 50% at 50% 55%, ${c.accent}12 0%, transparent 70%)`,
             }} />
           )}
-          {/* TEXT — anchored left for image mode, centered without */}
+
+          {/* TEXT — bottom-anchored over photo for cinematic feel */}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 80,
             display: "flex", flexDirection: "column",
-            justifyContent: "center",
-            alignItems: hasImage ? "flex-start" : "center",
+            justifyContent: "flex-end",
             padding: hasImage
-              ? `${PAD * 1.3}px ${PAD * 2}px ${PAD * 2}px ${PAD}px`
+              ? `${PAD}px ${PAD * 1.5}px ${PAD * 1.8}px ${PAD}px`
               : `${PAD * 1.3}px ${PAD * 0.7}px`,
             textAlign: hasImage ? "left" : "center",
+            alignItems: hasImage ? "flex-start" : "center",
             zIndex: 2,
           }}>
-            {/* Accent dash */}
             <div style={{
               width: 36, height: 2,
-              backgroundColor: c.accent,
-              opacity: hasImage ? 0.5 : 0.35,
-              marginBottom: 48, borderRadius: 1,
+              backgroundColor: hasImage ? "#ffffff" : c.accent,
+              opacity: hasImage ? 0.4 : 0.35,
+              marginBottom: 40, borderRadius: 1,
             }} />
             <blockquote style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize,
               fontWeight: 700,
               lineHeight: 1.05,
-              color: c.coverText,
+              color: hasImage ? "#FFFFFF" : c.coverText,
               margin: 0,
-              maxWidth: hasImage ? "70%" : "85%",
+              maxWidth: hasImage ? "75%" : "85%",
               letterSpacing: "-0.03em",
               textTransform: "uppercase" as const,
-              textShadow: hasImage ? `0 2px 40px ${c.coverBg}80` : "none",
+              textShadow: hasImage
+                ? "0 2px 30px rgba(0,0,0,0.6), 0 0 80px rgba(0,0,0,0.3)"
+                : "none",
             }}>
               {slide.headline}
             </blockquote>
           </div>
-          {footer(c.coverText)}
+          {footer(hasImage ? "#FFFFFF" : c.coverText)}
         </div>
       );
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // SIGNATURE — EDITORIAL CLOSING. Portrait bleeds into composition.
-    // Image is embedded in the layout, not boxed. Feels like brand presence.
+    // SIGNATURE — EDITORIAL CLOSING. Portrait integrated, not boxed.
+    // Image bleeds off-frame with soft gradients. Brand presence.
     // ═══════════════════════════════════════════════════════════════════════
     if (slide.type === "signature") {
       const hSize = headlineSize(slide.headline.length, {
@@ -539,47 +546,54 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
 
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.bgAlt }}>
-          {/* INTEGRATED PORTRAIT — bleeds from right, fades into background */}
           {hasImage && (
             <>
+              {/* PORTRAIT — off-center, bleeds beyond frame edges */}
               <div style={{
                 position: "absolute",
-                top: 0, right: 0, bottom: 0,
-                width: "52%",
+                top: -40, right: -20, bottom: -40,
+                width: "58%",
                 backgroundImage: `url(${doctorImageUrl})`,
                 backgroundSize: "cover",
-                backgroundPosition: "center 15%",
-                filter: "grayscale(12%) contrast(1.02)",
+                backgroundPosition: "center 12%",
+                filter: "grayscale(18%) contrast(1.05) brightness(0.95)",
               }} />
-              {/* Left fade: blend portrait into background */}
+              {/* LEFT GRADIENT MASK — smooth blend into background */}
               <div style={{
-                position: "absolute", top: 0, left: 0, bottom: 0,
-                width: "65%",
-                background: `linear-gradient(90deg, ${c.bgAlt} 55%, ${c.bgAlt}E0 70%, ${c.bgAlt}80 82%, transparent 100%)`,
+                position: "absolute", top: -40, left: 0, bottom: -40,
+                width: "62%",
+                background: `linear-gradient(90deg, ${c.bgAlt} 50%, ${c.bgAlt}EE 62%, ${c.bgAlt}AA 74%, ${c.bgAlt}44 86%, transparent 100%)`,
                 zIndex: 1,
               }} />
-              {/* Top soft fade */}
+              {/* TOP FADE */}
               <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, height: "18%",
-                background: `linear-gradient(180deg, ${c.bgAlt}99 0%, transparent 100%)`,
+                position: "absolute", top: 0, left: 0, right: 0, height: "20%",
+                background: `linear-gradient(180deg, ${c.bgAlt} 0%, ${c.bgAlt}88 40%, transparent 100%)`,
                 zIndex: 1,
               }} />
-              {/* Bottom soft fade */}
+              {/* BOTTOM FADE */}
               <div style={{
-                position: "absolute", bottom: 0, left: 0, right: 0, height: "15%",
-                background: `linear-gradient(0deg, ${c.bgAlt} 0%, transparent 100%)`,
+                position: "absolute", bottom: 0, left: 0, right: 0, height: "18%",
+                background: `linear-gradient(0deg, ${c.bgAlt} 0%, ${c.bgAlt}CC 40%, transparent 100%)`,
                 zIndex: 1,
               }} />
-              {/* Subtle vignette */}
+              {/* DEPTH SHADOW around portrait */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: `radial-gradient(ellipse 90% 80% at 70% 40%, transparent 40%, ${c.bgAlt}40 100%)`,
+                background: `radial-gradient(ellipse 80% 80% at 72% 45%, transparent 30%, ${c.bgAlt}50 100%)`,
                 zIndex: 1,
+              }} />
+              {/* SOFT ACCENT GLOW */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                background: `radial-gradient(ellipse 40% 30% at 30% 65%, ${c.accent}12 0%, transparent 70%)`,
+                zIndex: 1,
+                mixBlendMode: "multiply" as React.CSSProperties["mixBlendMode"],
               }} />
             </>
           )}
 
-          {/* TEXT — left-anchored, elegant, interdependent with image */}
+          {/* TEXT — left-anchored, interdependent with portrait */}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 80,
             display: "flex", flexDirection: "column",
@@ -593,7 +607,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
           }}>
             <div style={{
               width: 36, height: 2,
-              backgroundColor: c.accent, opacity: 0.25,
+              backgroundColor: c.accent, opacity: 0.3,
               marginBottom: 44, borderRadius: 1,
             }} />
             <h2 style={{
@@ -603,24 +617,24 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
               lineHeight: 1.25,
               color: c.text,
               margin: 0,
-              maxWidth: hasImage ? "48%" : "72%",
+              maxWidth: hasImage ? "46%" : "72%",
               letterSpacing: "-0.01em",
             }}>
               {slide.headline}
             </h2>
             <p style={{
-              marginTop: 36,
+              marginTop: 32,
               fontSize: vs.bodySize - 3,
               fontWeight: 400,
               lineHeight: 1.6,
               color: c.textMuted,
-              maxWidth: hasImage ? "42%" : "56%",
+              maxWidth: hasImage ? "40%" : "56%",
             }}>
               Agende sua avaliação pelo link na bio
             </p>
             {/* Brand signature */}
             <div style={{
-              marginTop: 52,
+              marginTop: 48,
               display: "flex", flexDirection: "column",
               alignItems: hasImage ? "flex-start" : "center", gap: 6,
             }}>
