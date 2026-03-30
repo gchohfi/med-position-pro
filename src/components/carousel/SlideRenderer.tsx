@@ -9,6 +9,7 @@ export interface SlideData {
   items?: string[];
   slideNumber: number;
   totalSlides: number;
+  showImage?: boolean; // Whether this slide should show the doctor image
 }
 
 // ─── ARCHETYPE VISUAL SYSTEMS ─────────────────────────────────────────────
@@ -132,6 +133,7 @@ interface SlideRendererProps {
   brandHandle?: string;
   brandColors?: { bg: string; text: string; accent: string; bgAlt?: string };
   contentType?: string;
+  doctorImageUrl?: string;
 }
 
 function headlineSize(len: number, sizes: VisualSystem["headlineSizes"]): number {
