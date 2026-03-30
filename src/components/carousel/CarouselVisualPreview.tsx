@@ -207,6 +207,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                   brandName={brandName}
                   brandHandle={brandHandle}
                   contentType={contentType}
+                  doctorImageUrl={doctorImageUrl}
                 />
               </div>
             </div>
@@ -324,6 +325,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                     brandName={brandName}
                     brandHandle={brandHandle}
                     contentType={contentType}
+                    doctorImageUrl={doctorImageUrl}
                   />
                 </div>
               </div>
@@ -376,6 +378,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             brandName={brandName}
             brandHandle={brandHandle}
             contentType={contentType}
+            doctorImageUrl={doctorImageUrl}
           />
         ))}
       </div>
