@@ -25,6 +25,7 @@ interface CarouselVisualPreviewProps {
   brandHandle?: string;
   archetype?: string | null;
   contentType?: string;
+  doctorImageUrl?: string;
   onRegenerate?: () => void;
   onClose?: () => void;
   onSlidesChange?: (slides: SlideData[]) => void;
@@ -43,6 +44,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   brandHandle,
   archetype,
   contentType,
+  doctorImageUrl,
   onRegenerate,
   onClose,
   onSlidesChange,
