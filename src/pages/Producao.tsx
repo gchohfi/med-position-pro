@@ -32,6 +32,7 @@ import {
 import AppLayout from "@/components/AppLayout";
 import ImageUpload from "@/components/ImageUpload";
 import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
+import ProfilePhotoUpload from "@/components/ProfilePhotoUpload";
 import { mapContentToSlides } from "@/components/carousel/mapContentToSlides";
 import type { SlideData } from "@/components/carousel/SlideRenderer";
 import SuggestionCards from "@/components/SuggestionCards";
@@ -95,6 +96,7 @@ const Producao = () => {
   const [generatingVisual, setGeneratingVisual] = useState(false);
   const [loadedFromLibrary, setLoadedFromLibrary] = useState(false);
   const [loadedContentId, setLoadedContentId] = useState<string | null>(null);
+  const [doctorPhotoUrl, setDoctorPhotoUrl] = useState<string | null>(null);
 
   // Suggestion system state
   const [suggestingFields, setSuggestingFields] = useState(false);
@@ -113,9 +115,10 @@ const Producao = () => {
     const load = async () => {
       setContextLoading(true);
       try {
-        const [posRes, diagRes] = await Promise.all([
+        const [posRes, diagRes, profileRes] = await Promise.all([
           supabase.from("positioning").select("archetype, pillars, tone, target_audience, goals").eq("user_id", user.id).maybeSingle(),
           supabase.from("diagnosis_outputs").select("estrategia").eq("user_id", user.id).maybeSingle(),
+          supabase.from("profiles").select("photo_url").eq("id", user.id).maybeSingle(),
         ]);
         const pos = posRes.data;
         const diag = diagRes.data;
@@ -125,6 +128,7 @@ const Producao = () => {
           macro_objetivo: estrategia?.macro_objetivo || null,
           pillar: pos?.pillars?.[0] || null,
         });
+        setDoctorPhotoUrl((profileRes.data as any)?.photo_url || null);
       } catch {
         // ignore
       } finally {
@@ -603,6 +607,13 @@ const Producao = () => {
                 </div>
               )}
             </div>
+            {/* Photo upload for carousel */}
+            <div className="mt-4 pt-3 border-t border-accent/10">
+              <ProfilePhotoUpload
+                currentPhotoUrl={doctorPhotoUrl}
+                onPhotoUpdated={setDoctorPhotoUrl}
+              />
+            </div>
           </motion.div>
         )}
 
@@ -966,6 +977,7 @@ const Producao = () => {
                     brandName="MEDSHIFT"
                     archetype={context.archetype}
                     contentType={tipo}
+                    doctorImageUrl={doctorPhotoUrl || undefined}
                     onRegenerate={handleGenerateVisualCarousel}
                     onClose={() => setVisualSlides(null)}
                     onSlidesChange={(updated) => setVisualSlides(updated)}
