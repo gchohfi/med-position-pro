@@ -607,6 +607,13 @@ const Producao = () => {
                 </div>
               )}
             </div>
+            {/* Photo upload for carousel */}
+            <div className="mt-4 pt-3 border-t border-accent/10">
+              <ProfilePhotoUpload
+                currentPhotoUrl={doctorPhotoUrl}
+                onPhotoUpdated={setDoctorPhotoUrl}
+              />
+            </div>
           </motion.div>
         )}
 
