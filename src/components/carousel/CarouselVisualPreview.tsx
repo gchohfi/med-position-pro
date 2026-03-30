@@ -49,7 +49,8 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   onClose,
   onSlidesChange,
 }) => {
-  const autoStyle = getStyleForArchetype(archetype);
+  // Auto-detect style: content type takes priority over archetype
+  const autoStyle = contentType ? getStyleForContentType(contentType) : getStyleForArchetype(archetype);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
