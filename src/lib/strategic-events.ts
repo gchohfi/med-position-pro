@@ -55,4 +55,5 @@ export const STRATEGIC_EVENTS = {
   INSPIRATION_REJECTED: "inspiration_rejected",
   STRATEGIC_UPDATES_GENERATED: "strategic_updates_generated",
   ASSET_UPLOADED: "asset_uploaded",
+  INSTAGRAM_INTEL_GENERATED: "instagram_intel_generated",
 } as const;
