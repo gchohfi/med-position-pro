@@ -32,6 +32,7 @@ import {
 import AppLayout from "@/components/AppLayout";
 import ImageUpload from "@/components/ImageUpload";
 import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
+import ProfilePhotoUpload from "@/components/ProfilePhotoUpload";
 import { mapContentToSlides } from "@/components/carousel/mapContentToSlides";
 import type { SlideData } from "@/components/carousel/SlideRenderer";
 import SuggestionCards from "@/components/SuggestionCards";
