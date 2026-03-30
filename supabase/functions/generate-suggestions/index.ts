@@ -112,7 +112,7 @@ As opções devem ser genuinamente diferentes entre si. Sem clichês genéricos.
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("Error:", err);
+    console.error("Error:", err?.message || err, JSON.stringify(err));
     return new Response(
       JSON.stringify({ error: "Erro ao gerar sugestões." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
