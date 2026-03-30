@@ -1,4 +1,5 @@
 import React from "react";
+import { type ContentIntent, getCreativeDirection, getSlideTension } from "./creativeDirection";
 
 export interface SlideData {
   type: "cover" | "statement" | "editorial" | "structured" | "manifesto" | "signature" | "breathing";
@@ -74,7 +75,6 @@ export const VISUAL_SYSTEMS: Record<ArchetypeStyle, VisualSystem> = {
   },
 };
 
-// Legacy theme compatibility
 export type CarouselTheme = ArchetypeStyle;
 export const CAROUSEL_THEMES = VISUAL_SYSTEMS;
 
@@ -98,6 +98,39 @@ export function getStyleForArchetype(archetype?: string | null): ArchetypeStyle 
   return ARCHETYPE_MAP[archetype] || "editorial-premium";
 }
 
+// ─── CREATIVE DIRECTION VISUAL MODIFIERS ──────────────────────────────────
+
+interface DirectionModifiers {
+  /** Padding multiplier */
+  padScale: number;
+  /** Headline font weight */
+  headlineWeight: number;
+  /** Body opacity */
+  bodyOpacity: number;
+  /** Accent line thickness */
+  accentThickness: number;
+  /** Cover headline alignment */
+  coverAlign: "flex-start" | "center";
+  /** Whether to use italic on breathing slides */
+  breathingItalic: boolean;
+}
+
+function getDirectionModifiers(contentType?: string): DirectionModifiers {
+  const dir = getCreativeDirection(contentType);
+
+  const weightMap = { light: 400, medium: 600, heavy: 700 };
+  const padMap = { light: 1.15, medium: 1.0, heavy: 0.95 };
+
+  return {
+    padScale: dir.spacingScale * (padMap[dir.typographyWeight] || 1),
+    headlineWeight: weightMap[dir.typographyWeight] || 600,
+    bodyOpacity: dir.typographyWeight === "light" ? 0.55 : 0.65,
+    accentThickness: dir.typographyWeight === "heavy" ? 3 : 2,
+    coverAlign: dir.coverTone === "warm" ? "center" : "flex-start",
+    breathingItalic: dir.coverTone !== "sharp",
+  };
+}
+
 // ─── RENDERER ─────────────────────────────────────────────────────────────
 
 interface SlideRendererProps {
@@ -105,6 +138,7 @@ interface SlideRendererProps {
   visualSystem?: ArchetypeStyle;
   brandName?: string;
   brandColors?: { bg: string; text: string; accent: string; bgAlt?: string };
+  contentType?: string;
 }
 
 /** Pick headline font size — larger type for premium feel */
@@ -116,13 +150,16 @@ function headlineSize(len: number, sizes: VisualSystem["headlineSizes"]): number
 }
 
 const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
-  ({ slide, visualSystem = "editorial-premium", brandName, brandColors }, ref) => {
+  ({ slide, visualSystem = "editorial-premium", brandName, brandColors, contentType }, ref) => {
     const vs = VISUAL_SYSTEMS[visualSystem];
+    const mod = getDirectionModifiers(contentType);
+    const tension = getSlideTension(getCreativeDirection(contentType), slide.slideNumber - 1);
+
     const c = brandColors
       ? { ...vs.colors, bg: brandColors.bg, text: brandColors.text, accent: brandColors.accent, bgAlt: brandColors.bgAlt || vs.colors.bgAlt, textMuted: `${brandColors.text}70`, coverBg: brandColors.text, coverText: brandColors.bg }
       : vs.colors;
 
-    const PAD = vs.margins.page;
+    const PAD = Math.round(vs.margins.page * mod.padScale);
 
     const base: React.CSSProperties = {
       width: 1080,
@@ -139,7 +176,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       <div style={{
         position: "absolute", top: 52, right: PAD,
         fontSize: 11, fontWeight: 500, color, letterSpacing: "0.18em",
-        fontFamily: vs.bodyFont, opacity: 0.25,
+        fontFamily: vs.bodyFont, opacity: 0.2,
       }}>
         {slide.slideNumber}/{slide.totalSlides}
       </div>
@@ -148,7 +185,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
     const watermark = (color: string) => brandName ? (
       <div style={{
         position: "absolute", bottom: 44, right: PAD,
-        fontSize: 10, fontWeight: 600, color, opacity: 0.15,
+        fontSize: 10, fontWeight: 600, color, opacity: 0.12,
         letterSpacing: "0.14em", fontFamily: vs.bodyFont,
         textTransform: "uppercase" as const,
       }}>
@@ -159,7 +196,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
     const sectionLabel = (color: string) => (
       <div style={{
         position: "absolute", bottom: 44, left: PAD,
-        fontSize: 9, fontWeight: 600, color, opacity: 0.2,
+        fontSize: 9, fontWeight: 600, color, opacity: 0.18,
         letterSpacing: "0.24em", fontFamily: vs.bodyFont,
         textTransform: "uppercase" as const,
       }}>
@@ -168,30 +205,42 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
     );
 
     const accentLine = (width: number, opacity = 0.5) => (
-      <div style={{ width, height: 2, backgroundColor: c.accent, opacity, borderRadius: 1 }} />
+      <div style={{
+        width,
+        height: mod.accentThickness,
+        backgroundColor: c.accent,
+        opacity,
+        borderRadius: 1,
+      }} />
     );
+
+    // Tension-based background selection
+    const tensionBg = tension === "minimal" ? c.bgAlt : c.bg;
 
     // ─── COVER ────────────────────────────────────────────────────────────
     if (slide.type === "cover") {
       const hSize = headlineSize(slide.headline.length, vs.headlineSizes);
+      const isCentered = mod.coverAlign === "center";
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.coverBg }}>
-          {slideNum(`${c.coverText}40`)}
+          {slideNum(`${c.coverText}30`)}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
-            justifyContent: "center", alignItems: "flex-start",
+            justifyContent: "center",
+            alignItems: isCentered ? "center" : "flex-start",
             padding: `${PAD * 1.5}px ${PAD}px ${PAD}px`,
+            textAlign: isCentered ? "center" : "left",
           }}>
-            {accentLine(56, 0.45)}
+            {accentLine(isCentered ? 40 : 56, 0.35)}
             <h1 style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize,
-              fontWeight: 700,
+              fontWeight: mod.headlineWeight,
               lineHeight: vs.lineHeights.headline,
               color: c.coverText,
               margin: "56px 0 0",
-              maxWidth: "85%",
+              maxWidth: isCentered ? "75%" : "85%",
               letterSpacing: "-0.02em",
             }}>
               {slide.headline}
@@ -200,9 +249,9 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
               <p style={{
                 fontSize: vs.bodySize,
                 lineHeight: vs.lineHeights.body,
-                color: `${c.coverText}55`,
+                color: `${c.coverText}${Math.round(mod.bodyOpacity * 255 / 1).toString(16).padStart(2, "0")}`,
                 margin: "44px 0 0",
-                maxWidth: "70%",
+                maxWidth: isCentered ? "60%" : "70%",
                 fontWeight: 400,
               }}>
                 {slide.body}
@@ -220,12 +269,12 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       const hSize = headlineSize(slide.headline.length, { xl: 56, lg: 46, md: 40, sm: 36 });
       const isEditorial = visualSystem === "editorial-premium";
       return (
-        <div ref={ref} style={{ ...base, backgroundColor: c.bg }}>
-          {slideNum(`${c.text}30`)}
+        <div ref={ref} style={{ ...base, backgroundColor: tensionBg }}>
+          {slideNum(`${c.text}25`)}
           {/* Vertical accent bar */}
           <div style={{
             position: "absolute", left: PAD - 24, top: "30%", bottom: "30%",
-            width: 3, backgroundColor: c.accent, opacity: 0.35, borderRadius: 2,
+            width: mod.accentThickness, backgroundColor: c.accent, opacity: 0.3, borderRadius: 2,
           }} />
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
@@ -236,7 +285,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
             <blockquote style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize,
-              fontWeight: isEditorial ? 500 : 600,
+              fontWeight: isEditorial ? 500 : mod.headlineWeight,
               lineHeight: 1.3,
               color: c.text,
               margin: 0,
@@ -252,32 +301,32 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       );
     }
 
-    // ─── BREATHING (new — ultra-minimal) ──────────────────────────────────
+    // ─── BREATHING (ultra-minimal) ────────────────────────────────────────
     if (slide.type === "breathing") {
       const hSize = headlineSize(slide.headline.length, { xl: 52, lg: 44, md: 38, sm: 34 });
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.bgAlt }}>
-          {slideNum(`${c.text}20`)}
+          {slideNum(`${c.text}15`)}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
             justifyContent: "center", alignItems: "center",
-            padding: `${PAD * 1.5}px ${PAD * 1.2}px`,
+            padding: `${PAD * 1.6}px ${PAD * 1.3}px`,
             textAlign: "center",
           }}>
-            <div style={{ marginBottom: 40 }}>
-              {accentLine(32, 0.3)}
+            <div style={{ marginBottom: 48 }}>
+              {accentLine(28, 0.25)}
             </div>
             <p style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize,
-              fontWeight: 400,
-              lineHeight: 1.35,
+              fontWeight: mod.headlineWeight >= 700 ? 500 : 400,
+              lineHeight: 1.4,
               color: c.text,
               margin: 0,
-              maxWidth: "78%",
-              fontStyle: "italic",
-              opacity: 0.85,
+              maxWidth: "72%",
+              fontStyle: mod.breathingItalic ? "italic" : "normal",
+              opacity: 0.8,
             }}>
               {slide.headline}
             </p>
@@ -291,19 +340,21 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
     // ─── EDITORIAL ────────────────────────────────────────────────────────
     if (slide.type === "editorial") {
       const hSize = headlineSize(slide.headline.length, vs.headlineSizes);
+      // Tension-aware: minimal slides get more whitespace
+      const extraPad = tension === "minimal" ? 20 : 0;
       return (
-        <div ref={ref} style={{ ...base, backgroundColor: c.bg }}>
-          {slideNum(`${c.text}30`)}
+        <div ref={ref} style={{ ...base, backgroundColor: tension === "minimal" ? c.bgAlt : c.bg }}>
+          {slideNum(`${c.text}25`)}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
             justifyContent: "center",
-            padding: `${PAD}px ${PAD}px`,
+            padding: `${PAD + extraPad}px ${PAD}px`,
           }}>
             <h2 style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize - 6,
-              fontWeight: 600,
+              fontWeight: mod.headlineWeight,
               lineHeight: vs.lineHeights.headline + 0.05,
               color: c.text,
               margin: 0,
@@ -314,16 +365,17 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
             </h2>
             {slide.body && (
               <>
-                <div style={{ margin: `${vs.margins.inner}px 0` }}>
-                  {accentLine(44, 0.4)}
+                <div style={{ margin: `${vs.margins.inner + 8}px 0` }}>
+                  {accentLine(44, 0.35)}
                 </div>
                 <p style={{
                   fontSize: vs.bodySize,
                   lineHeight: vs.lineHeights.body,
                   color: c.textMuted,
                   margin: 0,
-                  maxWidth: "75%",
+                  maxWidth: "72%",
                   fontWeight: 400,
+                  opacity: mod.bodyOpacity + 0.2,
                 }}>
                   {slide.body}
                 </p>
@@ -341,7 +393,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       const items = (slide.items || []).slice(0, 3);
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.bg }}>
-          {slideNum(`${c.text}30`)}
+          {slideNum(`${c.text}25`)}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
@@ -351,15 +403,15 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
             <h2 style={{
               fontFamily: vs.headlineFont,
               fontSize: vs.headlineSizes.md,
-              fontWeight: 600,
+              fontWeight: mod.headlineWeight,
               lineHeight: vs.lineHeights.headline + 0.05,
               color: c.text,
-              margin: `0 0 ${vs.margins.inner + 12}px`,
+              margin: `0 0 ${vs.margins.inner + 16}px`,
               maxWidth: "78%",
             }}>
               {slide.headline}
             </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 44 }}>
               {items.map((item, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 24 }}>
                   <span style={{
@@ -370,7 +422,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
                     minWidth: 32,
                     marginTop: 4,
                     letterSpacing: "0.08em",
-                    opacity: 0.7,
+                    opacity: 0.6,
                   }}>
                     {String(i + 1).padStart(2, "0")}
                   </span>
@@ -398,38 +450,38 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       const hSize = headlineSize(slide.headline.length, { xl: 50, lg: 42, md: 38, sm: 34 });
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.coverBg }}>
-          {slideNum(`${c.coverText}20`)}
+          {slideNum(`${c.coverText}15`)}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
             justifyContent: "center", alignItems: "center",
-            padding: `${PAD * 1.5}px ${PAD}px`, textAlign: "center",
+            padding: `${PAD * 1.6}px ${PAD}px`, textAlign: "center",
           }}>
             {/* Opening quote */}
             <div style={{
               fontFamily: vs.headlineFont,
               fontSize: 120,
               color: c.accent,
-              opacity: 0.18,
+              opacity: 0.15,
               lineHeight: 0.4,
-              marginBottom: 48,
+              marginBottom: 52,
             }}>
               &ldquo;
             </div>
             <blockquote style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize,
-              fontWeight: 500,
+              fontWeight: mod.headlineWeight === 700 ? 600 : 500,
               lineHeight: 1.35,
               color: c.coverText,
               margin: 0,
               fontStyle: "italic",
-              maxWidth: "80%",
+              maxWidth: "76%",
             }}>
               {slide.headline}
             </blockquote>
-            <div style={{ marginTop: 56 }}>
-              {accentLine(48, 0.3)}
+            <div style={{ marginTop: 60 }}>
+              {accentLine(40, 0.25)}
             </div>
           </div>
           {sectionLabel(c.coverText)}
@@ -443,33 +495,33 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       const hSize = headlineSize(slide.headline.length, { xl: 50, lg: 42, md: 38, sm: 34 });
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.bgAlt }}>
-          {slideNum(`${c.text}20`)}
+          {slideNum(`${c.text}15`)}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
             justifyContent: "center", alignItems: "center",
-            padding: `${PAD}px`, textAlign: "center",
+            padding: `${PAD * 1.2}px`, textAlign: "center",
           }}>
             <h2 style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize,
-              fontWeight: 600,
+              fontWeight: mod.headlineWeight,
               lineHeight: 1.2,
               color: c.text,
               margin: 0,
-              maxWidth: "78%",
+              maxWidth: "76%",
             }}>
               {slide.headline}
             </h2>
             {slide.body && (
               <>
-                <div style={{ margin: "48px 0" }}>{accentLine(36, 0.4)}</div>
+                <div style={{ margin: "52px 0" }}>{accentLine(32, 0.35)}</div>
                 <p style={{
                   fontSize: vs.bodySize,
                   lineHeight: vs.lineHeights.body,
                   color: c.textMuted,
                   margin: 0,
-                  maxWidth: "65%",
+                  maxWidth: "62%",
                   fontWeight: 400,
                 }}>
                   {slide.body}
@@ -484,7 +536,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
               color: c.accent,
               letterSpacing: "0.22em",
               textTransform: "uppercase" as const,
-              opacity: 0.35,
+              opacity: 0.3,
             }}>
               {brandName || "MEDSHIFT"}
             </div>

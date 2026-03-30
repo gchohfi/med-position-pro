@@ -23,6 +23,7 @@ interface CarouselVisualPreviewProps {
   brandColors?: { bg: string; text: string; accent: string };
   brandName?: string;
   archetype?: string | null;
+  contentType?: string;
   onRegenerate?: () => void;
   onClose?: () => void;
   onSlidesChange?: (slides: SlideData[]) => void;
@@ -39,6 +40,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   brandColors,
   brandName,
   archetype,
+  contentType,
   onRegenerate,
   onClose,
   onSlidesChange,
@@ -199,6 +201,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                   slide={slides[currentSlide]}
                   visualSystem={activeStyle}
                   brandName={brandName}
+                  contentType={contentType}
                 />
               </div>
             </div>
@@ -314,6 +317,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                     slide={slide}
                     visualSystem={activeStyle}
                     brandName={brandName}
+                    contentType={contentType}
                   />
                 </div>
               </div>
@@ -364,6 +368,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             slide={slide}
             visualSystem={activeStyle}
             brandName={brandName}
+            contentType={contentType}
           />
         ))}
       </div>
