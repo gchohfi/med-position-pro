@@ -23,6 +23,7 @@ interface CarouselVisualPreviewProps {
   brandColors?: { bg: string; text: string; accent: string };
   brandName?: string;
   archetype?: string | null;
+  contentType?: string;
   onRegenerate?: () => void;
   onClose?: () => void;
   onSlidesChange?: (slides: SlideData[]) => void;
