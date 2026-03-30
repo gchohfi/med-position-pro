@@ -95,11 +95,17 @@ As opções devem ser genuinamente diferentes entre si. Sem clichês genéricos.
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Invalid AI response");
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error("Empty AI response");
 
-    const result = JSON.parse(jsonMatch[0]);
+    let result: any;
+    try {
+      result = typeof content === "object" ? content : JSON.parse(content);
+    } catch {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("Invalid AI response");
+      result = JSON.parse(jsonMatch[0]);
+    }
     if (!result.teses?.length || !result.percepcoes?.length) throw new Error("Incomplete response");
 
     return new Response(JSON.stringify(result), {
