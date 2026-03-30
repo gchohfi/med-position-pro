@@ -369,6 +369,7 @@ export type Database = {
           full_name: string | null
           id: string
           onboarding_complete: boolean
+          photo_url: string | null
           specialty: string | null
           updated_at: string
         }
@@ -377,6 +378,7 @@ export type Database = {
           full_name?: string | null
           id: string
           onboarding_complete?: boolean
+          photo_url?: string | null
           specialty?: string | null
           updated_at?: string
         }
@@ -385,6 +387,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           onboarding_complete?: boolean
+          photo_url?: string | null
           specialty?: string | null
           updated_at?: string
         }
