@@ -586,59 +586,59 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
     // ═════════════════════════════════════════════════════════════════════════
     if (slide.type === "signature") {
       const hLen = slide.headline.length;
-      const hSize = hLen <= 25 ? 46 : hLen <= 45 ? 38 : hLen <= 70 ? 32 : 28;
+      const hSize = hLen <= 25 ? 50 : hLen <= 45 ? 42 : hLen <= 70 ? 34 : 28;
       const hasImage = !!doctorImageUrl;
 
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.bgAlt }}>
           {hasImage && (
             <>
-              {/* Portrait — off-center, bleeds beyond edges */}
+              {/* Portrait — dominant, bleeds right and top, asymmetric crop */}
               <div style={{
                 position: "absolute",
-                top: -60, right: -30, bottom: -60,
-                width: "55%",
+                top: "-8%", right: "-15%", bottom: "-5%",
+                width: "65%",
                 backgroundImage: `url(${doctorImageUrl})`,
                 backgroundSize: "cover",
-                backgroundPosition: "center 10%",
-                filter: "grayscale(15%) contrast(1.05) brightness(0.92) saturate(0.9)",
+                backgroundPosition: "35% 8%",
+                filter: "grayscale(20%) contrast(1.1) brightness(0.88) saturate(0.85)",
               }} />
-              {/* Left gradient mask — smooth blend */}
+              {/* Left gradient mask — text zone bleeds INTO image */}
               <div style={{
-                position: "absolute", top: -60, left: 0, bottom: -60,
-                width: "65%",
-                background: `linear-gradient(90deg, ${c.bgAlt} 48%, ${c.bgAlt}EE 60%, ${c.bgAlt}AA 72%, ${c.bgAlt}44 84%, transparent 100%)`,
+                position: "absolute", top: "-8%", left: 0, bottom: "-5%",
+                width: "58%",
+                background: `linear-gradient(90deg, ${c.bgAlt} 40%, ${c.bgAlt}F0 55%, ${c.bgAlt}99 70%, ${c.bgAlt}33 82%, transparent 100%)`,
                 zIndex: 1,
               }} />
-              {/* Top fade */}
+              {/* Top vignette */}
               <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, height: "22%",
-                background: `linear-gradient(180deg, ${c.bgAlt} 0%, ${c.bgAlt}88 40%, transparent 100%)`,
+                position: "absolute", top: 0, left: 0, right: 0, height: "18%",
+                background: `linear-gradient(180deg, ${c.bgAlt}DD 0%, transparent 100%)`,
                 zIndex: 1,
               }} />
-              {/* Bottom fade */}
+              {/* Bottom anchor — subtle */}
               <div style={{
-                position: "absolute", bottom: 0, left: 0, right: 0, height: "20%",
-                background: `linear-gradient(0deg, ${c.bgAlt} 0%, ${c.bgAlt}CC 40%, transparent 100%)`,
+                position: "absolute", bottom: 0, left: 0, right: 0, height: "15%",
+                background: `linear-gradient(0deg, ${c.bgAlt}EE 0%, transparent 100%)`,
                 zIndex: 1,
               }} />
-              {/* Subtle accent glow */}
+              {/* Accent glow behind subject */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: `radial-gradient(ellipse 40% 30% at 28% 62%, ${c.accent}0E 0%, transparent 70%)`,
+                background: `radial-gradient(ellipse 35% 40% at 68% 45%, ${c.accent}12 0%, transparent 70%)`,
                 zIndex: 1,
                 mixBlendMode: "multiply",
               }} />
             </>
           )}
 
-          {/* Text — left side, interdependent with portrait */}
+          {/* Text — overlaps into image zone for integration */}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 80,
             display: "flex", flexDirection: "column",
             justifyContent: "center",
             padding: hasImage
-              ? `${PAD}px ${PAD * 3}px ${PAD}px ${PAD}px`
+              ? `${PAD}px ${PAD * 1.5}px ${PAD}px ${PAD}px`
               : `${PAD}px`,
             textAlign: hasImage ? "left" : "center",
             alignItems: hasImage ? "flex-start" : "center",
@@ -646,49 +646,49 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
           }}>
             <div style={{
               width: 32, height: 2,
-              backgroundColor: c.accent, opacity: 0.3,
-              marginBottom: 48, borderRadius: 1,
+              backgroundColor: c.accent, opacity: 0.35,
+              marginBottom: 52, borderRadius: 1,
             }} />
             <h2 style={{
               fontFamily: SERIF,
               fontSize: hSize,
               fontWeight: 500,
-              lineHeight: 1.28,
+              lineHeight: 1.22,
               color: c.text,
               margin: 0,
-              maxWidth: hasImage ? "44%" : "68%",
-              letterSpacing: "-0.01em",
+              maxWidth: hasImage ? "52%" : "68%",
+              letterSpacing: "-0.015em",
               fontStyle: "italic",
             }}>
               {slide.headline}
             </h2>
             <p style={{
-              marginTop: 36,
+              marginTop: 40,
               fontSize: vs.bodySize - 4,
               fontWeight: 400,
               lineHeight: 1.6,
               color: c.textMuted,
-              maxWidth: hasImage ? "38%" : "52%",
+              maxWidth: hasImage ? "42%" : "52%",
               fontFamily: SANS,
             }}>
               Agende sua avaliação pelo link na bio
             </p>
             {/* Brand signature */}
             <div style={{
-              marginTop: 56,
+              marginTop: 64,
               display: "flex", flexDirection: "column",
               alignItems: hasImage ? "flex-start" : "center", gap: 8,
             }}>
               <span style={{
                 fontSize: 13, fontWeight: 700, color: c.text,
-                letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.28,
+                letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.25,
                 fontFamily: SANS,
               }}>
                 {name}
               </span>
               <span style={{
                 fontSize: 11, fontWeight: 400, color: c.accent,
-                letterSpacing: "0.04em", opacity: 0.35,
+                letterSpacing: "0.04em", opacity: 0.3,
                 fontFamily: SANS,
               }}>
                 {handle}
