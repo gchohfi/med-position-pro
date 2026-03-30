@@ -114,9 +114,10 @@ const Producao = () => {
     const load = async () => {
       setContextLoading(true);
       try {
-        const [posRes, diagRes] = await Promise.all([
+        const [posRes, diagRes, profileRes] = await Promise.all([
           supabase.from("positioning").select("archetype, pillars, tone, target_audience, goals").eq("user_id", user.id).maybeSingle(),
           supabase.from("diagnosis_outputs").select("estrategia").eq("user_id", user.id).maybeSingle(),
+          supabase.from("profiles").select("photo_url").eq("id", user.id).maybeSingle(),
         ]);
         const pos = posRes.data;
         const diag = diagRes.data;
@@ -126,6 +127,7 @@ const Producao = () => {
           macro_objetivo: estrategia?.macro_objetivo || null,
           pillar: pos?.pillars?.[0] || null,
         });
+        setDoctorPhotoUrl((profileRes.data as any)?.photo_url || null);
       } catch {
         // ignore
       } finally {
