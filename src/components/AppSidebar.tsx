@@ -25,7 +25,6 @@ import {
   TrendingUp,
   Radar,
   Zap,
-  Instagram,
 } from "lucide-react";
 
 const navItems = [
@@ -39,7 +38,6 @@ const navItems = [
   { title: "Radar de Mercado", url: "/radar", icon: Radar, disabled: false },
   { title: "Memória Viva", url: "/memoria-viva", icon: Brain, disabled: false },
   { title: "Evolução", url: "/evolucao", icon: TrendingUp, disabled: false },
-  { title: "Radar Instagram", url: "/instagram", icon: Instagram, disabled: false },
   { title: "Atualizações", url: "/atualizacoes", icon: Zap, disabled: false },
 ];
 

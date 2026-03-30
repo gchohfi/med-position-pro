@@ -19,7 +19,6 @@ import MemoriaViva from "./pages/MemoriaViva";
 import Evolucao from "./pages/Evolucao";
 import RadarMercado from "./pages/RadarMercado";
 import AtualizacoesInteligentes from "./pages/AtualizacoesInteligentes";
-import RadarInstagram from "./pages/RadarInstagram";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -124,14 +123,6 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <RadarMercado />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/instagram"
-        element={
-          <ProtectedRoute>
-            <RadarInstagram />
           </ProtectedRoute>
         }
       />
