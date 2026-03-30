@@ -977,6 +977,7 @@ const Producao = () => {
                     brandName="MEDSHIFT"
                     archetype={context.archetype}
                     contentType={tipo}
+                    doctorImageUrl={doctorPhotoUrl || undefined}
                     onRegenerate={handleGenerateVisualCarousel}
                     onClose={() => setVisualSlides(null)}
                     onSlidesChange={(updated) => setVisualSlides(updated)}
