@@ -528,8 +528,8 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // SIGNATURE — Final. Warm. Identity. Doctor image if available.
-    // Returns to light bg. Calm after the manifesto storm.
+    // SIGNATURE — EDITORIAL CLOSING. Portrait bleeds into composition.
+    // Image is embedded in the layout, not boxed. Feels like brand presence.
     // ═══════════════════════════════════════════════════════════════════════
     if (slide.type === "signature") {
       const hSize = headlineSize(slide.headline.length, {
@@ -539,107 +539,112 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
 
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.bgAlt }}>
+          {/* INTEGRATED PORTRAIT — bleeds from right, fades into background */}
+          {hasImage && (
+            <>
+              <div style={{
+                position: "absolute",
+                top: 0, right: 0, bottom: 0,
+                width: "52%",
+                backgroundImage: `url(${doctorImageUrl})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center 15%",
+                filter: "grayscale(12%) contrast(1.02)",
+              }} />
+              {/* Left fade: blend portrait into background */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, bottom: 0,
+                width: "65%",
+                background: `linear-gradient(90deg, ${c.bgAlt} 55%, ${c.bgAlt}E0 70%, ${c.bgAlt}80 82%, transparent 100%)`,
+                zIndex: 1,
+              }} />
+              {/* Top soft fade */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, height: "18%",
+                background: `linear-gradient(180deg, ${c.bgAlt}99 0%, transparent 100%)`,
+                zIndex: 1,
+              }} />
+              {/* Bottom soft fade */}
+              <div style={{
+                position: "absolute", bottom: 0, left: 0, right: 0, height: "15%",
+                background: `linear-gradient(0deg, ${c.bgAlt} 0%, transparent 100%)`,
+                zIndex: 1,
+              }} />
+              {/* Subtle vignette */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                background: `radial-gradient(ellipse 90% 80% at 70% 40%, transparent 40%, ${c.bgAlt}40 100%)`,
+                zIndex: 1,
+              }} />
+            </>
+          )}
+
+          {/* TEXT — left-anchored, elegant, interdependent with image */}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 80,
-            display: "flex", flexDirection: hasImage ? "row" : "column",
+            display: "flex", flexDirection: "column",
             justifyContent: "center",
-            alignItems: hasImage ? "flex-end" : "center",
-            padding: `${PAD}px`,
+            padding: hasImage
+              ? `${PAD}px ${PAD * 3}px ${PAD}px ${PAD}px`
+              : `${PAD}px`,
             textAlign: hasImage ? "left" : "center",
+            alignItems: hasImage ? "flex-start" : "center",
+            zIndex: 2,
           }}>
-            {/* Text column */}
             <div style={{
-              display: "flex", flexDirection: "column",
-              justifyContent: "center",
-              alignItems: hasImage ? "flex-start" : "center",
-              flex: hasImage ? "1 1 55%" : undefined,
-              zIndex: 1,
+              width: 36, height: 2,
+              backgroundColor: c.accent, opacity: 0.25,
+              marginBottom: 44, borderRadius: 1,
+            }} />
+            <h2 style={{
+              fontFamily: vs.headlineFont,
+              fontSize: hSize,
+              fontWeight: 500,
+              lineHeight: 1.25,
+              color: c.text,
+              margin: 0,
+              maxWidth: hasImage ? "48%" : "72%",
+              letterSpacing: "-0.01em",
             }}>
-              <div style={{
-                width: 36, height: 2,
-                backgroundColor: c.accent, opacity: 0.25,
-                marginBottom: 44, borderRadius: 1,
-              }} />
-              <h2 style={{
-                fontFamily: vs.headlineFont,
-                fontSize: hSize,
-                fontWeight: 500,
-                lineHeight: 1.25,
-                color: c.text,
-                margin: 0,
-                maxWidth: hasImage ? "95%" : "72%",
-                letterSpacing: "-0.01em",
+              {slide.headline}
+            </h2>
+            <p style={{
+              marginTop: 36,
+              fontSize: vs.bodySize - 3,
+              fontWeight: 400,
+              lineHeight: 1.6,
+              color: c.textMuted,
+              maxWidth: hasImage ? "42%" : "56%",
+            }}>
+              Agende sua avaliação pelo link na bio
+            </p>
+            {/* Brand signature */}
+            <div style={{
+              marginTop: 52,
+              display: "flex", flexDirection: "column",
+              alignItems: hasImage ? "flex-start" : "center", gap: 6,
+            }}>
+              <span style={{
+                fontSize: 13, fontWeight: 700, color: c.text,
+                letterSpacing: "0.2em", textTransform: "uppercase" as const, opacity: 0.3,
               }}>
-                {slide.headline}
-              </h2>
-              <p style={{
-                marginTop: 36,
-                fontSize: vs.bodySize - 3,
-                fontWeight: 400,
-                lineHeight: 1.6,
-                color: c.textMuted,
-                maxWidth: hasImage ? "85%" : "56%",
+                {name}
+              </span>
+              <span style={{
+                fontSize: 11, fontWeight: 400, color: c.accent,
+                letterSpacing: "0.04em", opacity: 0.4,
               }}>
-                Agende sua avaliação pelo link na bio
-              </p>
-              {/* Brand mark */}
-              <div style={{
-                marginTop: 44,
-                display: "flex", flexDirection: "column",
-                alignItems: hasImage ? "flex-start" : "center", gap: 5,
-              }}>
-                <span style={{
-                  fontSize: 13, fontWeight: 700, color: c.text,
-                  letterSpacing: "0.2em", textTransform: "uppercase" as const, opacity: 0.28,
-                }}>
-                  {name}
-                </span>
-                <span style={{
-                  fontSize: 11, fontWeight: 400, color: c.accent,
-                  letterSpacing: "0.04em", opacity: 0.35,
-                }}>
-                  {handle}
-                </span>
-              </div>
+                {handle}
+              </span>
             </div>
-
-            {/* Doctor image — right column */}
-            {hasImage && (
-              <div style={{
-                flex: "0 0 38%",
-                position: "relative",
-                height: "100%",
-                display: "flex",
-                alignItems: "flex-end",
-                justifyContent: "center",
-                overflow: "hidden",
-              }}>
-                <img
-                  src={doctorImageUrl}
-                  alt=""
-                  style={{
-                    height: "82%",
-                    width: "auto",
-                    maxWidth: "100%",
-                    objectFit: "cover",
-                    objectPosition: "center top",
-                    filter: "grayscale(15%)",
-                    borderRadius: "4px 4px 0 0",
-                  }}
-                />
-                <div style={{
-                  position: "absolute", bottom: 0, left: 0, right: 0,
-                  height: 90,
-                  background: `linear-gradient(180deg, transparent, ${c.bgAlt})`,
-                }} />
-              </div>
-            )}
           </div>
+
           {/* Centered final counter */}
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0,
             padding: `0 ${PAD}px ${40}px`,
             display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 2,
           }}>
             <span style={{
               fontSize: 10, fontWeight: 400, color: c.text,
