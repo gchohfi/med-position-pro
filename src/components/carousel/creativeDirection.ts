@@ -1,101 +1,118 @@
 /**
- * Creative Direction System
- * Maps content types to visual behavior profiles that control
- * slide rhythm, spacing, typography tension, and cover generation.
+ * Creative Direction System — Editorial Campaign Level
+ * 
+ * Philosophy: Each slide creates PERCEPTION, not information.
+ * Inspired by Vogue editorials and Apple keynotes.
+ * 
+ * If it feels safe → it's wrong.
+ * If it feels bold, minimal, intentional → accept.
  */
 
 export type ContentIntent = "educativo" | "manifesto" | "conexao" | "conversao" | "hibrido";
 
 export interface CreativeDirection {
-  /** Display label */
   label: string;
-  /** Cover rewrite: generate a punchy hook headline */
+  /** Cover: max words for the provocative hook (3-6) */
   coverMaxWords: number;
-  /** Whether cover should feel aggressive or soft */
+  /** Cover tone controls visual personality */
   coverTone: "bold" | "warm" | "sharp" | "editorial";
-  /** General spacing multiplier (1 = normal, 1.3 = more breathing) */
+  /** Spacing multiplier (higher = more emptiness) */
   spacingScale: number;
-  /** Max words per headline block */
+  /** Max words per headline — STRICT */
   headlineMaxWords: number;
-  /** Max words per body block */
+  /** Max words per body — STRICT */
   bodyMaxWords: number;
-  /** Whether to enforce extra breathing slides */
+  /** Force extra breathing slides */
   extraBreathing: boolean;
-  /** Slide density: how many content blocks per slide max */
+  /** Min breathing slides guaranteed */
+  minBreathingSlides: number;
+  /** Max content blocks per slide (1 = ultra-minimal) */
   maxBlocksPerSlide: number;
-  /** Typography weight bias: lighter = elegant, heavier = impactful */
+  /** Typography weight: light=elegant, heavy=impactful */
   typographyWeight: "light" | "medium" | "heavy";
-  /** Visual tension pattern: alternates between heavy and minimal */
+  /** Tension pattern: heavy↔minimal alternation */
   rhythmPattern: ("heavy" | "minimal" | "medium")[];
-  /** Accent opacity modifier */
+  /** Accent subtlety (lower = more refined) */
   accentIntensity: number;
+  /** Whether cover should suppress body text entirely */
+  coverSuppressBody: boolean;
 }
 
 const CREATIVE_DIRECTIONS: Record<ContentIntent, CreativeDirection> = {
   educativo: {
     label: "Educativo",
-    coverMaxWords: 8,
+    coverMaxWords: 5,
     coverTone: "editorial",
-    spacingScale: 1.0,
-    headlineMaxWords: 10,
-    bodyMaxWords: 15,
-    extraBreathing: false,
+    spacingScale: 1.15,
+    headlineMaxWords: 8,
+    bodyMaxWords: 10,
+    extraBreathing: true,
+    minBreathingSlides: 2,
     maxBlocksPerSlide: 2,
     typographyWeight: "medium",
-    rhythmPattern: ["heavy", "medium", "medium", "minimal", "medium", "heavy", "minimal"],
-    accentIntensity: 0.5,
+    rhythmPattern: ["heavy", "minimal", "medium", "minimal", "heavy", "minimal", "medium"],
+    accentIntensity: 0.35,
+    coverSuppressBody: true,
   },
   manifesto: {
     label: "Manifesto",
-    coverMaxWords: 6,
+    coverMaxWords: 4,
     coverTone: "bold",
+    spacingScale: 1.5,
+    headlineMaxWords: 6,
+    bodyMaxWords: 8,
+    extraBreathing: true,
+    minBreathingSlides: 3,
+    maxBlocksPerSlide: 1,
+    typographyWeight: "heavy",
+    rhythmPattern: ["heavy", "minimal", "heavy", "minimal", "heavy", "minimal", "heavy"],
+    accentIntensity: 0.2,
+    coverSuppressBody: true,
+  },
+  conexao: {
+    label: "Conexão",
+    coverMaxWords: 5,
+    coverTone: "warm",
     spacingScale: 1.4,
     headlineMaxWords: 8,
     bodyMaxWords: 10,
     extraBreathing: true,
+    minBreathingSlides: 3,
     maxBlocksPerSlide: 1,
-    typographyWeight: "heavy",
-    rhythmPattern: ["heavy", "minimal", "heavy", "minimal", "heavy", "minimal", "heavy"],
-    accentIntensity: 0.3,
-  },
-  conexao: {
-    label: "Conexão",
-    coverMaxWords: 8,
-    coverTone: "warm",
-    spacingScale: 1.3,
-    headlineMaxWords: 10,
-    bodyMaxWords: 12,
-    extraBreathing: true,
-    maxBlocksPerSlide: 2,
     typographyWeight: "light",
-    rhythmPattern: ["medium", "minimal", "medium", "minimal", "medium", "minimal", "medium"],
-    accentIntensity: 0.6,
+    rhythmPattern: ["medium", "minimal", "medium", "minimal", "minimal", "medium", "minimal"],
+    accentIntensity: 0.4,
+    coverSuppressBody: true,
   },
   conversao: {
     label: "Conversão",
-    coverMaxWords: 6,
+    coverMaxWords: 4,
     coverTone: "sharp",
-    spacingScale: 1.0,
-    headlineMaxWords: 8,
-    bodyMaxWords: 12,
-    extraBreathing: false,
-    maxBlocksPerSlide: 2,
+    spacingScale: 1.1,
+    headlineMaxWords: 7,
+    bodyMaxWords: 10,
+    extraBreathing: true,
+    minBreathingSlides: 2,
+    maxBlocksPerSlide: 1,
     typographyWeight: "heavy",
-    rhythmPattern: ["heavy", "medium", "heavy", "medium", "heavy", "minimal", "heavy"],
-    accentIntensity: 0.7,
+    rhythmPattern: ["heavy", "minimal", "heavy", "medium", "heavy", "minimal", "heavy"],
+    accentIntensity: 0.5,
+    coverSuppressBody: true,
   },
   hibrido: {
     label: "Híbrido",
-    coverMaxWords: 8,
+    coverMaxWords: 5,
     coverTone: "editorial",
-    spacingScale: 1.1,
-    headlineMaxWords: 10,
-    bodyMaxWords: 14,
-    extraBreathing: false,
-    maxBlocksPerSlide: 2,
+    spacingScale: 1.2,
+    headlineMaxWords: 8,
+    bodyMaxWords: 10,
+    extraBreathing: true,
+    minBreathingSlides: 2,
+    maxBlocksPerSlide: 1,
     typographyWeight: "medium",
-    rhythmPattern: ["heavy", "medium", "minimal", "medium", "heavy", "minimal", "medium"],
-    accentIntensity: 0.5,
+    rhythmPattern: ["heavy", "minimal", "medium", "minimal", "heavy", "minimal", "medium"],
+    accentIntensity: 0.3,
+    coverSuppressBody: true,
   },
 };
 
