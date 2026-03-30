@@ -86,9 +86,10 @@ function makeSlide(
   type: SlideData["type"],
   label: string,
   headline: string,
-  body?: string
+  body?: string,
+  showImage?: boolean
 ): SlideData {
-  return { type, label, headline, body, slideNumber: 0, totalSlides: 0 };
+  return { type, label, headline, body, slideNumber: 0, totalSlides: 0, showImage };
 }
 
 export function mapContentToSlides(
@@ -172,14 +173,14 @@ export function mapContentToSlides(
   const manifesto = content["Manifesto"] || "";
   if (manifesto) {
     const headline = extractStrongestSentence(manifesto, hlMax + 4);
-    slides.push(makeSlide("manifesto", "Manifesto", headline.replace(/\.$/, "")));
+    slides.push(makeSlide("manifesto", "Manifesto", headline.replace(/\.$/, ""), undefined, true));
   }
 
   // ── 7. SIGNATURE — Calm, conclusive, not a CTA ──
   const fechamento = content["Fechamento"] || "";
   if (fechamento) {
     const headline = extractStrongestSentence(fechamento, hlMax);
-    slides.push(makeSlide("signature", "Fechamento", headline.replace(/\.$/, "")));
+    slides.push(makeSlide("signature", "Fechamento", headline.replace(/\.$/, ""), undefined, true));
   }
 
   // ── Ensure minimum breathing slides ──
