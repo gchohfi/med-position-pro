@@ -15,7 +15,7 @@ import {
   RefreshCw,
   Palette,
 } from "lucide-react";
-import SlideRenderer, { type SlideData, type ArchetypeStyle, VISUAL_SYSTEMS, getStyleForArchetype } from "./SlideRenderer";
+import SlideRenderer, { type SlideData, type ArchetypeStyle, VISUAL_SYSTEMS, getStyleForArchetype, getStyleForContentType } from "./SlideRenderer";
 import SlideEditor from "./SlideEditor";
 
 interface CarouselVisualPreviewProps {
