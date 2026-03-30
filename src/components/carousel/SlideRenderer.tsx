@@ -320,7 +320,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
             <p style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize,
-              fontWeight: mod.typographyWeight === "heavy" ? 500 : 400,
+              fontWeight: mod.headlineWeight >= 700 ? 500 : 400,
               lineHeight: 1.4,
               color: c.text,
               margin: 0,
