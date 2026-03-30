@@ -40,6 +40,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   brandColors,
   brandName,
   archetype,
+  contentType,
   onRegenerate,
   onClose,
   onSlidesChange,
