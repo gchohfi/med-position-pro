@@ -1,5 +1,5 @@
 import React from "react";
-import { type ContentIntent, getCreativeDirection, getSlideTension } from "./creativeDirection";
+import { getCreativeDirection, getSlideTension } from "./creativeDirection";
 
 export interface SlideData {
   type: "cover" | "statement" | "editorial" | "structured" | "manifesto" | "signature" | "breathing";
@@ -35,50 +35,48 @@ export const VISUAL_SYSTEMS: Record<ArchetypeStyle, VisualSystem> = {
     label: "Editorial Premium",
     description: "Elegante, minimalista, editorial de alto padrão",
     colors: {
-      bg: "#F8F6F2", bgAlt: "#EFECE6", text: "#2A2A2A", textMuted: "#2A2A2A70",
-      accent: "#B8A07E", coverBg: "#2A2A2A", coverText: "#F8F6F2",
+      bg: "#F8F6F2", bgAlt: "#F0EDE7", text: "#2A2A2A", textMuted: "#2A2A2A55",
+      accent: "#B8A07E", coverBg: "#1A1A1A", coverText: "#F5F3EF",
     },
     headlineFont: SERIF,
     bodyFont: SANS,
-    headlineSizes: { xl: 72, lg: 58, md: 48, sm: 40 },
-    bodySize: 22,
-    lineHeights: { headline: 1.1, body: 1.7 },
-    margins: { page: 120, inner: 56 },
+    headlineSizes: { xl: 82, lg: 64, md: 52, sm: 42 },
+    bodySize: 21,
+    lineHeights: { headline: 1.05, body: 1.7 },
+    margins: { page: 130, inner: 64 },
   },
   "clinical-structured": {
     label: "Clínico Estruturado",
     description: "Limpo, técnico, alta clareza",
     colors: {
-      bg: "#F4F6F8", bgAlt: "#EDF0F3", text: "#1E2A3A", textMuted: "#1E2A3A70",
-      accent: "#5A7B9A", coverBg: "#1E2A3A", coverText: "#F4F6F8",
+      bg: "#F4F6F8", bgAlt: "#EBEEF2", text: "#1E2A3A", textMuted: "#1E2A3A50",
+      accent: "#5A7B9A", coverBg: "#1A2332", coverText: "#F0F2F5",
     },
     headlineFont: SANS,
     bodyFont: SANS,
-    headlineSizes: { xl: 64, lg: 52, md: 44, sm: 38 },
-    bodySize: 21,
-    lineHeights: { headline: 1.15, body: 1.65 },
-    margins: { page: 110, inner: 48 },
+    headlineSizes: { xl: 72, lg: 56, md: 46, sm: 38 },
+    bodySize: 20,
+    lineHeights: { headline: 1.1, body: 1.65 },
+    margins: { page: 120, inner: 56 },
   },
   "humanized": {
     label: "Humanizado",
     description: "Caloroso, acessível, próximo",
     colors: {
-      bg: "#FBF8F4", bgAlt: "#F5EFE8", text: "#3A3028", textMuted: "#3A302870",
-      accent: "#C4956A", coverBg: "#3A3028", coverText: "#FBF8F4",
+      bg: "#FBF8F4", bgAlt: "#F3EDE4", text: "#3A3028", textMuted: "#3A302850",
+      accent: "#C4956A", coverBg: "#2E2820", coverText: "#F8F4EE",
     },
     headlineFont: SERIF,
     bodyFont: SANS,
-    headlineSizes: { xl: 66, lg: 54, md: 46, sm: 38 },
-    bodySize: 22,
-    lineHeights: { headline: 1.15, body: 1.75 },
-    margins: { page: 116, inner: 52 },
+    headlineSizes: { xl: 76, lg: 60, md: 48, sm: 40 },
+    bodySize: 21,
+    lineHeights: { headline: 1.08, body: 1.75 },
+    margins: { page: 126, inner: 60 },
   },
 };
 
 export type CarouselTheme = ArchetypeStyle;
 export const CAROUSEL_THEMES = VISUAL_SYSTEMS;
-
-// ─── ARCHETYPE → STYLE MAPPING ────────────────────────────────────────────
 
 const ARCHETYPE_MAP: Record<string, ArchetypeStyle> = {
   "Especialista": "editorial-premium",
@@ -98,36 +96,31 @@ export function getStyleForArchetype(archetype?: string | null): ArchetypeStyle 
   return ARCHETYPE_MAP[archetype] || "editorial-premium";
 }
 
-// ─── CREATIVE DIRECTION VISUAL MODIFIERS ──────────────────────────────────
+// ─── DIRECTION MODIFIERS ──────────────────────────────────────────────────
 
 interface DirectionModifiers {
-  /** Padding multiplier */
   padScale: number;
-  /** Headline font weight */
   headlineWeight: number;
-  /** Body opacity */
   bodyOpacity: number;
-  /** Accent line thickness */
   accentThickness: number;
-  /** Cover headline alignment */
   coverAlign: "flex-start" | "center";
-  /** Whether to use italic on breathing slides */
   breathingItalic: boolean;
+  /** Asymmetric offset for editorial tension */
+  asymmetricOffset: number;
 }
 
 function getDirectionModifiers(contentType?: string): DirectionModifiers {
   const dir = getCreativeDirection(contentType);
-
   const weightMap = { light: 400, medium: 600, heavy: 700 };
-  const padMap = { light: 1.15, medium: 1.0, heavy: 0.95 };
 
   return {
-    padScale: dir.spacingScale * (padMap[dir.typographyWeight] || 1),
+    padScale: dir.spacingScale,
     headlineWeight: weightMap[dir.typographyWeight] || 600,
-    bodyOpacity: dir.typographyWeight === "light" ? 0.55 : 0.65,
-    accentThickness: dir.typographyWeight === "heavy" ? 3 : 2,
+    bodyOpacity: dir.typographyWeight === "light" ? 0.4 : 0.5,
+    accentThickness: 1.5,
     coverAlign: dir.coverTone === "warm" ? "center" : "flex-start",
     breathingItalic: dir.coverTone !== "sharp",
+    asymmetricOffset: dir.coverTone === "bold" ? 40 : dir.coverTone === "warm" ? 0 : 20,
   };
 }
 
@@ -141,11 +134,14 @@ interface SlideRendererProps {
   contentType?: string;
 }
 
-/** Pick headline font size — larger type for premium feel */
+/** 
+ * Pick headline font size — DRAMATICALLY larger for short text.
+ * Short headlines (cover, breathing) should dominate the canvas.
+ */
 function headlineSize(len: number, sizes: VisualSystem["headlineSizes"]): number {
-  if (len <= 30) return sizes.xl;
-  if (len <= 55) return sizes.lg;
-  if (len <= 85) return sizes.md;
+  if (len <= 25) return sizes.xl;
+  if (len <= 45) return sizes.lg;
+  if (len <= 70) return sizes.md;
   return sizes.sm;
 }
 
@@ -153,10 +149,17 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
   ({ slide, visualSystem = "editorial-premium", brandName, brandColors, contentType }, ref) => {
     const vs = VISUAL_SYSTEMS[visualSystem];
     const mod = getDirectionModifiers(contentType);
-    const tension = getSlideTension(getCreativeDirection(contentType), slide.slideNumber - 1);
+    const dir = getCreativeDirection(contentType);
+    const tension = getSlideTension(dir, slide.slideNumber - 1);
 
     const c = brandColors
-      ? { ...vs.colors, bg: brandColors.bg, text: brandColors.text, accent: brandColors.accent, bgAlt: brandColors.bgAlt || vs.colors.bgAlt, textMuted: `${brandColors.text}70`, coverBg: brandColors.text, coverText: brandColors.bg }
+      ? {
+          ...vs.colors,
+          bg: brandColors.bg, text: brandColors.text, accent: brandColors.accent,
+          bgAlt: brandColors.bgAlt || vs.colors.bgAlt,
+          textMuted: `${brandColors.text}50`,
+          coverBg: brandColors.text, coverText: brandColors.bg,
+        }
       : vs.colors;
 
     const PAD = Math.round(vs.margins.page * mod.padScale);
@@ -170,230 +173,232 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       overflow: "hidden",
     };
 
-    // ── Shared decorators ──
+    // ── Minimal decorators — barely visible ──
 
     const slideNum = (color: string) => (
       <div style={{
-        position: "absolute", top: 52, right: PAD,
-        fontSize: 11, fontWeight: 500, color, letterSpacing: "0.18em",
-        fontFamily: vs.bodyFont, opacity: 0.2,
+        position: "absolute", top: 56, right: PAD,
+        fontSize: 10, fontWeight: 400, color, letterSpacing: "0.2em",
+        fontFamily: vs.bodyFont, opacity: 0.15,
       }}>
-        {slide.slideNumber}/{slide.totalSlides}
+        {String(slide.slideNumber).padStart(2, "0")}
       </div>
     );
 
     const watermark = (color: string) => brandName ? (
       <div style={{
-        position: "absolute", bottom: 44, right: PAD,
-        fontSize: 10, fontWeight: 600, color, opacity: 0.12,
-        letterSpacing: "0.14em", fontFamily: vs.bodyFont,
+        position: "absolute", bottom: 48, right: PAD,
+        fontSize: 9, fontWeight: 500, color, opacity: 0.08,
+        letterSpacing: "0.16em", fontFamily: vs.bodyFont,
         textTransform: "uppercase" as const,
       }}>
         {brandName}
       </div>
     ) : null;
 
-    const sectionLabel = (color: string) => (
+    const accentLine = (width: number, opacity = 0.3) => (
       <div style={{
-        position: "absolute", bottom: 44, left: PAD,
-        fontSize: 9, fontWeight: 600, color, opacity: 0.18,
-        letterSpacing: "0.24em", fontFamily: vs.bodyFont,
-        textTransform: "uppercase" as const,
-      }}>
-        {slide.label}
-      </div>
-    );
-
-    const accentLine = (width: number, opacity = 0.5) => (
-      <div style={{
-        width,
-        height: mod.accentThickness,
-        backgroundColor: c.accent,
-        opacity,
-        borderRadius: 1,
+        width, height: mod.accentThickness,
+        backgroundColor: c.accent, opacity, borderRadius: 1,
       }} />
     );
 
-    // Tension-based background selection
-    const tensionBg = tension === "minimal" ? c.bgAlt : c.bg;
-
-    // ─── COVER ────────────────────────────────────────────────────────────
+    // ─── COVER — Campaign headline. Tension. No resolution. ──────────────
     if (slide.type === "cover") {
-      const hSize = headlineSize(slide.headline.length, vs.headlineSizes);
+      const hSize = headlineSize(slide.headline.length, {
+        xl: vs.headlineSizes.xl + 16,
+        lg: vs.headlineSizes.lg + 12,
+        md: vs.headlineSizes.md + 8,
+        sm: vs.headlineSizes.sm + 4,
+      });
       const isCentered = mod.coverAlign === "center";
+
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.coverBg }}>
-          {slideNum(`${c.coverText}30`)}
+          {slideNum(`${c.coverText}20`)}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
-            justifyContent: "center",
+            justifyContent: isCentered ? "center" : "flex-end",
             alignItems: isCentered ? "center" : "flex-start",
-            padding: `${PAD * 1.5}px ${PAD}px ${PAD}px`,
+            padding: isCentered
+              ? `${PAD * 2}px ${PAD}px`
+              : `${PAD}px ${PAD}px ${PAD * 2.2}px`,
             textAlign: isCentered ? "center" : "left",
           }}>
-            {accentLine(isCentered ? 40 : 56, 0.35)}
+            {!isCentered && (
+              <div style={{ marginBottom: 48 }}>
+                {accentLine(44, 0.2)}
+              </div>
+            )}
             <h1 style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize,
               fontWeight: mod.headlineWeight,
               lineHeight: vs.lineHeights.headline,
               color: c.coverText,
-              margin: "56px 0 0",
-              maxWidth: isCentered ? "75%" : "85%",
-              letterSpacing: "-0.02em",
+              margin: 0,
+              maxWidth: isCentered ? "70%" : "80%",
+              letterSpacing: "-0.03em",
             }}>
               {slide.headline}
             </h1>
-            {slide.body && (
-              <p style={{
-                fontSize: vs.bodySize,
-                lineHeight: vs.lineHeights.body,
-                color: `${c.coverText}${Math.round(mod.bodyOpacity * 255 / 1).toString(16).padStart(2, "0")}`,
-                margin: "44px 0 0",
-                maxWidth: isCentered ? "60%" : "70%",
-                fontWeight: 400,
-              }}>
-                {slide.body}
-              </p>
-            )}
           </div>
-          {sectionLabel(c.coverText)}
           {watermark(c.coverText)}
         </div>
       );
     }
 
-    // ─── STATEMENT ────────────────────────────────────────────────────────
+    // ─── STATEMENT — Tension slide. Asymmetric. Bold. ────────────────────
     if (slide.type === "statement") {
-      const hSize = headlineSize(slide.headline.length, { xl: 56, lg: 46, md: 40, sm: 36 });
+      const hSize = headlineSize(slide.headline.length, {
+        xl: 60, lg: 50, md: 42, sm: 36,
+      });
       const isEditorial = visualSystem === "editorial-premium";
+
       return (
-        <div ref={ref} style={{ ...base, backgroundColor: tensionBg }}>
-          {slideNum(`${c.text}25`)}
-          {/* Vertical accent bar */}
+        <div ref={ref} style={{ ...base, backgroundColor: c.bg }}>
+          {slideNum(`${c.text}15`)}
+          {/* Subtle vertical accent — asymmetric position */}
           <div style={{
-            position: "absolute", left: PAD - 24, top: "30%", bottom: "30%",
-            width: mod.accentThickness, backgroundColor: c.accent, opacity: 0.3, borderRadius: 2,
+            position: "absolute",
+            left: PAD - 20,
+            top: "35%", bottom: "35%",
+            width: mod.accentThickness,
+            backgroundColor: c.accent,
+            opacity: 0.2,
+            borderRadius: 1,
           }} />
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
             justifyContent: "center",
-            padding: `${PAD}px ${PAD}px ${PAD}px ${PAD + 24}px`,
+            padding: `${PAD}px ${PAD * 1.5}px ${PAD}px ${PAD + mod.asymmetricOffset}px`,
           }}>
             <blockquote style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize,
               fontWeight: isEditorial ? 500 : mod.headlineWeight,
-              lineHeight: 1.3,
+              lineHeight: 1.25,
               color: c.text,
               margin: 0,
               fontStyle: isEditorial ? "italic" : "normal",
-              maxWidth: "85%",
+              maxWidth: "82%",
+              letterSpacing: "-0.01em",
             }}>
               {slide.headline}
             </blockquote>
           </div>
-          {sectionLabel(c.text)}
           {watermark(c.text)}
         </div>
       );
     }
 
-    // ─── BREATHING (ultra-minimal) ────────────────────────────────────────
+    // ─── BREATHING — Emotional pause. Almost empty. ──────────────────────
     if (slide.type === "breathing") {
-      const hSize = headlineSize(slide.headline.length, { xl: 52, lg: 44, md: 38, sm: 34 });
+      const isDash = slide.headline === "—";
+      const hSize = isDash ? 120 : headlineSize(slide.headline.length, {
+        xl: 48, lg: 40, md: 34, sm: 30,
+      });
+
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.bgAlt }}>
-          {slideNum(`${c.text}15`)}
+          {slideNum(`${c.text}10`)}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
             justifyContent: "center", alignItems: "center",
-            padding: `${PAD * 1.6}px ${PAD * 1.3}px`,
+            padding: `${PAD * 2}px ${PAD * 1.5}px`,
             textAlign: "center",
           }}>
-            <div style={{ marginBottom: 48 }}>
-              {accentLine(28, 0.25)}
-            </div>
+            {!isDash && (
+              <div style={{ marginBottom: 56 }}>
+                {accentLine(24, 0.15)}
+              </div>
+            )}
             <p style={{
-              fontFamily: vs.headlineFont,
+              fontFamily: isDash ? vs.bodyFont : vs.headlineFont,
               fontSize: hSize,
-              fontWeight: mod.headlineWeight >= 700 ? 500 : 400,
-              lineHeight: 1.4,
+              fontWeight: isDash ? 200 : (mod.breathingItalic ? 400 : 500),
+              lineHeight: isDash ? 1 : 1.4,
               color: c.text,
               margin: 0,
-              maxWidth: "72%",
-              fontStyle: mod.breathingItalic ? "italic" : "normal",
-              opacity: 0.8,
+              maxWidth: "65%",
+              fontStyle: (mod.breathingItalic && !isDash) ? "italic" : "normal",
+              opacity: isDash ? 0.15 : 0.65,
             }}>
               {slide.headline}
             </p>
           </div>
-          {sectionLabel(c.text)}
           {watermark(c.text)}
         </div>
       );
     }
 
-    // ─── EDITORIAL ────────────────────────────────────────────────────────
+    // ─── EDITORIAL — Single idea. Clean hierarchy. ───────────────────────
     if (slide.type === "editorial") {
       const hSize = headlineSize(slide.headline.length, vs.headlineSizes);
-      // Tension-aware: minimal slides get more whitespace
-      const extraPad = tension === "minimal" ? 20 : 0;
+      const isMinimalTension = tension === "minimal";
+      // Alternate alignment for visual variation
+      const isOddSlide = slide.slideNumber % 2 === 1;
+
       return (
-        <div ref={ref} style={{ ...base, backgroundColor: tension === "minimal" ? c.bgAlt : c.bg }}>
-          {slideNum(`${c.text}25`)}
+        <div ref={ref} style={{ ...base, backgroundColor: isMinimalTension ? c.bgAlt : c.bg }}>
+          {slideNum(`${c.text}15`)}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
-            justifyContent: "center",
-            padding: `${PAD + extraPad}px ${PAD}px`,
+            justifyContent: isOddSlide ? "center" : "flex-end",
+            padding: isOddSlide
+              ? `${PAD}px ${PAD}px`
+              : `${PAD}px ${PAD}px ${PAD * 2}px`,
           }}>
+            {isOddSlide && (
+              <div style={{ marginBottom: 40 }}>
+                {accentLine(36, 0.2)}
+              </div>
+            )}
             <h2 style={{
               fontFamily: vs.headlineFont,
-              fontSize: hSize - 6,
+              fontSize: hSize - 4,
               fontWeight: mod.headlineWeight,
-              lineHeight: vs.lineHeights.headline + 0.05,
+              lineHeight: vs.lineHeights.headline + 0.08,
               color: c.text,
               margin: 0,
-              maxWidth: "80%",
-              letterSpacing: "-0.01em",
+              maxWidth: "78%",
+              letterSpacing: "-0.015em",
             }}>
               {slide.headline}
             </h2>
             {slide.body && (
               <>
-                <div style={{ margin: `${vs.margins.inner + 8}px 0` }}>
-                  {accentLine(44, 0.35)}
+                <div style={{ margin: `${vs.margins.inner}px 0` }}>
+                  {accentLine(32, 0.2)}
                 </div>
                 <p style={{
                   fontSize: vs.bodySize,
                   lineHeight: vs.lineHeights.body,
                   color: c.textMuted,
                   margin: 0,
-                  maxWidth: "72%",
+                  maxWidth: "68%",
                   fontWeight: 400,
-                  opacity: mod.bodyOpacity + 0.2,
                 }}>
                   {slide.body}
                 </p>
               </>
             )}
           </div>
-          {sectionLabel(c.text)}
           {watermark(c.text)}
         </div>
       );
     }
 
-    // ─── STRUCTURED ───────────────────────────────────────────────────────
+    // ─── STRUCTURED — Minimal items. Clean numbering. ────────────────────
     if (slide.type === "structured") {
       const items = (slide.items || []).slice(0, 3);
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.bg }}>
-          {slideNum(`${c.text}25`)}
+          {slideNum(`${c.text}15`)}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
@@ -402,36 +407,38 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
           }}>
             <h2 style={{
               fontFamily: vs.headlineFont,
-              fontSize: vs.headlineSizes.md,
+              fontSize: vs.headlineSizes.md - 2,
               fontWeight: mod.headlineWeight,
-              lineHeight: vs.lineHeights.headline + 0.05,
+              lineHeight: vs.lineHeights.headline + 0.08,
               color: c.text,
-              margin: `0 0 ${vs.margins.inner + 16}px`,
-              maxWidth: "78%",
+              margin: `0 0 ${vs.margins.inner + 24}px`,
+              maxWidth: "75%",
+              letterSpacing: "-0.01em",
             }}>
               {slide.headline}
             </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 44 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 52 }}>
               {items.map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 24 }}>
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 28 }}>
                   <span style={{
                     fontFamily: vs.bodyFont,
-                    fontSize: 13,
-                    fontWeight: 700,
+                    fontSize: 12,
+                    fontWeight: 500,
                     color: c.accent,
-                    minWidth: 32,
-                    marginTop: 4,
-                    letterSpacing: "0.08em",
-                    opacity: 0.6,
+                    minWidth: 28,
+                    marginTop: 5,
+                    letterSpacing: "0.1em",
+                    opacity: 0.45,
                   }}>
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <p style={{
-                    fontSize: vs.bodySize + 1,
+                    fontSize: vs.bodySize,
                     lineHeight: 1.55,
                     color: c.textMuted,
                     margin: 0,
-                    maxWidth: "82%",
+                    maxWidth: "80%",
+                    fontWeight: 400,
                   }}>
                     {item}
                   </p>
@@ -439,109 +446,89 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
               ))}
             </div>
           </div>
-          {sectionLabel(c.text)}
           {watermark(c.text)}
         </div>
       );
     }
 
-    // ─── MANIFESTO ────────────────────────────────────────────────────────
+    // ─── MANIFESTO — Single belief. Apple-style. ─────────────────────────
     if (slide.type === "manifesto") {
-      const hSize = headlineSize(slide.headline.length, { xl: 50, lg: 42, md: 38, sm: 34 });
+      const hSize = headlineSize(slide.headline.length, {
+        xl: 54, lg: 46, md: 40, sm: 34,
+      });
+
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.coverBg }}>
-          {slideNum(`${c.coverText}15`)}
+          {slideNum(`${c.coverText}10`)}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
             justifyContent: "center", alignItems: "center",
-            padding: `${PAD * 1.6}px ${PAD}px`, textAlign: "center",
+            padding: `${PAD * 2}px ${PAD * 1.2}px`,
+            textAlign: "center",
           }}>
-            {/* Opening quote */}
-            <div style={{
-              fontFamily: vs.headlineFont,
-              fontSize: 120,
-              color: c.accent,
-              opacity: 0.15,
-              lineHeight: 0.4,
-              marginBottom: 52,
-            }}>
-              &ldquo;
-            </div>
             <blockquote style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize,
-              fontWeight: mod.headlineWeight === 700 ? 600 : 500,
-              lineHeight: 1.35,
+              fontWeight: mod.headlineWeight >= 700 ? 600 : 500,
+              lineHeight: 1.3,
               color: c.coverText,
               margin: 0,
               fontStyle: "italic",
-              maxWidth: "76%",
+              maxWidth: "72%",
+              letterSpacing: "-0.01em",
             }}>
               {slide.headline}
             </blockquote>
-            <div style={{ marginTop: 60 }}>
-              {accentLine(40, 0.25)}
+            <div style={{ marginTop: 72 }}>
+              {accentLine(32, 0.15)}
             </div>
           </div>
-          {sectionLabel(c.coverText)}
           {watermark(c.coverText)}
         </div>
       );
     }
 
-    // ─── SIGNATURE ────────────────────────────────────────────────────────
+    // ─── SIGNATURE — Conclusive. Calm. Authoritative. ────────────────────
     if (slide.type === "signature") {
-      const hSize = headlineSize(slide.headline.length, { xl: 50, lg: 42, md: 38, sm: 34 });
+      const hSize = headlineSize(slide.headline.length, {
+        xl: 48, lg: 42, md: 36, sm: 32,
+      });
+
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.bgAlt }}>
-          {slideNum(`${c.text}15`)}
+          {slideNum(`${c.text}10`)}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
             display: "flex", flexDirection: "column",
             justifyContent: "center", alignItems: "center",
-            padding: `${PAD * 1.2}px`, textAlign: "center",
+            padding: `${PAD * 1.5}px`, textAlign: "center",
           }}>
             <h2 style={{
               fontFamily: vs.headlineFont,
               fontSize: hSize,
-              fontWeight: mod.headlineWeight,
+              fontWeight: mod.headlineWeight >= 700 ? 600 : 500,
               lineHeight: 1.2,
               color: c.text,
               margin: 0,
-              maxWidth: "76%",
+              maxWidth: "72%",
+              letterSpacing: "-0.01em",
             }}>
               {slide.headline}
             </h2>
-            {slide.body && (
-              <>
-                <div style={{ margin: "52px 0" }}>{accentLine(32, 0.35)}</div>
-                <p style={{
-                  fontSize: vs.bodySize,
-                  lineHeight: vs.lineHeights.body,
-                  color: c.textMuted,
-                  margin: 0,
-                  maxWidth: "62%",
-                  fontWeight: 400,
-                }}>
-                  {slide.body}
-                </p>
-              </>
-            )}
-            {/* Brand signature */}
+            {/* Brand signature — subtle, final */}
             <div style={{
-              marginTop: 72,
-              fontSize: 11,
-              fontWeight: 600,
+              marginTop: 88,
+              fontSize: 10,
+              fontWeight: 500,
               color: c.accent,
-              letterSpacing: "0.22em",
+              letterSpacing: "0.24em",
               textTransform: "uppercase" as const,
-              opacity: 0.3,
+              opacity: 0.2,
             }}>
               {brandName || "MEDSHIFT"}
             </div>
           </div>
-          {sectionLabel(c.text)}
           {watermark(c.text)}
         </div>
       );
