@@ -1,4 +1,5 @@
 import type { SlideData } from "./SlideRenderer";
+import { getCreativeDirection, type CreativeDirection } from "./creativeDirection";
 
 /**
  * Splits text into sentences.
@@ -58,29 +59,51 @@ function enforceMaxWords(text: string | undefined, max: number): string | undefi
   return words.slice(0, max).join(" ") + "…";
 }
 
+/**
+ * Generate a punchy cover headline from raw text.
+ * Instead of truncating, extracts the strongest fragment.
+ */
+function generateCoverHeadline(text: string, maxWords: number): string {
+  const sents = sentences(text);
+  if (sents.length === 0) return extractShortHeadline(text, maxWords);
+
+  // Pick the shortest, punchiest sentence (under maxWords)
+  const candidates = sents
+    .map((s) => ({ s, wc: wordCount(s) }))
+    .filter((c) => c.wc <= maxWords + 2);
+
+  if (candidates.length > 0) {
+    // Prefer shorter, punchier
+    candidates.sort((a, b) => a.wc - b.wc);
+    return enforceMaxWords(candidates[0].s, maxWords) || candidates[0].s;
+  }
+
+  // Fallback: take first sentence, enforce limit
+  return enforceMaxWords(sents[0], maxWords) || extractShortHeadline(text, maxWords);
+}
+
 // ─── SLIDE RHYTHM ─────────────────────────────────────────────────────────
-// Each carousel follows a strict editorial rhythm:
-//   1. COVER (dark, minimal, bold)
-//   2. STATEMENT (tension/contrast — single strong sentence)
-//   3. EDITORIAL (explanation — headline + short support)
-//   4. BREATHING (ultra-minimal — one insight phrase)
-//   5. STRUCTURED (method — max 3 short items)
-//   6. MANIFESTO (dark, single sentence, large type)
-//   7. SIGNATURE (warm closing)
-//
-// If content is rich, additional editorial/breathing slides are inserted.
-// Content is ALWAYS split rather than compressed.
+// Each carousel follows a strict editorial rhythm driven by creative direction.
+// Content type determines spacing, density, and tension alternation.
 
 export function mapContentToSlides(
-  content: Record<string, string>
+  content: Record<string, string>,
+  contentType?: string
 ): SlideData[] {
+  const dir = getCreativeDirection(contentType);
   const slides: SlideData[] = [];
+
+  const hlMax = dir.headlineMaxWords;
+  const bodyMax = dir.bodyMaxWords;
 
   // ── 1. COVER — Gancho ──
   const gancho = content["Gancho"] || "";
   if (gancho) {
-    const headline = extractShortHeadline(gancho, 10);
-    const body = enforceMaxWords(extractRemainder(gancho, headline), 12);
+    // Generate a punchy cover headline, not just truncate
+    const headline = generateCoverHeadline(gancho, dir.coverMaxWords);
+    const body = dir.maxBlocksPerSlide >= 2
+      ? enforceMaxWords(extractRemainder(gancho, headline), bodyMax)
+      : undefined;
     slides.push({
       type: "cover",
       label: "Gancho",
@@ -95,20 +118,19 @@ export function mapContentToSlides(
   const quebra = content["Quebra de percepção"] || "";
   if (quebra) {
     const sents = sentences(quebra);
-    // First sentence as statement
     slides.push({
       type: "statement",
       label: "Quebra de percepção",
-      headline: enforceMaxWords(sents[0], 18) || extractShortHeadline(quebra, 18),
+      headline: enforceMaxWords(sents[0], hlMax + 8) || extractShortHeadline(quebra, hlMax + 8),
       slideNumber: 0,
       totalSlides: 0,
     });
-    // If there's more, add a breathing slide with the key insight
-    if (sents.length > 1) {
+    // For manifesto/conexao, always add a breathing slide after tension
+    if (sents.length > 1 || dir.extraBreathing) {
       slides.push({
         type: "breathing",
         label: "Insight",
-        headline: enforceMaxWords(sents[1], 12) || "",
+        headline: enforceMaxWords(sents[1] || sents[0], hlMax) || "",
         slideNumber: 0,
         totalSlides: 0,
       });
@@ -119,23 +141,24 @@ export function mapContentToSlides(
   const explicacao = content["Explicação / visão"] || "";
   if (explicacao) {
     const paragraphs = explicacao.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+    const maxParas = dir.maxBlocksPerSlide === 1 ? 4 : 3;
 
-    // Always split into multiple slides: one editorial per key idea
-    for (let i = 0; i < Math.min(paragraphs.length, 3); i++) {
+    for (let i = 0; i < Math.min(paragraphs.length, maxParas); i++) {
       const para = paragraphs[i];
-      if (wordCount(para) <= 20) {
-        // Short enough for a breathing slide
+      if (wordCount(para) <= hlMax) {
+        // Short enough for a breathing/editorial slide
         slides.push({
           type: i === 0 ? "editorial" : "breathing",
           label: "Visão",
-          headline: enforceMaxWords(para, 12) || "",
+          headline: enforceMaxWords(para, hlMax) || "",
           slideNumber: 0,
           totalSlides: 0,
         });
       } else {
-        // Split into headline + body
-        const headline = extractShortHeadline(para, 8);
-        const body = enforceMaxWords(extractRemainder(para, headline), 15);
+        const headline = extractShortHeadline(para, hlMax - 2);
+        const body = dir.maxBlocksPerSlide >= 2
+          ? enforceMaxWords(extractRemainder(para, headline), bodyMax)
+          : undefined;
         slides.push({
           type: "editorial",
           label: "Visão",
@@ -153,15 +176,14 @@ export function mapContentToSlides(
   if (metodo) {
     const items = extractItems(metodo);
     if (items.length >= 2) {
-      // If more than 3 items, split into 2 structured slides
       if (items.length > 3) {
         const firstBatch = items.slice(0, 3);
         const secondBatch = items.slice(3, 6);
         slides.push({
           type: "structured",
           label: "Método",
-          headline: enforceMaxWords(firstBatch[0], 8) || "Método",
-          items: firstBatch.slice(1).map((it) => enforceMaxWords(it, 12) || it),
+          headline: enforceMaxWords(firstBatch[0], hlMax) || "Método",
+          items: firstBatch.slice(1).map((it) => enforceMaxWords(it, bodyMax) || it),
           slideNumber: 0,
           totalSlides: 0,
         });
@@ -169,47 +191,58 @@ export function mapContentToSlides(
           slides.push({
             type: "structured",
             label: "Método",
-            headline: enforceMaxWords(secondBatch[0], 8) || "Continuação",
-            items: secondBatch.slice(1).map((it) => enforceMaxWords(it, 12) || it),
+            headline: enforceMaxWords(secondBatch[0], hlMax) || "Continuação",
+            items: secondBatch.slice(1).map((it) => enforceMaxWords(it, bodyMax) || it),
             slideNumber: 0,
             totalSlides: 0,
           });
         }
       } else {
-        const headline = items[0].length < 50 ? enforceMaxWords(items[0], 8) : "Método";
+        const headline = items[0].length < 50 ? enforceMaxWords(items[0], hlMax) : "Método";
         const listItems = items[0].length < 50 ? items.slice(1) : items;
         slides.push({
           type: "structured",
           label: "Método",
           headline: headline || "Método",
-          items: listItems.slice(0, 3).map((it) => enforceMaxWords(it, 12) || it),
+          items: listItems.slice(0, 3).map((it) => enforceMaxWords(it, bodyMax) || it),
           slideNumber: 0,
           totalSlides: 0,
         });
       }
     } else {
-      // Not enough items — editorial layout
-      const headline = extractShortHeadline(metodo, 8);
+      const headline = extractShortHeadline(metodo, hlMax);
       slides.push({
         type: "editorial",
         label: "Método",
         headline,
-        body: enforceMaxWords(extractRemainder(metodo, headline), 15),
+        body: dir.maxBlocksPerSlide >= 2
+          ? enforceMaxWords(extractRemainder(metodo, headline), bodyMax)
+          : undefined,
         slideNumber: 0,
         totalSlides: 0,
       });
     }
   }
 
+  // ── Insert breathing before manifesto for high-spacing content types ──
+  if (dir.extraBreathing && slides.length >= 4) {
+    slides.push({
+      type: "breathing",
+      label: "Pausa",
+      headline: "Reflita sobre isso.",
+      slideNumber: 0,
+      totalSlides: 0,
+    });
+  }
+
   // ── 5. MANIFESTO ──
   const manifesto = content["Manifesto"] || "";
   if (manifesto) {
-    // Only the strongest single sentence
     const sents = sentences(manifesto);
     slides.push({
       type: "manifesto",
       label: "Manifesto",
-      headline: enforceMaxWords(sents[0], 18) || extractShortHeadline(manifesto, 18),
+      headline: enforceMaxWords(sents[0], hlMax + 8) || extractShortHeadline(manifesto, hlMax + 8),
       slideNumber: 0,
       totalSlides: 0,
     });
@@ -218,8 +251,10 @@ export function mapContentToSlides(
   // ── 6. SIGNATURE — Fechamento ──
   const fechamento = content["Fechamento"] || "";
   if (fechamento) {
-    const headline = extractShortHeadline(fechamento, 10);
-    const body = enforceMaxWords(extractRemainder(fechamento, headline), 12);
+    const headline = extractShortHeadline(fechamento, hlMax);
+    const body = dir.maxBlocksPerSlide >= 2
+      ? enforceMaxWords(extractRemainder(fechamento, headline), bodyMax)
+      : undefined;
     slides.push({
       type: "signature",
       label: "Fechamento",
@@ -233,7 +268,6 @@ export function mapContentToSlides(
   // ── Ensure rhythm: at least one breathing slide exists ──
   const hasBreathing = slides.some((s) => s.type === "breathing");
   if (!hasBreathing && slides.length >= 5) {
-    // Insert a breathing slide before manifesto
     const manifestoIdx = slides.findIndex((s) => s.type === "manifesto");
     if (manifestoIdx > 0) {
       const prevSlide = slides[manifestoIdx - 1];
