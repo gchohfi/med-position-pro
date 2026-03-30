@@ -144,7 +144,7 @@ function headlineSize(len: number, sizes: VisualSystem["headlineSizes"]): number
 }
 
 const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
-  ({ slide, visualSystem = "editorial-premium", brandName, brandHandle, brandColors, contentType }, ref) => {
+  ({ slide, visualSystem = "editorial-premium", brandName, brandHandle, brandColors, contentType, doctorImageUrl }, ref) => {
     const vs = VISUAL_SYSTEMS[visualSystem];
     const mod = getDirectionModifiers(contentType);
     const dir = getCreativeDirection(contentType);
