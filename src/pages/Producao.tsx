@@ -506,7 +506,7 @@ const Producao = () => {
     // Small delay to show loading state
     setTimeout(() => {
       try {
-        const slides = mapContentToSlides(output);
+        const slides = mapContentToSlides(output, tipo);
         if (slides.length === 0) {
           toast.error("Conteúdo insuficiente para gerar slides.");
           return;
@@ -965,6 +965,7 @@ const Producao = () => {
                     slides={visualSlides}
                     brandName="MEDSHIFT"
                     archetype={context.archetype}
+                    contentType={tipo}
                     onRegenerate={handleGenerateVisualCarousel}
                     onClose={() => setVisualSlides(null)}
                     onSlidesChange={(updated) => setVisualSlides(updated)}
