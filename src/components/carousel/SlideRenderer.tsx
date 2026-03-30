@@ -97,6 +97,17 @@ export function getStyleForArchetype(archetype?: string | null): ArchetypeStyle 
   return ARCHETYPE_MAP[archetype] || "editorial-premium";
 }
 
+// ─── GRAIN TEXTURE (shared SVG noise) ──────────────────────────────────────
+const GRAIN_URL = "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+
+const grain = (opacity = 0.035): React.CSSProperties => ({
+  position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+  opacity,
+  backgroundImage: GRAIN_URL,
+  backgroundSize: "128px 128px",
+  pointerEvents: "none",
+});
+
 // ─── RENDERER ─────────────────────────────────────────────────────────────
 
 interface SlideRendererProps {
@@ -107,13 +118,6 @@ interface SlideRendererProps {
   brandColors?: { bg: string; text: string; accent: string; bgAlt?: string };
   contentType?: string;
   doctorImageUrl?: string;
-}
-
-function headlineSize(len: number, sizes: { xl: number; lg: number; md: number; sm: number }): number {
-  if (len <= 25) return sizes.xl;
-  if (len <= 45) return sizes.lg;
-  if (len <= 70) return sizes.md;
-  return sizes.sm;
 }
 
 const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
@@ -145,12 +149,13 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       overflow: "hidden",
     };
 
-    // ── FOOTER — Minimal, near-invisible ──
-    const footer = (color: string) => (
+    // ── FOOTER — Near-invisible pagination ──
+    const footer = (color: string, zIdx = 2) => (
       <div style={{
         position: "absolute", bottom: 0, left: 0, right: 0,
         padding: `0 ${PAD}px ${40}px`,
         display: "flex", alignItems: "center", justifyContent: "space-between",
+        zIndex: zIdx,
       }}>
         <span style={{
           fontSize: 10, fontWeight: 500, color,
@@ -169,89 +174,167 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       </div>
     );
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // COVER — MAXIMUM TENSION. Dark. Enormous type. 3-5 words only.
-    // This slide must STOP the scroll. Nothing subtle here.
-    // ═══════════════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════════════
+    // SLIDE 1 — COVER
+    // Fullscreen doctor image. Dark overlay. Massive serif. 3-5 words.
+    // Must stop the scroll. Cinematic, atmospheric, high-tension.
+    // ═════════════════════════════════════════════════════════════════════════
     if (slide.type === "cover") {
-      const wordCount = slide.headline.split(/\s+/).length;
-      // Massive type — scales inversely with word count
-      const fontSize = wordCount <= 3 ? 120 : wordCount <= 4 ? 100 : 86;
+      const wc = slide.headline.split(/\s+/).length;
+      const fontSize = wc <= 3 ? 128 : wc <= 4 ? 108 : 92;
+      const hasImage = !!doctorImageUrl;
 
       return (
-        <div ref={ref} style={{ ...base, backgroundColor: c.coverBg }}>
-          {/* Subtle grain texture via gradient */}
-          <div style={{
-            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-            background: `radial-gradient(ellipse 80% 60% at 30% 70%, ${c.accent}08 0%, transparent 70%)`,
-          }} />
-          <div style={{
-            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-            display: "flex", flexDirection: "column",
-            justifyContent: "center",
-            padding: `${PAD * 1.2}px ${PAD}px ${PAD * 2}px`,
-          }}>
-            {/* Small accent dash */}
+        <div ref={ref} style={{ ...base, backgroundColor: "#0A0A0A" }}>
+          {hasImage && (
+            <>
+              {/* Full-bleed doctor image — off-center for editorial crop */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                backgroundImage: `url(${doctorImageUrl})`,
+                backgroundSize: "cover",
+                backgroundPosition: "55% 15%",
+                filter: "contrast(1.08) brightness(0.65) saturate(0.8)",
+              }} />
+              {/* Dark directional overlay — heavier left for text */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                background: "linear-gradient(115deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.6) 35%, rgba(0,0,0,0.35) 65%, rgba(0,0,0,0.2) 100%)",
+              }} />
+              {/* Vignette for depth */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                background: "radial-gradient(ellipse 65% 65% at 50% 45%, transparent 25%, rgba(0,0,0,0.5) 100%)",
+              }} />
+              {/* Bottom gradient for footer */}
+              <div style={{
+                position: "absolute", bottom: 0, left: 0, right: 0, height: "30%",
+                background: "linear-gradient(0deg, rgba(0,0,0,0.7) 0%, transparent 100%)",
+              }} />
+            </>
+          )}
+          {!hasImage && (
             <div style={{
-              width: 36, height: 2,
-              backgroundColor: c.accent, opacity: 0.35,
-              marginBottom: 56, borderRadius: 1,
+              position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+              background: `radial-gradient(ellipse 80% 60% at 25% 65%, ${c.accent}10 0%, transparent 70%)`,
+            }} />
+          )}
+          <div style={grain(0.04)} />
+
+          {/* Typography — bottom-anchored, massive, uppercase */}
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, bottom: 80,
+            display: "flex", flexDirection: "column",
+            justifyContent: "flex-end",
+            padding: `${PAD * 1.5}px ${PAD}px ${PAD * 2.2}px`,
+            zIndex: 2,
+          }}>
+            <div style={{
+              width: 40, height: 2.5, backgroundColor: c.accent,
+              opacity: 0.45, marginBottom: 56, borderRadius: 1,
             }} />
             <h1 style={{
-              fontFamily: vs.headlineFont,
+              fontFamily: SERIF,
               fontSize,
               fontWeight: 700,
-              lineHeight: 0.95,
-              color: c.coverText,
+              lineHeight: 0.92,
+              color: "#FFFFFF",
               margin: 0,
-              maxWidth: "90%",
-              letterSpacing: "-0.04em",
-              textTransform: "uppercase" as const,
+              maxWidth: "92%",
+              letterSpacing: "-0.045em",
+              textTransform: "uppercase",
+              textShadow: hasImage
+                ? "0 4px 40px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.4)"
+                : "none",
             }}>
               {slide.headline}
             </h1>
           </div>
-          {footer(c.coverText)}
+          {footer("#FFFFFF", 3)}
         </div>
       );
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // STATEMENT — Bold asymmetric. High contrast. Italic serif.
-    // Feels like a pulled quote from a manifesto.
-    // ═══════════════════════════════════════════════════════════════════════
-    if (slide.type === "statement") {
-      const hSize = headlineSize(slide.headline.length, {
-        xl: 64, lg: 54, md: 46, sm: 38,
-      });
+    // ═════════════════════════════════════════════════════════════════════════
+    // BREATHING — Maximum whitespace. Featherweight typography.
+    // Visual pause between heavy slides. Feels like a gallery breath.
+    // ═════════════════════════════════════════════════════════════════════════
+    if (slide.type === "breathing") {
+      const isDash = slide.headline === "—";
+      const hLen = slide.headline.length;
+      const hSize = isDash ? 160 : hLen <= 20 ? 36 : hLen <= 40 ? 30 : 24;
 
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.bg }}>
-          {/* Bold left accent bar */}
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+            display: "flex", flexDirection: "column",
+            justifyContent: "center", alignItems: "center",
+            padding: `${PAD * 3}px ${PAD * 2}px`,
+            textAlign: "center",
+          }}>
+            {!isDash && (
+              <div style={{
+                width: 24, height: 1.5,
+                backgroundColor: c.accent, opacity: 0.12,
+                marginBottom: 56, borderRadius: 1,
+              }} />
+            )}
+            <p style={{
+              fontFamily: isDash ? SANS : SERIF,
+              fontSize: hSize,
+              fontWeight: isDash ? 100 : 400,
+              lineHeight: isDash ? 1 : 1.65,
+              color: c.text,
+              margin: 0,
+              maxWidth: "50%",
+              fontStyle: isDash ? "normal" : "italic",
+              opacity: isDash ? 0.05 : 0.25,
+              letterSpacing: isDash ? 0 : "0.015em",
+            }}>
+              {slide.headline}
+            </p>
+          </div>
+          {footer(c.text)}
+        </div>
+      );
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // STATEMENT — Bold pulled quote. Italic serif. Asymmetric accent bar.
+    // Feels like a manifesto pull-quote from a magazine spread.
+    // ═════════════════════════════════════════════════════════════════════════
+    if (slide.type === "statement") {
+      const hLen = slide.headline.length;
+      const hSize = hLen <= 25 ? 68 : hLen <= 45 ? 56 : hLen <= 70 ? 46 : 38;
+
+      return (
+        <div ref={ref} style={{ ...base, backgroundColor: c.bg }}>
+          {/* Left accent bar */}
           <div style={{
             position: "absolute",
             left: PAD - 28,
-            top: "25%", bottom: "25%",
+            top: "22%", bottom: "22%",
             width: 3,
             backgroundColor: c.accent,
-            opacity: 0.5,
+            opacity: 0.45,
             borderRadius: 2,
           }} />
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 80,
             display: "flex", flexDirection: "column",
             justifyContent: "center",
-            padding: `${PAD}px ${PAD * 1.5}px ${PAD}px ${PAD + 32}px`,
+            padding: `${PAD}px ${PAD * 1.6}px ${PAD}px ${PAD + 36}px`,
           }}>
             <blockquote style={{
-              fontFamily: vs.headlineFont,
+              fontFamily: SERIF,
               fontSize: hSize,
               fontWeight: 500,
               lineHeight: 1.22,
               color: c.text,
               margin: 0,
               fontStyle: "italic",
-              maxWidth: "88%",
+              maxWidth: "85%",
               letterSpacing: "-0.015em",
             }}>
               {slide.headline}
@@ -262,66 +345,37 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       );
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // BREATHING — Near-empty. Maximum whitespace. Ghostly text.
-    // The carousel NEEDS these pauses. They create rhythm by contrast.
-    // ═══════════════════════════════════════════════════════════════════════
-    if (slide.type === "breathing") {
-      const isDash = slide.headline === "—";
-      const hSize = isDash ? 140 : headlineSize(slide.headline.length, {
-        xl: 38, lg: 32, md: 28, sm: 24,
-      });
-
-      return (
-        <div ref={ref} style={{ ...base, backgroundColor: c.bgAlt }}>
-          <div style={{
-            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-            display: "flex", flexDirection: "column",
-            justifyContent: "center", alignItems: "center",
-            padding: `${PAD * 2}px`,
-            textAlign: "center",
-          }}>
-            {!isDash && (
-              <div style={{
-                width: 20, height: 1.5,
-                backgroundColor: c.accent, opacity: 0.12,
-                marginBottom: 48, borderRadius: 1,
-              }} />
-            )}
-            <p style={{
-              fontFamily: isDash ? vs.bodyFont : vs.headlineFont,
-              fontSize: hSize,
-              fontWeight: isDash ? 100 : 400,
-              lineHeight: isDash ? 1 : 1.55,
-              color: c.text,
-              margin: 0,
-              maxWidth: "55%",
-              fontStyle: isDash ? "normal" : "italic",
-              opacity: isDash ? 0.06 : 0.3,
-              letterSpacing: isDash ? 0 : "0.01em",
-            }}>
-              {slide.headline}
-            </p>
-          </div>
-          {footer(c.text)}
-        </div>
-      );
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // EDITORIAL — Clean single idea. Medium weight. Balanced.
-    // Alternates bg for visual rhythm.
-    // ═══════════════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════════════
+    // EDITORIAL — Single idea. Alternates light/dark for visual rhythm.
+    // Dark variant: high contrast, impactful.
+    // Light variant: clean, refined, breathing.
+    // ═════════════════════════════════════════════════════════════════════════
     if (slide.type === "editorial") {
-      const hSize = headlineSize(slide.headline.length, vs.headlineSizes);
-      const useDarkBg = tension === "heavy";
+      const hLen = slide.headline.length;
+      const useDark = tension === "heavy";
+      const hSize = hLen <= 25
+        ? (useDark ? 96 : vs.headlineSizes.xl)
+        : hLen <= 45
+          ? (useDark ? 76 : vs.headlineSizes.lg)
+          : hLen <= 70
+            ? (useDark ? 60 : vs.headlineSizes.md)
+            : (useDark ? 50 : vs.headlineSizes.sm);
 
-      const bgColor = useDarkBg ? c.coverBg : c.bg;
-      const textColor = useDarkBg ? c.coverText : c.text;
-      const mutedColor = useDarkBg ? `${c.coverText}60` : c.textMuted;
+      const bgColor = useDark ? c.coverBg : c.bg;
+      const textColor = useDark ? c.coverText : c.text;
+      const mutedColor = useDark ? `${c.coverText}55` : c.textMuted;
 
       return (
         <div ref={ref} style={{ ...base, backgroundColor: bgColor }}>
+          {useDark && (
+            <>
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                background: `radial-gradient(ellipse 70% 50% at 70% 60%, ${c.accent}0A 0%, transparent 70%)`,
+              }} />
+              <div style={grain(0.03)} />
+            </>
+          )}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 80,
             display: "flex", flexDirection: "column",
@@ -329,20 +383,21 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
             padding: `${PAD}px ${PAD}px`,
           }}>
             <div style={{
-              width: 32, height: 2,
+              width: useDark ? 40 : 28, height: 2,
               backgroundColor: c.accent,
-              opacity: useDarkBg ? 0.4 : 0.22,
-              marginBottom: 40, borderRadius: 1,
+              opacity: useDark ? 0.5 : 0.2,
+              marginBottom: 44, borderRadius: 1,
             }} />
             <h2 style={{
-              fontFamily: vs.headlineFont,
+              fontFamily: SERIF,
               fontSize: hSize,
-              fontWeight: 600,
-              lineHeight: vs.lineHeights.headline + 0.08,
+              fontWeight: useDark ? 700 : 600,
+              lineHeight: useDark ? 1.0 : vs.lineHeights.headline + 0.08,
               color: textColor,
               margin: 0,
-              maxWidth: "78%",
-              letterSpacing: "-0.02em",
+              maxWidth: useDark ? "85%" : "75%",
+              letterSpacing: useDark ? "-0.035em" : "-0.02em",
+              textTransform: useDark ? "uppercase" : "none",
             }}>
               {slide.headline}
             </h2>
@@ -352,7 +407,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
                 lineHeight: vs.lineHeights.body,
                 color: mutedColor,
                 margin: `${vs.margins.inner}px 0 0`,
-                maxWidth: "68%",
+                maxWidth: "65%",
                 fontWeight: 400,
                 letterSpacing: "0.005em",
               }}>
@@ -365,10 +420,10 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       );
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // STRUCTURED — Giant numbers. Strong hierarchy. Clear contrast.
-    // Numbers should be the first thing you see. Then the text.
-    // ═══════════════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════════════
+    // STRUCTURED — Giant numbers. Strong hierarchy. Method/logic slide.
+    // Numbers are the dominant visual element. 01, 02, 03.
+    // ═════════════════════════════════════════════════════════════════════════
     if (slide.type === "structured") {
       const items = (slide.items || []).slice(0, 3);
       return (
@@ -382,49 +437,51 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
             {/* Section label */}
             <span style={{
               fontSize: 11, fontWeight: 600,
-              color: c.accent, letterSpacing: "0.2em",
-              textTransform: "uppercase" as const,
-              opacity: 0.5, marginBottom: 24,
+              color: c.accent, letterSpacing: "0.25em",
+              textTransform: "uppercase",
+              opacity: 0.55, marginBottom: 28,
+              fontFamily: SANS,
             }}>
               {slide.label}
             </span>
             <h2 style={{
-              fontFamily: vs.headlineFont,
+              fontFamily: SERIF,
               fontSize: vs.headlineSizes.md - 4,
               fontWeight: 600,
               lineHeight: vs.lineHeights.headline + 0.1,
               color: c.text,
-              margin: `0 0 ${vs.margins.inner + 32}px`,
-              maxWidth: "76%",
+              margin: `0 0 ${vs.margins.inner + 40}px`,
+              maxWidth: "72%",
               letterSpacing: "-0.01em",
             }}>
               {slide.headline}
             </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 56 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 64 }}>
               {items.map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 28 }}>
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 32 }}>
                   {/* GIANT number — dominant visual element */}
                   <span style={{
-                    fontFamily: vs.headlineFont,
-                    fontSize: 72,
+                    fontFamily: SERIF,
+                    fontSize: 88,
                     fontWeight: 300,
                     color: c.accent,
-                    lineHeight: 0.85,
-                    minWidth: 64,
-                    opacity: 0.7,
-                    letterSpacing: "-0.04em",
+                    lineHeight: 0.8,
+                    minWidth: 80,
+                    opacity: 0.6,
+                    letterSpacing: "-0.05em",
                   }}>
-                    {i + 1}
+                    {String(i + 1).padStart(2, "0")}
                   </span>
                   <p style={{
-                    fontSize: vs.bodySize + 1,
-                    lineHeight: 1.55,
+                    fontSize: vs.bodySize + 2,
+                    lineHeight: 1.5,
                     color: c.text,
                     margin: 0,
-                    maxWidth: "80%",
+                    maxWidth: "78%",
                     fontWeight: 400,
-                    paddingTop: 8,
-                    opacity: 0.7,
+                    paddingTop: 14,
+                    opacity: 0.65,
+                    fontFamily: SANS,
                   }}>
                     {item}
                   </p>
@@ -437,54 +494,47 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
       );
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // MANIFESTO — ATMOSPHERIC FULL-BLEED PHOTO.
-    // Image IS the slide. Text floats on top with cinematic overlays.
-    // ═══════════════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════════════
+    // MANIFESTO — AUTHORITY SLIDE. Fullscreen doctor image.
+    // Text overlay with cinematic depth. The "I am" moment.
+    // ═════════════════════════════════════════════════════════════════════════
     if (slide.type === "manifesto") {
-      const wordCount = slide.headline.split(/\s+/).length;
-      const hSize = wordCount <= 5 ? 88 : wordCount <= 8 ? 72 : 60;
+      const wc = slide.headline.split(/\s+/).length;
+      const hSize = wc <= 5 ? 92 : wc <= 8 ? 76 : 64;
       const hasImage = !!(doctorImageUrl && slide.showImage);
 
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.coverBg }}>
           {hasImage ? (
             <>
-              {/* FULL-BLEED PHOTO — covers entire slide, off-center crop */}
+              {/* Full-bleed photo — slightly off-center */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
                 backgroundImage: `url(${doctorImageUrl})`,
                 backgroundSize: "cover",
-                backgroundPosition: "55% 10%",
-                filter: "contrast(1.1) brightness(0.7) saturate(0.85)",
+                backgroundPosition: "50% 12%",
+                filter: "contrast(1.1) brightness(0.6) saturate(0.75)",
               }} />
-              {/* DIRECTIONAL OVERLAY — heavier on text side, lighter on image */}
+              {/* Directional overlay — editorial gradient */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: "linear-gradient(110deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.25) 70%, rgba(0,0,0,0.15) 100%)",
+                background: "linear-gradient(160deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 30%, rgba(0,0,0,0.2) 55%, rgba(0,0,0,0.35) 80%, rgba(0,0,0,0.75) 100%)",
               }} />
-              {/* VIGNETTE — depth and focus */}
+              {/* Vignette */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: "radial-gradient(ellipse 70% 70% at 50% 50%, transparent 30%, rgba(0,0,0,0.4) 100%)",
+                background: "radial-gradient(ellipse 60% 60% at 50% 40%, transparent 20%, rgba(0,0,0,0.45) 100%)",
               }} />
-              {/* BOTTOM GRADIENT — footer legibility */}
+              {/* Bottom gradient */}
               <div style={{
-                position: "absolute", bottom: 0, left: 0, right: 0, height: "35%",
-                background: "linear-gradient(0deg, rgba(0,0,0,0.65) 0%, transparent 100%)",
+                position: "absolute", bottom: 0, left: 0, right: 0, height: "40%",
+                background: "linear-gradient(0deg, rgba(0,0,0,0.75) 0%, transparent 100%)",
               }} />
-              {/* WARM ACCENT GLOW — editorial atmosphere */}
-              <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: `radial-gradient(ellipse 45% 35% at 20% 60%, ${c.accent}20 0%, transparent 70%)`,
-                mixBlendMode: "soft-light" as React.CSSProperties["mixBlendMode"],
-              }} />
-              {/* GRAIN TEXTURE — subtle editorial noise */}
+              {/* Accent glow */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                opacity: 0.04,
-                backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-                backgroundSize: "128px 128px",
+                background: `radial-gradient(ellipse 50% 40% at 25% 65%, ${c.accent}18 0%, transparent 70%)`,
+                mixBlendMode: "soft-light",
               }} />
             </>
           ) : (
@@ -493,107 +543,102 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
               background: `radial-gradient(ellipse 70% 50% at 50% 55%, ${c.accent}12 0%, transparent 70%)`,
             }} />
           )}
+          <div style={grain(0.04)} />
 
-          {/* TEXT — bottom-anchored over photo for cinematic feel */}
+          {/* Text — bottom-anchored, cinematic */}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 80,
             display: "flex", flexDirection: "column",
             justifyContent: "flex-end",
             padding: hasImage
-              ? `${PAD}px ${PAD * 1.5}px ${PAD * 1.8}px ${PAD}px`
-              : `${PAD * 1.3}px ${PAD * 0.7}px`,
+              ? `${PAD}px ${PAD * 1.4}px ${PAD * 2}px ${PAD}px`
+              : `${PAD * 1.3}px ${PAD * 0.8}px`,
             textAlign: hasImage ? "left" : "center",
             alignItems: hasImage ? "flex-start" : "center",
             zIndex: 2,
           }}>
             <div style={{
               width: 36, height: 2,
-              backgroundColor: hasImage ? "#ffffff" : c.accent,
-              opacity: hasImage ? 0.4 : 0.35,
-              marginBottom: 40, borderRadius: 1,
+              backgroundColor: "#FFFFFF",
+              opacity: 0.35,
+              marginBottom: 44, borderRadius: 1,
             }} />
             <blockquote style={{
-              fontFamily: vs.headlineFont,
+              fontFamily: SERIF,
               fontSize: hSize,
               fontWeight: 700,
-              lineHeight: 1.05,
-              color: hasImage ? "#FFFFFF" : c.coverText,
+              lineHeight: 1.02,
+              color: "#FFFFFF",
               margin: 0,
-              maxWidth: hasImage ? "75%" : "85%",
+              maxWidth: hasImage ? "72%" : "82%",
               letterSpacing: "-0.03em",
-              textTransform: "uppercase" as const,
+              textTransform: "uppercase",
               textShadow: hasImage
-                ? "0 2px 30px rgba(0,0,0,0.6), 0 0 80px rgba(0,0,0,0.3)"
+                ? "0 3px 35px rgba(0,0,0,0.55), 0 1px 4px rgba(0,0,0,0.35)"
                 : "none",
             }}>
               {slide.headline}
             </blockquote>
           </div>
-          {footer(hasImage ? "#FFFFFF" : c.coverText)}
+          {footer("#FFFFFF", 3)}
         </div>
       );
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // SIGNATURE — EDITORIAL CLOSING. Portrait integrated, not boxed.
-    // Image bleeds off-frame with soft gradients. Brand presence.
-    // ═══════════════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════════════
+    // SIGNATURE — Elegant closing. Integrated portrait. Brand presence.
+    // Portrait bleeds off-frame. Left text is interdependent with image.
+    // Calm. Refined. Not a CTA — a signature.
+    // ═════════════════════════════════════════════════════════════════════════
     if (slide.type === "signature") {
-      const hSize = headlineSize(slide.headline.length, {
-        xl: 44, lg: 38, md: 32, sm: 28,
-      });
+      const hLen = slide.headline.length;
+      const hSize = hLen <= 25 ? 46 : hLen <= 45 ? 38 : hLen <= 70 ? 32 : 28;
       const hasImage = !!doctorImageUrl;
 
       return (
         <div ref={ref} style={{ ...base, backgroundColor: c.bgAlt }}>
           {hasImage && (
             <>
-              {/* PORTRAIT — off-center, bleeds beyond frame edges */}
+              {/* Portrait — off-center, bleeds beyond edges */}
               <div style={{
                 position: "absolute",
-                top: -40, right: -20, bottom: -40,
-                width: "58%",
+                top: -60, right: -30, bottom: -60,
+                width: "55%",
                 backgroundImage: `url(${doctorImageUrl})`,
                 backgroundSize: "cover",
-                backgroundPosition: "center 12%",
-                filter: "grayscale(18%) contrast(1.05) brightness(0.95)",
+                backgroundPosition: "center 10%",
+                filter: "grayscale(15%) contrast(1.05) brightness(0.92) saturate(0.9)",
               }} />
-              {/* LEFT GRADIENT MASK — smooth blend into background */}
+              {/* Left gradient mask — smooth blend */}
               <div style={{
-                position: "absolute", top: -40, left: 0, bottom: -40,
-                width: "62%",
-                background: `linear-gradient(90deg, ${c.bgAlt} 50%, ${c.bgAlt}EE 62%, ${c.bgAlt}AA 74%, ${c.bgAlt}44 86%, transparent 100%)`,
+                position: "absolute", top: -60, left: 0, bottom: -60,
+                width: "65%",
+                background: `linear-gradient(90deg, ${c.bgAlt} 48%, ${c.bgAlt}EE 60%, ${c.bgAlt}AA 72%, ${c.bgAlt}44 84%, transparent 100%)`,
                 zIndex: 1,
               }} />
-              {/* TOP FADE */}
+              {/* Top fade */}
               <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, height: "20%",
+                position: "absolute", top: 0, left: 0, right: 0, height: "22%",
                 background: `linear-gradient(180deg, ${c.bgAlt} 0%, ${c.bgAlt}88 40%, transparent 100%)`,
                 zIndex: 1,
               }} />
-              {/* BOTTOM FADE */}
+              {/* Bottom fade */}
               <div style={{
-                position: "absolute", bottom: 0, left: 0, right: 0, height: "18%",
+                position: "absolute", bottom: 0, left: 0, right: 0, height: "20%",
                 background: `linear-gradient(0deg, ${c.bgAlt} 0%, ${c.bgAlt}CC 40%, transparent 100%)`,
                 zIndex: 1,
               }} />
-              {/* DEPTH SHADOW around portrait */}
+              {/* Subtle accent glow */}
               <div style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: `radial-gradient(ellipse 80% 80% at 72% 45%, transparent 30%, ${c.bgAlt}50 100%)`,
+                background: `radial-gradient(ellipse 40% 30% at 28% 62%, ${c.accent}0E 0%, transparent 70%)`,
                 zIndex: 1,
-              }} />
-              {/* SOFT ACCENT GLOW */}
-              <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: `radial-gradient(ellipse 40% 30% at 30% 65%, ${c.accent}12 0%, transparent 70%)`,
-                zIndex: 1,
-                mixBlendMode: "multiply" as React.CSSProperties["mixBlendMode"],
+                mixBlendMode: "multiply",
               }} />
             </>
           )}
 
-          {/* TEXT — left-anchored, interdependent with portrait */}
+          {/* Text — left side, interdependent with portrait */}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 80,
             display: "flex", flexDirection: "column",
@@ -606,54 +651,58 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
             zIndex: 2,
           }}>
             <div style={{
-              width: 36, height: 2,
+              width: 32, height: 2,
               backgroundColor: c.accent, opacity: 0.3,
-              marginBottom: 44, borderRadius: 1,
+              marginBottom: 48, borderRadius: 1,
             }} />
             <h2 style={{
-              fontFamily: vs.headlineFont,
+              fontFamily: SERIF,
               fontSize: hSize,
               fontWeight: 500,
-              lineHeight: 1.25,
+              lineHeight: 1.28,
               color: c.text,
               margin: 0,
-              maxWidth: hasImage ? "46%" : "72%",
+              maxWidth: hasImage ? "44%" : "68%",
               letterSpacing: "-0.01em",
+              fontStyle: "italic",
             }}>
               {slide.headline}
             </h2>
             <p style={{
-              marginTop: 32,
-              fontSize: vs.bodySize - 3,
+              marginTop: 36,
+              fontSize: vs.bodySize - 4,
               fontWeight: 400,
               lineHeight: 1.6,
               color: c.textMuted,
-              maxWidth: hasImage ? "40%" : "56%",
+              maxWidth: hasImage ? "38%" : "52%",
+              fontFamily: SANS,
             }}>
               Agende sua avaliação pelo link na bio
             </p>
             {/* Brand signature */}
             <div style={{
-              marginTop: 48,
+              marginTop: 56,
               display: "flex", flexDirection: "column",
-              alignItems: hasImage ? "flex-start" : "center", gap: 6,
+              alignItems: hasImage ? "flex-start" : "center", gap: 8,
             }}>
               <span style={{
                 fontSize: 13, fontWeight: 700, color: c.text,
-                letterSpacing: "0.2em", textTransform: "uppercase" as const, opacity: 0.3,
+                letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.28,
+                fontFamily: SANS,
               }}>
                 {name}
               </span>
               <span style={{
                 fontSize: 11, fontWeight: 400, color: c.accent,
-                letterSpacing: "0.04em", opacity: 0.4,
+                letterSpacing: "0.04em", opacity: 0.35,
+                fontFamily: SANS,
               }}>
                 {handle}
               </span>
             </div>
           </div>
 
-          {/* Centered final counter */}
+          {/* Centered counter */}
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0,
             padding: `0 ${PAD}px ${40}px`,
@@ -662,7 +711,8 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
           }}>
             <span style={{
               fontSize: 10, fontWeight: 400, color: c.text,
-              letterSpacing: "0.12em", opacity: 0.12,
+              letterSpacing: "0.12em", opacity: 0.1,
+              fontFamily: SANS,
             }}>
               {String(slide.slideNumber).padStart(2, "0")}/{String(slide.totalSlides).padStart(2, "0")}
             </span>
