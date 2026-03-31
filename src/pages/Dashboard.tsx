@@ -112,14 +112,16 @@ const Dashboard = () => {
       const [profileRes, posRes, diagRes, seriesRes, calRes, contentRes] = await Promise.all([
         supabase.from("profiles").select("full_name, onboarding_complete").eq("id", user.id).maybeSingle(),
         supabase.from("positioning").select("archetype, tone, pillars, target_audience, goals").eq("user_id", user.id).maybeSingle(),
-        supabase.from("diagnosis_outputs").select("id, estrategia, updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1),
+        supabase.from("diagnosis_outputs").select("id, diagnosis, estrategia, updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1),
         supabase.from("series").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("calendar_items").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("content_outputs").select("id, created_at", { count: "exact" }).eq("user_id", user.id).order("created_at", { ascending: false }).limit(1),
       ]);
 
       const diagRow = diagRes.data?.[0];
-      const hasStrategy = !!diagRow && diagRow.estrategia != null && JSON.stringify(diagRow.estrategia) !== "{}";
+      // Bug #7 fix: check actual diagnosis content, not just row existence
+      const hasDiagnosisReal = !!(diagRow?.diagnosis && typeof diagRow.diagnosis === "object" && Object.keys(diagRow.diagnosis as object).length > 1);
+      const hasStrategy = !!(diagRow?.estrategia && typeof diagRow.estrategia === "object" && Object.keys(diagRow.estrategia as object).length > 1);
 
       const dates = [diagRow?.updated_at, contentRes.data?.[0]?.created_at].filter(Boolean) as string[];
       const latestUpdate = dates.length > 0 ? dates.sort().reverse()[0] : null;
@@ -127,7 +129,7 @@ const Dashboard = () => {
       setData({
         profile: profileRes.data ?? null,
         positioning: posRes.data ?? null,
-        hasDiagnosis: !!(diagRow && JSON.stringify(diagRow) !== "{}"),
+        hasDiagnosis: hasDiagnosisReal,
         hasStrategy,
         seriesCount: seriesRes.count ?? 0,
         calendarCount: calRes.count ?? 0,

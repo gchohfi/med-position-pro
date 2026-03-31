@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -19,6 +20,7 @@ import MemoriaViva from "./pages/MemoriaViva";
 import Evolucao from "./pages/Evolucao";
 import RadarMercado from "./pages/RadarMercado";
 import AtualizacoesInteligentes from "./pages/AtualizacoesInteligentes";
+import RadarInstagram from "./pages/RadarInstagram";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -127,6 +129,14 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/instagram"
+        element={
+          <ProtectedRoute>
+            <RadarInstagram />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/atualizacoes"
         element={
           <ProtectedRoute>
@@ -140,17 +150,19 @@ const AppRoutes = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

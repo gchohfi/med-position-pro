@@ -9,15 +9,23 @@ export async function logStrategicEvent(
   sourceModule: string,
   details: Record<string, unknown> = {}
 ) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-  await supabase.from("refresh_logs").insert([{
-    user_id: user.id,
-    event_type: eventType,
-    source_module: sourceModule,
-    details: details as any,
-  }]);
+    const { error } = await supabase.from("refresh_logs").insert([{
+      user_id: user.id,
+      event_type: eventType,
+      source_module: sourceModule,
+      details: details as any,
+    }]);
+
+    if (error) {
+      console.warn("Strategic event log failed:", eventType, error.message);
+    }
+  } catch (err) {
+    console.warn("Strategic event log error:", eventType, err);
+  }
 }
 
 /**
@@ -55,4 +63,5 @@ export const STRATEGIC_EVENTS = {
   INSPIRATION_REJECTED: "inspiration_rejected",
   STRATEGIC_UPDATES_GENERATED: "strategic_updates_generated",
   ASSET_UPLOADED: "asset_uploaded",
+  INSTAGRAM_INTEL_GENERATED: "instagram_intel_generated",
 } as const;

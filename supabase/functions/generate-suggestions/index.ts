@@ -1,10 +1,79 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// ── Inline shared helpers ──
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 5000;
+
+async function callGemini(apiKey: string, body: Record<string, unknown>): Promise<Response> {
+  let lastError: string | null = null;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+      console.log(`[Gemini] retry ${attempt}/${MAX_RETRIES} after ${delay}ms...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+    const res = await fetch(GEMINI_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: "gemini-2.5-flash", ...body }),
+    });
+    if (res.ok) return res;
+    if (res.status === 429 && attempt < MAX_RETRIES) {
+      lastError = await res.text();
+      console.log(`[Gemini] 429 (attempt ${attempt + 1}): ${lastError.slice(0, 120)}`);
+      continue;
+    }
+    return res;
+  }
+  throw new Error(`Gemini failed after ${MAX_RETRIES} retries: ${lastError}`);
+}
+
+async function callGeminiStream(apiKey: string, body: Record<string, unknown>): Promise<Response> {
+  return callGemini(apiKey, { stream: true, ...body });
+}
+
+async function callPerplexity(apiKey: string, body: Record<string, unknown>): Promise<Response | null> {
+  try {
+    const res = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "sonar", ...body }),
+    });
+    if (res.ok) return res;
+    console.log(`[Perplexity] error: ${res.status}`);
+    return null;
+  } catch (e) {
+    console.log(`[Perplexity] exception: ${e}`);
+    return null;
+  }
+}
+
+function errorResponse(message: string, status = 500) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function jsonResponse(data: unknown) {
+  return new Response(JSON.stringify(data), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function streamResponse(body: ReadableStream | null) {
+  return new Response(body, {
+    headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+  });
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -12,20 +81,31 @@ serve(async (req) => {
   }
 
   try {
+    // --- Auth validation (Bug #5 fix) ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return errorResponse("Missing auth", 401);
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return errorResponse("Unauthorized", 401);
+    // --- End auth validation ---
+
     const {
       tipo, objetivo, archetype, pillar, tone, targetAudience, goals, specialty,
       recentTheses, recentPerceptions, activeSeries, memoryHighlights, calendarContext, radarSignals,
     } = await req.json();
 
     if (!tipo || !objetivo) {
-      return new Response(
-        JSON.stringify({ error: "Tipo e objetivo são obrigatórios." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errorResponse("Tipo e objetivo são obrigatórios.", 400);
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured");
 
     const avoidTheses = (recentTheses || []).slice(0, 5);
     const avoidPerceptions = (recentPerceptions || []).slice(0, 5);
@@ -65,32 +145,18 @@ Cada item de "percepcoes" deve ter: angle, label, text
 
 As opções devem ser genuinamente diferentes entre si. Sem clichês genéricos. Específicas ao nicho.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-5-mini",
-        messages: [
-          { role: "system", content: "You generate structured JSON with arrays. Always include the full teses and percepcoes arrays with exactly 3 items each as instructed. Respond in Portuguese (Brazil)." },
-          { role: "user", content: prompt },
-        ],
-        response_format: { type: "json_object" },
-        max_completion_tokens: 1500,
-      }),
+    const response = await callGemini(GEMINI_API_KEY, {
+      messages: [
+        { role: "system", content: "You generate structured JSON with arrays. Always include the full teses and percepcoes arrays with exactly 3 items each as instructed. Respond in Portuguese (Brazil)." },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_object" },
+      max_completion_tokens: 4000,
     });
 
     if (!response.ok) {
       const errText = await response.text();
       console.error("AI API error:", response.status, errText);
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite atingido." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos esgotados." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
       throw new Error(`AI API error: ${response.status}`);
     }
 
@@ -100,10 +166,15 @@ As opções devem ser genuinamente diferentes entre si. Sem clichês genéricos.
 
     let result: any;
     try {
-      result = typeof content === "object" ? content : JSON.parse(content);
+      // Strip markdown code fences if present
+      let cleaned = typeof content === "string" ? content.trim() : "";
+      if (cleaned.startsWith("```")) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+      }
+      result = typeof content === "object" ? content : JSON.parse(cleaned);
     } catch {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("Invalid AI response");
+      const jsonMatch = (typeof content === "string" ? content : "").match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("Invalid AI response — could not extract JSON");
       result = JSON.parse(jsonMatch[0]);
     }
     if (!result.teses?.length || !result.percepcoes?.length) throw new Error("Incomplete response");
@@ -112,10 +183,7 @@ As opções devem ser genuinamente diferentes entre si. Sem clichês genéricos.
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("Error:", err instanceof Error ? err.message : err);
-    return new Response(
-      JSON.stringify({ error: "Erro ao gerar sugestões." }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error("Error:", err?.message || err, JSON.stringify(err));
+    return errorResponse("Erro ao gerar sugestões.", 500);
   }
 });

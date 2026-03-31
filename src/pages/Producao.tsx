@@ -138,6 +138,38 @@ const Producao = () => {
     load();
   }, [user]);
 
+  // Bug #8 fix: Load existing content when content_id is in URL params (from Biblioteca "Reabrir na produção")
+  useEffect(() => {
+    const contentId = searchParams.get("content_id");
+    if (!contentId || !user) return;
+
+    const loadExistingContent = async () => {
+      const { data } = await supabase
+        .from("content_outputs")
+        .select("*")
+        .eq("id", contentId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (data) {
+        const input = data.strategic_input as any;
+        if (input?.tipo) setTipo(input.tipo);
+        if (input?.objetivo) setObjetivo(input.objetivo);
+        if (input?.tese) setTese(input.tese);
+        if (input?.percepcao) setPercepcao(input.percepcao);
+
+        if (data.generated_content && typeof data.generated_content === "object") {
+          setOutput(data.generated_content as Record<string, string>);
+        }
+
+        setLoadedFromLibrary(true);
+        setLoadedContentId(contentId);
+      }
+    };
+
+    loadExistingContent();
+  }, [user, searchParams]);
+
   // Load previous theses/perceptions for variation
   useEffect(() => {
     if (!user) return;
@@ -408,14 +440,16 @@ const Producao = () => {
       for (let i = 0; i < OUTPUT_SECTIONS.length; i++) {
         const sectionName = OUTPUT_SECTIONS[i];
         const nextSection = OUTPUT_SECTIONS[i + 1];
-        const regex = new RegExp(
-          `(?:#+\\s*)?${sectionName.replace(/[.*+?^${}()|[\]\\\/]/g, "\\$&")}[:\\s]*\\n?([\\s\\S]*?)${
-            nextSection
-              ? `(?=(?:#+\\s*)?${nextSection.replace(/[.*+?^${}()|[\]\\\/]/g, "\\$&")})`
-              : "$"
-          }`,
-          "i"
-        );
+        // Match section name with optional markdown formatting (**, ##, numbers, etc.)
+        const escapedName = sectionName.replace(/[.*+?^${}()|[\]\\\/]/g, "\\$&");
+        const escapedNext = nextSection
+          ? nextSection.replace(/[.*+?^${}()|[\]\\\/]/g, "\\$&")
+          : null;
+        const startPattern = `(?:#{1,3}\\s*)?(?:\\*{1,2})?(?:\\d+\\.?\\s*)?${escapedName}(?:\\*{1,2})?[:\\s\u2014-]*\\n?`;
+        const endPattern = escapedNext
+          ? `(?=(?:#{1,3}\\s*)?(?:\\*{1,2})?(?:\\d+\\.?\\s*)?${escapedNext})`
+          : "$";
+        const regex = new RegExp(`${startPattern}([\\s\\S]*?)${endPattern}`, "i");
         const match = fullContent.match(regex);
         sections[sectionName] = match ? match[1].trim() : "";
       }

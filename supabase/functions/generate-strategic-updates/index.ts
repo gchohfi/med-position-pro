@@ -1,10 +1,78 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// ── Inline shared helpers ──
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 5000;
+
+async function callGemini(apiKey: string, body: Record<string, unknown>): Promise<Response> {
+  let lastError: string | null = null;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+      console.log(`[Gemini] retry ${attempt}/${MAX_RETRIES} after ${delay}ms...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+    const res = await fetch(GEMINI_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: "gemini-2.5-flash", ...body }),
+    });
+    if (res.ok) return res;
+    if (res.status === 429 && attempt < MAX_RETRIES) {
+      lastError = await res.text();
+      console.log(`[Gemini] 429 (attempt ${attempt + 1}): ${lastError.slice(0, 120)}`);
+      continue;
+    }
+    return res;
+  }
+  throw new Error(`Gemini failed after ${MAX_RETRIES} retries: ${lastError}`);
+}
+
+async function callGeminiStream(apiKey: string, body: Record<string, unknown>): Promise<Response> {
+  return callGemini(apiKey, { stream: true, ...body });
+}
+
+async function callPerplexity(apiKey: string, body: Record<string, unknown>): Promise<Response | null> {
+  try {
+    const res = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "sonar", ...body }),
+    });
+    if (res.ok) return res;
+    console.log(`[Perplexity] error: ${res.status}`);
+    return null;
+  } catch (e) {
+    console.log(`[Perplexity] exception: ${e}`);
+    return null;
+  }
+}
+
+function errorResponse(message: string, status = 500) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function jsonResponse(data: unknown) {
+  return new Response(JSON.stringify(data), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function streamResponse(body: ReadableStream | null) {
+  return new Response(body, {
+    headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+  });
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS")
@@ -12,18 +80,22 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing auth");
+    if (!authHeader) return errorResponse("Missing auth", 401);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // User client for reading (respects RLS)
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    // Admin client for write operations (Bug #2 fix)
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return errorResponse("Unauthorized", 401);
 
     // Gather context
     const [
@@ -111,19 +183,13 @@ REGRAS:
 - Não invente dados. Se não há informação suficiente, sinalize que o sistema precisa de mais dados.
 - Priorize insights acionáveis sobre observações genéricas.`;
 
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${lovableKey}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
-        response_format: { type: "json_object" },
-      }),
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+
+    const aiRes = await callGemini(GEMINI_API_KEY, {
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      response_format: { type: "json_object" },
     });
 
     if (!aiRes.ok) {
@@ -137,8 +203,8 @@ REGRAS:
 
     const result = JSON.parse(content);
 
-    // Clear old updates and insert new ones
-    await supabase
+    // Bug #2 fix: Use admin client for delete/insert operations
+    await adminClient
       .from("strategic_updates")
       .delete()
       .eq("user_id", user.id);
@@ -155,7 +221,6 @@ REGRAS:
       severity: u.severity || "info",
     }));
 
-    // Add staleness as warning updates
     const stalenessUpdates = (result.staleness || []).map((s: any) => ({
       user_id: user.id,
       update_type: "stagnation",
@@ -170,22 +235,17 @@ REGRAS:
 
     const allUpdates = [...updates, ...stalenessUpdates];
     if (allUpdates.length > 0) {
-      await supabase.from("strategic_updates").insert(allUpdates);
+      await adminClient.from("strategic_updates").insert(allUpdates);
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        updates: allUpdates,
-        next_move: result.next_move,
-        staleness: result.staleness,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({
+      success: true,
+      updates: allUpdates,
+      next_move: result.next_move,
+      staleness: result.staleness,
+    });
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error("generate-strategic-updates error:", error);
+    return errorResponse(error.message, 500);
   }
 });

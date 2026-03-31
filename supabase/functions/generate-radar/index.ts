@@ -1,11 +1,80 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.1";
 
+// ── Inline shared helpers ──
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 5000;
+
+async function callGemini(apiKey: string, body: Record<string, unknown>): Promise<Response> {
+  let lastError: string | null = null;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+      console.log(`[Gemini] retry ${attempt}/${MAX_RETRIES} after ${delay}ms...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+    const res = await fetch(GEMINI_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: "gemini-2.5-flash", ...body }),
+    });
+    if (res.ok) return res;
+    if (res.status === 429 && attempt < MAX_RETRIES) {
+      lastError = await res.text();
+      console.log(`[Gemini] 429 (attempt ${attempt + 1}): ${lastError.slice(0, 120)}`);
+      continue;
+    }
+    return res;
+  }
+  throw new Error(`Gemini failed after ${MAX_RETRIES} retries: ${lastError}`);
+}
+
+async function callGeminiStream(apiKey: string, body: Record<string, unknown>): Promise<Response> {
+  return callGemini(apiKey, { stream: true, ...body });
+}
+
+async function callPerplexity(apiKey: string, body: Record<string, unknown>): Promise<Response | null> {
+  try {
+    const res = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "sonar", ...body }),
+    });
+    if (res.ok) return res;
+    console.log(`[Perplexity] error: ${res.status}`);
+    return null;
+  } catch (e) {
+    console.log(`[Perplexity] exception: ${e}`);
+    return null;
+  }
+}
+
+function errorResponse(message: string, status = 500) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function jsonResponse(data: unknown) {
+  return new Response(JSON.stringify(data), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function streamResponse(body: ReadableStream | null) {
+  return new Response(body, {
+    headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+  });
+}
+
 
 const RADAR_TOOL = {
   type: "function" as const,
@@ -164,8 +233,8 @@ serve(async (req) => {
     const series = seriesRes.data || [];
     const recentContent = contentRes.data || [];
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
 
@@ -245,23 +314,15 @@ Estratégia existente: ${estrategia ? "Sim" : "Não"}
 
 Gere uma leitura estratégica completa do mercado editorial médico para esta profissional, incluindo sinais reais de mercado, padrões de saturação, oportunidades de diferenciação, alertas estratégicos e recomendações acionáveis.`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
+    const aiRes = await callGemini(GEMINI_API_KEY, {
+messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
         tools: [RADAR_TOOL],
         tool_choice: { type: "function", function: { name: "save_radar" } },
         temperature: 0.7,
-      }),
-    });
+      });
 
     if (!aiRes.ok) {
       const errText = await aiRes.text();
