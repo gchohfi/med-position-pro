@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Instagram, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const especialidades: Especialidade[] = [
   "Dermatologia",
@@ -63,6 +65,69 @@ const Setup = () => {
   const [skill, setSkill] = useState<CarouselSkill>(
     profile?.skill || DEFAULT_SKILL
   );
+
+  const [instagramHandle, setInstagramHandle] = useState(
+    profile?.skill?.handle || ""
+  );
+  const [importLoading, setImportLoading] = useState(false);
+
+  const handleInstagramImport = async () => {
+    if (!instagramHandle.trim()) {
+      toast.error("Digite um handle do Instagram para importar.");
+      return;
+    }
+
+    setImportLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "import-instagram-profile",
+        { body: { handle: instagramHandle.trim() } }
+      );
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Merge returned data into form — only overwrite empty fields or if returned value is non-empty
+      setForm((prev) => ({
+        ...prev,
+        nome: prev.nome || data.nome || prev.nome,
+        especialidade:
+          prev.especialidade === "Outra" && data.especialidade
+            ? data.especialidade
+            : prev.especialidade,
+        subespecialidade:
+          prev.subespecialidade || data.subespecialidade || "",
+        crm: prev.crm || data.crm || "",
+        cidade: prev.cidade || data.cidade || "",
+        estado: prev.estado || data.estado || "",
+        plataformas:
+          prev.plataformas.length === 0 && Array.isArray(data.plataformas)
+            ? data.plataformas
+            : prev.plataformas,
+        publico_alvo: prev.publico_alvo || data.publico_alvo || "",
+        tom_de_voz: prev.tom_de_voz || data.tom_de_voz || "",
+        diferenciais:
+          prev.diferenciais.length === 0 && Array.isArray(data.diferenciais)
+            ? data.diferenciais
+            : prev.diferenciais,
+        objetivos: prev.objetivos.length === 0 && Array.isArray(data.objetivos)
+          ? data.objetivos
+          : prev.objetivos,
+        bio_instagram: prev.bio_instagram || data.bio_instagram || "",
+      }));
+
+      const confidence = data.confidence ?? 0;
+      toast.success(
+        `Perfil importado com ${Math.round(confidence * 100)}% de confiança.`
+      );
+    } catch (err) {
+      toast.error(
+        `Erro ao importar perfil: ${(err as Error).message}`
+      );
+    } finally {
+      setImportLoading(false);
+    }
+  };
 
   const updateSkill = <K extends keyof CarouselSkill>(key: K, value: CarouselSkill[K]) => {
     setSkill((prev) => ({ ...prev, [key]: value }));
@@ -113,6 +178,34 @@ const Setup = () => {
             <CardTitle>Dados Profissionais</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="rounded-lg border border-dashed border-pink-300 bg-pink-50/50 p-4 space-y-3">
+              <Label className="text-sm font-medium">Importar do Instagram</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={instagramHandle}
+                  onChange={(e) => setInstagramHandle(e.target.value)}
+                  placeholder="@dra.exemplo"
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleInstagramImport}
+                  disabled={importLoading}
+                  className="gap-2"
+                >
+                  {importLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Instagram className="h-4 w-4" />
+                  )}
+                  {importLoading ? "Importando..." : "Importar do Instagram"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Preencha automaticamente os campos a partir do perfil do Instagram.
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="nome">Nome completo</Label>
