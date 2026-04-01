@@ -653,7 +653,7 @@ const MemoriaViva = () => {
             transition={{ delay: 0.6 }}
           >
             <Button
-              onClick={() => navigate("/estrategia")}
+              onClick={() => navigate("/estrategia-ia")}
               className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
             >
               Revisar direção estratégica

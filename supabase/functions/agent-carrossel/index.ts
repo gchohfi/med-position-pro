@@ -98,7 +98,10 @@ Retorne APENAS JSON válido (sem markdown, sem texto fora do JSON):
       "headline": "...",
       "img_query": "..."
     }
-  ]
+  ],
+  "legenda": "Legenda completa para o post do Instagram (2-3 parágrafos curtos)",
+  "hashtags": ["hashtag1", "hashtag2", "...até 15 hashtags relevantes"],
+  "cta_final": "Frase de call-to-action para a legenda (ex: Salve este post e compartilhe com quem precisa)"
 }
 `;
 

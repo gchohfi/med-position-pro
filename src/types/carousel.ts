@@ -72,6 +72,9 @@ export interface TravessIARoteiro {
   tese: string;
   jornada?: string;
   slides: TravessIASlide[];
+  legenda?: string;
+  hashtags?: string[];
+  cta_final?: string;
 }
 
 export interface CarouselSkill {

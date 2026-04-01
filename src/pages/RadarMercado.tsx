@@ -86,7 +86,7 @@ const MODULE_ICONS: Record<string, any> = {
 };
 
 const MODULE_PATHS: Record<string, string> = {
-  estrategia: "/estrategia",
+  estrategia: "/estrategia-ia",
   series: "/series",
   calendario: "/calendario",
   producao: "/producao",
@@ -472,7 +472,7 @@ const RadarMercado = () => {
                             variant="outline"
                             size="sm"
                             className="rounded-xl shrink-0 text-xs"
-                            onClick={() => navigate(MODULE_PATHS[rec.module] || "/estrategia")}
+                            onClick={() => navigate(MODULE_PATHS[rec.module] || "/estrategia-ia")}
                           >
                             {MODULE_LABELS[rec.module] || "Abrir"}
                             <ArrowRight className="ml-1.5 h-3 w-3" />

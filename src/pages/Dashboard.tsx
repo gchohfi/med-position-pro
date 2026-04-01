@@ -60,7 +60,7 @@ function resolveStage(data: DashboardData): UserStage {
 const journeySteps = [
   { key: "onboarding", label: "Onboarding", path: "/onboarding" },
   { key: "diagnosis", label: "Diagnóstico", path: "/diagnostico" },
-  { key: "strategy", label: "Estratégia", path: "/estrategia" },
+  { key: "strategy", label: "Estratégia", path: "/estrategia-ia" },
   { key: "series", label: "Séries", path: "/series" },
   { key: "calendar", label: "Calendário", path: "/calendario" },
   { key: "production", label: "Criação", path: "/producao" },
@@ -190,7 +190,7 @@ const Dashboard = () => {
   const nextMove: Record<UserStage, { label: string; path: string; cta: string }> = {
     pre_onboarding: { label: "Definir sua base estratégica", path: "/onboarding", cta: "Começar onboarding" },
     post_onboarding: { label: "Gerar diagnóstico de posicionamento", path: "/diagnostico", cta: "Gerar diagnóstico" },
-    has_diagnosis: { label: "Refinar direção estratégica", path: "/estrategia", cta: "Definir estratégia" },
+    has_diagnosis: { label: "Refinar direção estratégica", path: "/estrategia-ia", cta: "Definir estratégia" },
     has_strategy: { label: "Criar sua primeira série editorial", path: "/series", cta: "Criar série" },
     active: { label: "Estruturar próxima peça de conteúdo", path: "/producao", cta: "Criar conteúdo" },
   };
@@ -239,7 +239,7 @@ const Dashboard = () => {
       quickActions.push({ label: "Gerar diagnóstico", icon: Target, path: "/diagnostico", primary: !data.hasDiagnosis });
     }
     if (data.hasDiagnosis && !data.hasStrategy) {
-      quickActions.push({ label: "Definir estratégia", icon: Sparkles, path: "/estrategia", primary: true });
+      quickActions.push({ label: "Definir estratégia", icon: Sparkles, path: "/estrategia-ia", primary: true });
     }
     if (data.hasStrategy) {
       quickActions.push({ label: "Criar conteúdo", icon: PenTool, path: "/producao", primary: true });

@@ -151,7 +151,7 @@ const Carrossel = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("agent-carrossel", {
-        body: { profile, tese, objetivo, action: "generate" },
+        body: { profile, tese, objetivo, action: "generate", skill: profile?.skill },
       });
       if (error) throw error;
       const parsed = data as TravessIARoteiro;
@@ -173,7 +173,7 @@ const Carrossel = () => {
     setRewriteLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("agent-carrossel", {
-        body: { action: "rewrite", roteiro: roteiro.slides, feedback, profile },
+        body: { action: "rewrite", roteiro: roteiro.slides, feedback, profile, skill: profile?.skill },
       });
       if (error) throw error;
       const parsed = data as TravessIARoteiro;
@@ -512,25 +512,25 @@ const Carrossel = () => {
                 </Card>
 
                 {/* ── Legenda / Hashtags placeholder ─────────────────── */}
-                {(roteiro as any).legenda && (
+                {roteiro.legenda && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-base">Legenda e Hashtags</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <p className="text-sm whitespace-pre-wrap">{(roteiro as any).legenda}</p>
-                      {(roteiro as any).hashtags && (
+                      <p className="text-sm whitespace-pre-wrap">{roteiro.legenda}</p>
+                      {roteiro.hashtags && (
                         <div className="flex flex-wrap gap-1">
-                          {((roteiro as any).hashtags as string[]).map((h) => (
+                          {roteiro.hashtags.map((h) => (
                             <Badge key={h} variant="secondary" className="text-xs">
                               {h.startsWith("#") ? h : `#${h}`}
                             </Badge>
                           ))}
                         </div>
                       )}
-                      {(roteiro as any).cta_final && (
+                      {roteiro.cta_final && (
                         <p className="text-sm">
-                          <strong>CTA Final:</strong> {(roteiro as any).cta_final}
+                          <strong>CTA Final:</strong> {roteiro.cta_final}
                         </p>
                       )}
                     </CardContent>

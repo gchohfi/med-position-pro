@@ -497,7 +497,7 @@ const Diagnostico = () => {
             transition={{ delay: 0.7 }}
           >
             <Button
-              onClick={() => navigate("/estrategia")}
+              onClick={() => navigate("/estrategia-ia")}
               className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 h-11 px-8"
             >
               Ver estratégia
