@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
 import { useDoctor } from "@/contexts/DoctorContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TravessIARoteiro, TravessIASlide, travessiaToSlideData, validarRoteiro } from "@/types/carousel";
@@ -38,6 +38,7 @@ interface PautaResult {
 const Carrossel = () => {
   const { profile, isConfigured } = useDoctor();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Brief form
   const [tese, setTese] = useState("");
@@ -58,6 +59,14 @@ const Carrossel = () => {
   const [slideDataList, setSlideDataList] = useState<SlideData[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Pre-fill from navigation state (e.g. from Inspiração page)
+  useEffect(() => {
+    if (location.state?.tese) {
+      setTese(location.state.tese);
+      if (location.state?.objetivo) setObjetivo(location.state.objetivo);
+    }
+  }, [location.state]);
 
   // View toggle
   const [viewMode, setViewMode] = useState<"texto" | "visual">("texto");

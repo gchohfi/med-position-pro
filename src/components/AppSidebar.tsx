@@ -29,6 +29,7 @@ import {
   Zap,
   Bot,
   LineChart,
+  Globe,
 } from "lucide-react";
 
 const configLinks = [
@@ -40,6 +41,7 @@ const diagnosticoLinks = [
   { label: "Análise de Perfil", icon: Users, path: "/analise-perfil" },
   { label: "Concorrência", icon: Eye, path: "/concorrencia" },
   { label: "Radar Instagram", icon: Instagram, path: "/radar-instagram" },
+  { label: "Inspiração", icon: Globe, path: "/inspiracao" },
 ];
 
 const estrategiaLinks = [

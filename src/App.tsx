@@ -32,6 +32,7 @@ import Tendencias from "./pages/Tendencias";
 import Estrategia from "./pages/Estrategia";
 import Carrossel from "./pages/Carrossel";
 import Metricas from "./pages/Metricas";
+import Inspiracao from "./pages/Inspiracao";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +69,7 @@ const App = () => (
               <Route path="/estrategia-ia" element={<Estrategia />} />
               <Route path="/carrossel" element={<Carrossel />} />
               <Route path="/metricas" element={<Metricas />} />
+              <Route path="/inspiracao" element={<Inspiracao />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </DoctorProvider>
