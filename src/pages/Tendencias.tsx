@@ -1,1 +1,98 @@
+import AppLayout from "@/components/AppLayout";
+import { useDoctor } from "@/contexts/DoctorContext";
+import { useStreamingResponse } from "@/hooks/useStreamingResponse";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle, TrendingUp, Loader2, RotateCcw } from "lucide-react";
 
+const Tendencias = () => {
+  const { profile, isConfigured } = useDoctor();
+  const navigate = useNavigate();
+
+  const { text, loading, error, start, reset } = useStreamingResponse({
+    functionName: "agent-tendencias",
+    onComplete: () => {},
+    onError: (err) => console.error("Erro ao buscar tendências:", err),
+  });
+
+  const handleFetch = () => {
+    if (!profile) return;
+    start({ profile, especialidade: profile.especialidade });
+  };
+
+  return (
+    <AppLayout>
+      <div className="p-6 max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center gap-3">
+          <TrendingUp className="h-7 w-7 text-primary" />
+          <h1 className="text-3xl font-bold">Tendências</h1>
+        </div>
+        <p className="text-muted-foreground">
+          Descubra tendências de conteúdo médico e oportunidades de pauta para sua especialidade.
+        </p>
+
+        {!isConfigured ? (
+          <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+            <CardContent className="flex items-center gap-4 py-4">
+              <AlertTriangle className="h-6 w-6 text-amber-600 shrink-0" />
+              <div className="flex-1">
+                <p className="font-medium">Perfil não configurado</p>
+                <p className="text-sm text-muted-foreground">
+                  Configure seu perfil no Setup antes de buscar tendências.
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => navigate("/setup")}>
+                Ir para Setup
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex gap-3">
+              <Button onClick={handleFetch} disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Buscando Tendências...
+                  </>
+                ) : (
+                  "Buscar Tendências"
+                )}
+              </Button>
+              {text && !loading && (
+                <Button variant="outline" onClick={reset}>
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Nova Busca
+                </Button>
+              )}
+            </div>
+
+            {error && (
+              <Card className="border-red-500/50">
+                <CardContent className="py-4 text-red-600">
+                  Erro ao buscar tendências: {error}
+                </CardContent>
+              </Card>
+            )}
+
+            {text && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tendências Identificadas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
+                    {text}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+      </div>
+    </AppLayout>
+  );
+};
+
+export default Tendencias;
