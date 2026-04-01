@@ -211,7 +211,7 @@ serve(async (req) => {
     // Build system prompt with optional skill injection
     let systemPrompt = "";
     if (skill) {
-      systemPrompt += `## CARROSSEL_SKILL (estilo do cliente)\n${skill}\n\n`;
+      systemPrompt += `## CARROSSEL_SKILL (estilo do cliente)\n${JSON.stringify(skill, null, 2)}\n\n`;
     }
     systemPrompt += BASE_SYSTEM;
 
