@@ -1,3 +1,5 @@
+import type { CarouselSkill } from "./carousel";
+
 export type Especialidade =
   | "Dermatologia"
   | "Ginecologia e Obstetrícia"
@@ -30,4 +32,5 @@ export interface DoctorProfile {
   concorrentes?: string[];
   referencia_visual?: string;
   bio_instagram?: string;
+  skill?: CarouselSkill;
 }
