@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { logStrategicEvent } from "@/lib/strategic-events";
+import { isValidInstagramHandle, normalizeInstagramHandle } from "@/lib/inspiration";
 import {
   Instagram,
   Plus,
@@ -207,7 +208,13 @@ const RadarInstagram = () => {
       .select("*")
       .eq("user_id", user!.id)
       .order("created_at", { ascending: true });
-    if (tracked) setProfiles(tracked as unknown as TrackedProfile[]);
+    if (tracked) {
+      const normalized = (tracked as any[]).map((p) => ({
+        ...p,
+        username: normalizeInstagramHandle(String(p.username || "")),
+      }));
+      setProfiles(normalized as unknown as TrackedProfile[]);
+    }
   };
 
   const loadAnalysis = async () => {
@@ -234,7 +241,11 @@ const RadarInstagram = () => {
   /* ─── Profile management ─── */
   const addProfile = async () => {
     if (!newUsername.trim()) return;
-    const clean = newUsername.trim().replace(/^@/, "");
+    const clean = normalizeInstagramHandle(newUsername);
+    if (!isValidInstagramHandle(clean)) {
+      toast.error("Username inválido. Digite apenas o @handle do Instagram.");
+      return;
+    }
 
     const ownCount = profiles.filter((p) => p.profile_type === "own").length;
     const compCount = profiles.filter(
@@ -250,7 +261,9 @@ const RadarInstagram = () => {
       return;
     }
     if (
-      profiles.some((p) => p.username.toLowerCase() === clean.toLowerCase())
+      profiles.some(
+        (p) => normalizeInstagramHandle(p.username).toLowerCase() === clean.toLowerCase()
+      )
     ) {
       toast.error("Este perfil já está sendo monitorado.");
       return;

@@ -8,6 +8,16 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function normalizeHandle(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\/(www\.)?instagram\.com\//, "")
+    .replace(/^@/, "")
+    .split(/[/?#]/)[0]
+    .replace(/[^a-z0-9._]/g, "");
+}
+
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 5000;
@@ -175,8 +185,12 @@ serve(async (req) => {
     const archetype = positioning?.archetype || "";
     const pillars = positioning?.pillars?.join(", ") || "";
     const tone = positioning?.tone || "";
-    const ownProfile = trackedProfiles.find((p: any) => p.profile_type === "own");
-    const competitors = trackedProfiles.filter((p: any) => p.profile_type === "competitor");
+    const sanitizedProfiles = trackedProfiles
+      .map((p: any) => ({ ...p, username: normalizeHandle(String(p.username || "")) }))
+      .filter((p: any) => !!p.username);
+
+    const ownProfile = sanitizedProfiles.find((p: any) => p.profile_type === "own");
+    const competitors = sanitizedProfiles.filter((p: any) => p.profile_type === "competitor");
     const competitorUsernames = competitors.map((p: any) => p.username);
 
     // ── STEP 1: Market research via Perplexity ──
@@ -212,7 +226,7 @@ serve(async (req) => {
       contextParts.push(`ESTRATÉGIA: ${typeof diagnosis.estrategia === "string" ? diagnosis.estrategia : JSON.stringify(diagnosis.estrategia).substring(0, 500)}`);
     }
 
-    const profilesDescription = trackedProfiles.map((p: any) => {
+    const profilesDescription = sanitizedProfiles.map((p: any) => {
       const type = p.profile_type === "own" ? "PRÓPRIO" : "CONCORRENTE";
       return `@${p.username} (${type})${p.notes ? ` — ${p.notes}` : ""}`;
     }).join("\n");

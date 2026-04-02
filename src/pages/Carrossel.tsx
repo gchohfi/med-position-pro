@@ -4,7 +4,16 @@ import { useDoctor } from "@/contexts/DoctorContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { TravessIARoteiro, TravessIASlide, travessiaToSlideData, validarRoteiro } from "@/types/carousel";
+import {
+  TravessIARoteiro,
+  TravessIASlide,
+  travessiaToSlideData,
+  validarRoteiro,
+  avaliarQualidadeRoteiro,
+  type CarouselQualityReport,
+  simularRevisaoNutrologa,
+  type NutrologaReviewReport,
+} from "@/types/carousel";
 import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
 import type { SlideData } from "@/components/carousel/SlideRenderer";
 import { Button } from "@/components/ui/button";
@@ -57,6 +66,8 @@ const Carrossel = () => {
   const [roteiro, setRoteiro] = useState<TravessIARoteiro | null>(null);
   const [slideDataList, setSlideDataList] = useState<SlideData[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [quality, setQuality] = useState<CarouselQualityReport | null>(null);
+  const [nutrologaReview, setNutrologaReview] = useState<NutrologaReviewReport | null>(null);
   const [loading, setLoading] = useState(false);
 
   // View toggle
@@ -130,6 +141,8 @@ const Carrossel = () => {
     setSlideDataList(slides);
     const avisos = validarRoteiro(parsed);
     setWarnings(avisos);
+    setQuality(avaliarQualidadeRoteiro(parsed));
+    setNutrologaReview(simularRevisaoNutrologa(parsed));
     if (avisos.length > 0) {
       toast.warning(`Roteiro gerado com ${avisos.length} aviso(s).`);
     } else {
@@ -192,6 +205,8 @@ const Carrossel = () => {
     setRoteiro(null);
     setSlideDataList([]);
     setWarnings([]);
+    setQuality(null);
+    setNutrologaReview(null);
     setTese("");
     setObjetivo("");
     setFeedback("");
@@ -373,6 +388,53 @@ const Carrossel = () => {
                           {w}
                         </p>
                       ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Quality score */}
+                {quality && (
+                  <Card>
+                    <CardContent className="py-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Qualidade estimada do carrossel</p>
+                        <Badge variant={quality.score >= 85 ? "default" : quality.score >= 70 ? "secondary" : "destructive"}>
+                          {quality.score}/100 · {quality.summary}
+                        </Badge>
+                      </div>
+                      {quality.strengths.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-emerald-700 mb-1">Pontos fortes</p>
+                          {quality.strengths.slice(0, 3).map((item, i) => (
+                            <p key={i} className="text-xs text-muted-foreground">• {item}</p>
+                          ))}
+                        </div>
+                      )}
+                      {quality.improvements.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-amber-700 mb-1">Melhorias sugeridas</p>
+                          {quality.improvements.slice(0, 3).map((item, i) => (
+                            <p key={i} className="text-xs text-muted-foreground">• {item}</p>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {nutrologaReview && (
+                  <Card className="border-l-4 border-l-primary">
+                    <CardContent className="py-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Simulação: revisão de uma nutróloga</p>
+                        <Badge variant={nutrologaReview.parecer === "aprovado" ? "default" : "secondary"}>
+                          {nutrologaReview.parecer === "aprovado" ? "Aprovado para teste" : "Ajustar antes de publicar"}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">• {nutrologaReview.headlineFeedback}</p>
+                      <p className="text-xs text-muted-foreground">• {nutrologaReview.scientificFeedback}</p>
+                      <p className="text-xs text-muted-foreground">• {nutrologaReview.practicalFeedback}</p>
+                      <p className="text-xs text-muted-foreground">• {nutrologaReview.ctaFeedback}</p>
                     </CardContent>
                   </Card>
                 )}

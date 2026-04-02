@@ -14,10 +14,8 @@ import {
   Target,
   PenTool,
   Archive,
-  Brain,
-  TrendingUp,
   Calendar,
-  BookOpen,
+  TrendingUp,
   Sparkles,
   Instagram,
   RefreshCw,
@@ -28,24 +26,32 @@ import {
   Layers,
   Zap,
   Bot,
+  type LucideIcon,
 } from "lucide-react";
 
-const platformLinks = [
+interface NavLinkItem {
+  label: string;
+  icon: LucideIcon;
+  path: string;
+}
+
+const platformLinks: NavLinkItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { label: "Onboarding", icon: Settings, path: "/onboarding" },
   { label: "Diagnóstico", icon: Target, path: "/diagnostico" },
   { label: "Produção", icon: PenTool, path: "/producao" },
   { label: "Biblioteca", icon: Archive, path: "/biblioteca" },
-  { label: "Memória Viva", icon: Brain, path: "/memoria-viva" },
-  { label: "Evolução", icon: TrendingUp, path: "/evolucao" },
   { label: "Calendário", icon: Calendar, path: "/calendario" },
-  { label: "Séries", icon: BookOpen, path: "/series" },
+];
+
+const intelligenceLinks: NavLinkItem[] = [
+  { label: "Onboarding", icon: Settings, path: "/onboarding" },
   { label: "Radar Mercado", icon: Sparkles, path: "/radar-mercado" },
   { label: "Radar Instagram", icon: Instagram, path: "/radar-instagram" },
   { label: "Atualizações", icon: RefreshCw, path: "/atualizacoes" },
+  { label: "Métricas", icon: BarChart3, path: "/metricas" },
 ];
 
-const squadLinks = [
+const squadLinks: NavLinkItem[] = [
   { label: "Setup", icon: Settings, path: "/setup" },
   { label: "Supervisor", icon: Bot, path: "/supervisor" },
   { label: "Análise de Perfil", icon: Users, path: "/analise-perfil" },
@@ -53,53 +59,38 @@ const squadLinks = [
   { label: "Tendências", icon: TrendingUp, path: "/tendencias" },
   { label: "Estratégia IA", icon: Zap, path: "/estrategia-ia" },
   { label: "Carrossel", icon: Layers, path: "/carrossel" },
-  { label: "Métricas", icon: BarChart3, path: "/metricas" },
 ];
 
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const renderGroup = (title: string, links: NavLinkItem[]) => (
+    <SidebarGroup>
+      <SidebarGroupLabel>{title}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {links.map((link) => (
+            <SidebarMenuItem key={link.path}>
+              <SidebarMenuButton
+                onClick={() => navigate(link.path)}
+                isActive={location.pathname === link.path}
+              >
+                <link.icon className="h-4 w-4" />
+                <span>{link.label}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
 
   return (
     <Sidebar>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Plataforma</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {platformLinks.map((link) => (
-                <SidebarMenuItem key={link.path}>
-                  <SidebarMenuButton
-                    onClick={() => navigate(link.path)}
-                    isActive={location.pathname === link.path}
-                  >
-                    <link.icon className="h-4 w-4" />
-                    <span>{link.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>IA Squad Médico</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {squadLinks.map((link) => (
-                <SidebarMenuItem key={link.path}>
-                  <SidebarMenuButton
-                    onClick={() => navigate(link.path)}
-                    isActive={location.pathname === link.path}
-                  >
-                    <link.icon className="h-4 w-4" />
-                    <span>{link.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {renderGroup("Plataforma", platformLinks)}
+        {renderGroup("Inteligência", intelligenceLinks)}
+        {renderGroup("IA Squad Médico", squadLinks)}
       </SidebarContent>
     </Sidebar>
   );

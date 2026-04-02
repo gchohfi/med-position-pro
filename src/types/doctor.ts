@@ -33,4 +33,5 @@ export interface DoctorProfile {
   referencia_visual?: string;
   bio_instagram?: string;
   skill?: CarouselSkill;
+  inspiration_handles?: string[];
 }
