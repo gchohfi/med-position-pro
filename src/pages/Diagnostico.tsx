@@ -109,8 +109,8 @@ const Diagnostico = () => {
         .single();
 
       const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const accessToken = currentSession?.access_token;
-      if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const token = currentSession?.access_token ?? supabaseKey;
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-diagnosis`,
@@ -118,7 +118,8 @@ const Diagnostico = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
+            apikey: supabaseKey,
           },
           body: JSON.stringify({
             positioning,

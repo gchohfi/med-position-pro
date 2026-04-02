@@ -301,7 +301,8 @@ const RadarInstagram = () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Sessão expirada.");
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const token = session?.access_token ?? supabaseKey;
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-instagram-intel`,
@@ -309,7 +310,8 @@ const RadarInstagram = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${token}`,
+            apikey: supabaseKey,
           },
           body: JSON.stringify({}),
         }

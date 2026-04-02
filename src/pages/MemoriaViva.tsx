@@ -111,15 +111,16 @@ const MemoriaViva = () => {
     setGenerating(true);
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const accessToken = currentSession?.access_token;
-      if (!accessToken) throw new Error("Sessão expirada.");
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const token = currentSession?.access_token ?? supabaseKey;
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-memory`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
+            apikey: supabaseKey,
           },
           body: JSON.stringify({}),
         }
@@ -142,8 +143,8 @@ const MemoriaViva = () => {
     setGeneratingInspirations(true);
     try {
       const { data: { session: inspSession } } = await supabase.auth.getSession();
-      const inspToken = inspSession?.access_token;
-      if (!inspToken) throw new Error("Sessão expirada.");
+      const supabaseKey2 = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const inspToken = inspSession?.access_token ?? supabaseKey2;
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-inspirations`,
         {
@@ -151,6 +152,7 @@ const MemoriaViva = () => {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${inspToken}`,
+            apikey: supabaseKey2,
           },
           body: JSON.stringify({}),
         }
