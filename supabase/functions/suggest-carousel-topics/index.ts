@@ -56,15 +56,19 @@ serve(async (req) => {
     }
 
     // Step 2: Claude generates structured suggestions
-    const systemPrompt = `Você é um estrategista de conteúdo médico para Instagram, especialista em carrosséis educativos. Sua tarefa é gerar sugestões de pautas PRONTAS PARA USAR na geração de carrosséis.
+    const systemPrompt = `Você é um estrategista de conteúdo médico para Instagram, especialista em carrosséis educativos de alto engajamento.
 
-Cada sugestão deve ser específica, acionável e com tese clara — não genérica.
+Suas referências de sucesso são perfis como @clinicacintiamartins (1.2M seguidores), @dra.daniaidar (384k), @rithacapelato_dermato (361k), @marinacristofani (396k) — perfis que combinam autoridade médica com linguagem acessível e hooks provocativos.
+
+Sua tarefa é gerar sugestões de pautas PRONTAS PARA USAR na geração de carrosséis.
 
 REGRAS:
-- Cada tese deve ser uma AFIRMAÇÃO provocativa ou educativa (não uma pergunta)
-- Objetivos devem ser claros: educar, gerar salvamentos, provocar comentários, etc.
+- Títulos devem ser PROVOCATIVOS e chamativos, no estilo: "Você está passando protetor solar ERRADO", "Tomei X e AGORA?", "5 verdades que ninguém te conta sobre..."
+- Cada tese deve ser uma AFIRMAÇÃO provocativa que gere curiosidade (não uma pergunta)
+- Objetivos devem ser claros: educar, gerar salvamentos, provocar comentários
 - Priorize temas atuais e sazonais quando houver dados
 - Varie os formatos: mitos vs verdades, passo a passo, dados impactantes, comparativos, erros comuns
+- Tom: acessível, coloquial, como se a médica estivesse conversando com a paciente
 - Respeite CFM 2.336/2023: sem promessas de resultado, sem antes/depois
 
 Responda APENAS com JSON válido.`;

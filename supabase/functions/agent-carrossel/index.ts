@@ -46,12 +46,32 @@ const LAYOUTS_DOC = `
 
 const REGRAS_TOM = `
 ## REGRAS DE TOM (obrigatório)
+### Inspirado em perfis de referência (@clinicacintiamartins 1.2M, @dra.daniaidar 384k, @rithacapelato_dermato 361k, @marinacristofani 396k, @dermatoingrid 27.8k)
+
 - NUNCA use travessão longo (—). Use ponto final ou vírgula.
 - Frases curtas e diretas. Parágrafos de no máximo 2 linhas.
 - Use dados específicos, nunca genéricos ("73% dos pacientes" em vez de "a maioria").
-- Voz humana: escreva como o médico fala no consultório, não como artigo científico.
-- PROIBIDO palavras de IA: "crucial", "vale ressaltar", "é importante destacar", "nesse sentido", "outrossim".
+
+### VOZ E TOM
+- Escreva como a médica FALA no consultório, não como artigo científico.
+- Tom acessível e acolhedor. Linguagem coloquial, como se estivesse conversando com a paciente.
+- Hooks provocativos no estilo @clinicacintiamartins: "Tomei X e AGORA?", "Você está fazendo ERRADO", "Ninguém te conta isso sobre..."
+- A headline da capa deve ser uma PROVOCAÇÃO ou PERGUNTA que gere curiosidade imediata.
+- Use perguntas retóricas para criar conexão: "Já passou por isso?", "Sabe aquele momento que..."
+- Tom de autoridade com proximidade: a médica é expert mas fala de igual para igual.
+
+### ESTILO DE ESCRITA
 - Prefira linguagem ativa. "O colágeno regenera" em vez de "A regeneração do colágeno é promovida".
+- Textos ultra-concisos. Se pode dizer em 3 palavras, não use 10.
+- Big_text e headlines devem ter IMPACTO VISUAL — frases curtas que funcionam como manchete.
+- Use *asteriscos* para enfatizar palavras-chave que devem ter cor de destaque.
+- PROIBIDO palavras de IA: "crucial", "vale ressaltar", "é importante destacar", "nesse sentido", "outrossim", "de fato", "sem dúvida".
+
+### ENGAJAMENTO
+- Pergunta do slide final deve ser ESPECÍFICA e pessoal (não genérica).
+- Ex bom: "Qual dessas dicas você já faz? Me conta nos comentários"
+- Ex ruim: "Gostou? Comente abaixo"
+- A legenda deve ter personalidade — como se a médica estivesse desabafando ou compartilhando algo pessoal.
 `;
 
 const REGRAS_CFM = `
