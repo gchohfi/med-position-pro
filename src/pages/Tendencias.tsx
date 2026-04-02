@@ -1,10 +1,12 @@
 import AppLayout from "@/components/AppLayout";
+import SimpleMarkdown from "@/components/SimpleMarkdown";
 import { useDoctor } from "@/contexts/DoctorContext";
 import { useStreamingResponse } from "@/hooks/useStreamingResponse";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, TrendingUp, Loader2, RotateCcw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, TrendingUp, Loader2, RotateCcw, Sparkles, LayoutTemplate } from "lucide-react";
 
 const Tendencias = () => {
   const { profile, isConfigured } = useDoctor();
@@ -21,15 +23,25 @@ const Tendencias = () => {
     start({ profile, especialidade: profile.especialidade });
   };
 
+  const handleUsarNoCarrossel = () => {
+    navigate("/carrossel");
+  };
+
   return (
     <AppLayout>
       <div className="p-6 max-w-4xl mx-auto space-y-6">
+        {/* Header */}
         <div className="flex items-center gap-3">
           <TrendingUp className="h-7 w-7 text-primary" />
-          <h1 className="text-3xl font-bold">Tendências</h1>
+          <div>
+            <h1 className="text-3xl font-bold">Tendências</h1>
+            <p className="text-muted-foreground text-sm">
+              Dados em tempo real via Perplexity + análise Claude
+            </p>
+          </div>
         </div>
         <p className="text-muted-foreground">
-          Descubra tendências de conteúdo médico e oportunidades de pauta para sua especialidade.
+          Descubra tendências de conteúdo médico com dados reais do Instagram — atualizados para abril de 2026.
         </p>
 
         {!isConfigured ? (
@@ -49,25 +61,45 @@ const Tendencias = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            <div className="flex gap-3">
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-3 items-center">
               <Button onClick={handleFetch} disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Buscando Tendências...
+                    Pesquisando tendências reais...
                   </>
                 ) : (
-                  "Buscar Tendências"
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Buscar Tendências
+                  </>
                 )}
               </Button>
               {text && !loading && (
-                <Button variant="outline" onClick={reset}>
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Nova Busca
-                </Button>
+                <>
+                  <Button variant="outline" onClick={reset}>
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Nova Busca
+                  </Button>
+                  <Button variant="secondary" onClick={handleUsarNoCarrossel}>
+                    <LayoutTemplate className="h-4 w-4 mr-2" />
+                    Usar tema no Carrossel
+                  </Button>
+                </>
               )}
             </div>
 
+            {/* Source badge while loading */}
+            {loading && (
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs text-blue-600 border-blue-300">
+                  Buscando dados reais no Perplexity...
+                </Badge>
+              </div>
+            )}
+
+            {/* Error */}
             {error && (
               <Card className="border-red-500/50">
                 <CardContent className="py-4 text-red-600">
@@ -76,15 +108,33 @@ const Tendencias = () => {
               </Card>
             )}
 
+            {/* Results */}
             {text && (
               <Card>
-                <CardHeader>
-                  <CardTitle>Tendências Identificadas</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-lg">Tendências Identificadas</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      Abril 2026
+                    </Badge>
+                    <Badge variant="outline" className="text-xs text-blue-600 border-blue-300">
+                      Dados em tempo real
+                    </Badge>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
-                    {text}
-                  </div>
+                  <SimpleMarkdown content={text} className="text-foreground" />
+                  {!loading && (
+                    <div className="mt-6 pt-4 border-t flex flex-wrap gap-2">
+                      <Button size="sm" variant="secondary" onClick={handleUsarNoCarrossel}>
+                        <LayoutTemplate className="h-3.5 w-3.5 mr-1.5" />
+                        Criar Carrossel com este tema
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => navigate("/estrategia")}>
+                        Ver Estratégia de Conteúdo
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
