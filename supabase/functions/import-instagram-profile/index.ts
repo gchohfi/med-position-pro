@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") ?? "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { callClaude } from "../_shared/anthropic.ts";
+import { callPerplexityText } from "../_shared/perplexity.ts";
 
 const ESPECIALIDADES = [
   "Dermatologia",
@@ -42,139 +39,8 @@ Retorne APENAS JSON válido (sem markdown, sem texto fora do JSON) com esta estr
 
 O campo "confidence" deve ser um número entre 0 e 1 indicando quanta informação foi encontrada. 1.0 = todos os campos preenchidos, 0.0 = nenhum campo encontrado.`;
 
-function extractJSON(text: string): Record<string, unknown> {
-  try {
-    return JSON.parse(text);
-  } catch {
-    const stripped = text
-      .replace(/```json\s*/gi, "")
-      .replace(/```\s*/g, "")
-      .trim();
-    try {
-      return JSON.parse(stripped);
-    } catch {
-      const match = stripped.match(/\{[\s\S]*\}/);
-      if (match) {
-        return JSON.parse(match[0]);
-      }
-      throw new Error("Não foi possível extrair JSON da resposta");
-    }
-  }
-}
-
-async function callPerplexity(
-  apiKey: string,
-  handle: string,
-): Promise<string> {
-  const res = await fetch("https://api.perplexity.ai/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "sonar",
-      messages: [
-        {
-          role: "user",
-          content: `Analise o perfil do Instagram ${handle}. Qual o nome completo, especialidade médica, biografia, público-alvo aparente, tom de comunicação, pilares de conteúdo e diferenciais?`,
-        },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Perplexity API error ${res.status}: ${errText}`);
-  }
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "";
-}
-
-async function callClaude(
-  apiKey: string,
-  profileInfo: string,
-  handle: string,
-): Promise<Record<string, unknown>> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2048,
-      stream: false,
-      system: CLAUDE_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: `Aqui estão as informações coletadas sobre o perfil do Instagram ${handle}:\n\n${profileInfo}\n\nEstruture esses dados no formato JSON especificado.`,
-        },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Anthropic API error ${res.status}: ${errText}`);
-  }
-
-  const data = await res.json();
-  const content = data.content?.[0]?.text;
-  if (!content) {
-    throw new Error("Resposta vazia do Claude");
-  }
-
-  return extractJSON(content);
-}
-
-async function callClaudeDirect(
-  apiKey: string,
-  handle: string,
-): Promise<Record<string, unknown>> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2048,
-      stream: false,
-      system: CLAUDE_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: `Com base no seu conhecimento, tente identificar informações sobre o perfil médico do Instagram ${handle}. Este é um médico brasileiro que usa o Instagram para divulgar conteúdo. Estruture o que conseguir encontrar no formato JSON especificado. Se não tiver informações suficientes, preencha o que for possível e use confidence baixo.`,
-        },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Anthropic API error ${res.status}: ${errText}`);
-  }
-
-  const data = await res.json();
-  const content = data.content?.[0]?.text;
-  if (!content) {
-    throw new Error("Resposta vazia do Claude");
-  }
-
-  return extractJSON(content);
-}
-
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return handleOptions();
 
   try {
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
@@ -184,33 +50,51 @@ serve(async (req) => {
     let handle = body.handle?.trim();
     if (!handle) throw new Error("Campo 'handle' é obrigatório");
 
-    // Normalize handle
     if (!handle.startsWith("@")) {
       handle = `@${handle}`;
     }
 
-    let result: Record<string, unknown>;
-
     const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
+
+    let result: Record<string, unknown>;
 
     if (perplexityKey) {
       try {
         // Step 1: Research with Perplexity
-        const profileInfo = await callPerplexity(perplexityKey, handle);
+        const profileInfo = await callPerplexityText(
+          perplexityKey,
+          [
+            {
+              role: "user",
+              content: `Analise o perfil do Instagram ${handle}. Qual o nome completo, especialidade médica, biografia, público-alvo aparente, tom de comunicação, pilares de conteúdo e diferenciais?`,
+            },
+          ],
+        );
 
         // Step 2: Structure with Claude
-        result = await callClaude(anthropicKey, profileInfo, handle);
+        result = await callClaude(
+          anthropicKey,
+          CLAUDE_SYSTEM_PROMPT,
+          `Aqui estão as informações coletadas sobre o perfil do Instagram ${handle}:\n\n${profileInfo}\n\nEstruture esses dados no formato JSON especificado.`,
+        );
       } catch (perplexityErr) {
         console.warn(
           "Perplexity failed, falling back to Claude only:",
           (perplexityErr as Error).message,
         );
-        // Fallback: use Claude alone
-        result = await callClaudeDirect(anthropicKey, handle);
+        result = await callClaude(
+          anthropicKey,
+          CLAUDE_SYSTEM_PROMPT,
+          `Com base no seu conhecimento, tente identificar informações sobre o perfil médico do Instagram ${handle}. Este é um médico brasileiro que usa o Instagram para divulgar conteúdo. Estruture o que conseguir encontrar no formato JSON especificado. Se não tiver informações suficientes, preencha o que for possível e use confidence baixo.`,
+        );
       }
     } else {
       console.warn("PERPLEXITY_API_KEY not set, using Claude only");
-      result = await callClaudeDirect(anthropicKey, handle);
+      result = await callClaude(
+        anthropicKey,
+        CLAUDE_SYSTEM_PROMPT,
+        `Com base no seu conhecimento, tente identificar informações sobre o perfil médico do Instagram ${handle}. Este é um médico brasileiro que usa o Instagram para divulgar conteúdo. Estruture o que conseguir encontrar no formato JSON especificado. Se não tiver informações suficientes, preencha o que for possível e use confidence baixo.`,
+      );
     }
 
     return new Response(JSON.stringify(result), {

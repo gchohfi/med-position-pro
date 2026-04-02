@@ -1,10 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") ?? "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 
 const MAX_CONTENT_LENGTH = 8000;
 
@@ -46,7 +41,6 @@ function stripHtml(html: string): string {
 }
 
 function extractMeta(html: string, property: string): string {
-  // Try og: and twitter: variants
   const patterns = [
     new RegExp(
       `<meta[^>]*property=["']${property}["'][^>]*content=["']([^"']*)["']`,
@@ -80,7 +74,6 @@ function extractTitle(html: string): string {
 }
 
 function extractMainContent(html: string): string {
-  // Try <article> first, then <main>, then <body>
   const articleMatch = html.match(/<article[\s\S]*?<\/article>/i);
   if (articleMatch) return stripHtml(articleMatch[0]);
 
@@ -143,9 +136,7 @@ async function extractFromUrl(
    ─────────────────────────────────────────── */
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return handleOptions();
 
   try {
     const body = await req.json();

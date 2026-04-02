@@ -1,19 +1,14 @@
 /**
  * Shared helpers for Edge Functions:
- * - CORS headers
+ * - CORS headers (re-exported from cors.ts)
  * - Gemini API with retry + exponential backoff (429 handling)
- * - Perplexity API helper (optional, web-grounded)
+ * - Perplexity API helper (re-exported from perplexity.ts)
  * - Rate limiting (in-memory, per-user)
  * - Response helpers
  */
 
-// ── CORS ──
-const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") ?? "*";
-export const corsHeaders = {
-    "Access-Control-Allow-Origin": allowedOrigin,
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+export { corsHeaders } from "./cors.ts";
+export { callPerplexity } from "./perplexity.ts";
 
 // ── Rate Limiting (in-memory, per-user, 10 req/min) ──
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -93,53 +88,32 @@ export async function callGeminiStream(
   return callGemini(apiKey, { stream: true, ...body });
 }
 
-// ── Perplexity (optional) ──
-export async function callPerplexity(
-  apiKey: string,
-  body: Record<string, unknown>,
-): Promise<Response | null> {
-  try {
-    const res = await fetch("https://api.perplexity.ai/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ model: "sonar", ...body }),
-    });
-    if (res.ok) return res;
-    console.log(`[Perplexity] error: ${res.status}`);
-    return null;
-  } catch (e) {
-    console.log(`[Perplexity] exception: ${e}`);
-    return null;
-  }
-}
-
 // ── Response helpers ──
+import { corsHeaders as _corsHeaders } from "./cors.ts";
+
 export function errorResponse(message: string, status = 500) {
   return new Response(
     JSON.stringify({ error: message }),
-    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    { status, headers: { ..._corsHeaders, "Content-Type": "application/json" } },
   );
 }
 
 export function jsonResponse(data: unknown) {
   return new Response(
     JSON.stringify(data),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    { headers: { ..._corsHeaders, "Content-Type": "application/json" } },
   );
 }
 
 export function streamResponse(body: ReadableStream | null) {
   return new Response(body, {
-    headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    headers: { ..._corsHeaders, "Content-Type": "text/event-stream" },
   });
 }
 
 export function rateLimitResponse() {
   return new Response(
     JSON.stringify({ error: "Rate limit exceeded. Max 10 requests per minute." }),
-    { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    { status: 429, headers: { ..._corsHeaders, "Content-Type": "application/json" } },
   );
 }

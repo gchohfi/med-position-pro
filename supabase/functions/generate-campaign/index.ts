@@ -1,11 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") ?? "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { callGemini } from "../_shared/gemini.ts";
 
 const CAMPAIGN_MODES: Record<string, string> = {
   manifesto_editorial:
@@ -31,55 +27,17 @@ const SLIDE_ROLES = [
   "cta",
 ];
 
-async function callGeminiJSON(
-  systemPrompt: string,
-  userPrompt: string
-): Promise<Record<string, unknown>> {
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
-
-  const res = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.7,
-        response_format: { type: "json_object" },
-      }),
-    }
-  );
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini API error ${res.status}: ${errText}`);
-  }
-
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error("Empty response from Gemini");
-
-  return JSON.parse(content);
-}
-
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return handleOptions();
 
   try {
     const { brief, user_id } = await req.json();
     if (!brief || !user_id) {
       throw new Error("Missing required fields: brief, user_id");
     }
+
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -118,12 +76,10 @@ serve(async (req) => {
     const memory = memoryRes.data?.memory_json ?? {};
     const recentContent = contentRes.data ?? [];
 
-    // Detect campaign mode
     const campaignType = brief.tipo ?? "manifesto_editorial";
     const modeInstruction =
       CAMPAIGN_MODES[campaignType] ?? CAMPAIGN_MODES.manifesto_editorial;
 
-    // Build prompts
     const systemPrompt = `Você é um diretor criativo de campanhas médicas para Instagram, especializado em carrosséis de alto impacto.
 
 Sua missão: criar um plano de slides (slide_plan) para um carrossel médico profissional.
@@ -176,7 +132,25 @@ ${JSON.stringify(recentContent, null, 2)}
 
 Gere o plano de slides completo para esta campanha, respeitando o tipo "${campaignType}" e o posicionamento do médico. Garanta que o carrossel tenha entre 7 e 10 slides com progressão narrativa clara.`;
 
-    const result = await callGeminiJSON(systemPrompt, userPrompt);
+    const res = await callGemini(apiKey, {
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.7,
+      response_format: { type: "json_object" },
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Gemini API error ${res.status}: ${errText}`);
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error("Empty response from Gemini");
+
+    const result = JSON.parse(content);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

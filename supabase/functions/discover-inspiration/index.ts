@@ -1,92 +1,32 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { callClaude } from "../_shared/anthropic.ts";
+import { callPerplexityText } from "../_shared/perplexity.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") ?? "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+/**
+ * discover-inspiration — Discovery ONLY (suggests candidates)
+ *
+ * Input:  { especialidade, subespecialidade?, pilares? }
+ * Output: { candidates: [{ handle, confidence, source, display_name?, reason? }] }
+ *
+ * This function does NOT verify profiles. It does NOT analyze content.
+ * It returns candidate handles with a confidence level so the frontend
+ * can present them for user review before verification.
+ */
 
-function extractJSON(text: string): Record<string, unknown> {
-  try {
-    return JSON.parse(text);
-  } catch {
-    const stripped = text
-      .replace(/```json\s*/gi, "")
-      .replace(/```\s*/g, "")
-      .trim();
-    try {
-      return JSON.parse(stripped);
-    } catch {
-      const match = stripped.match(/\{[\s\S]*\}/);
-      if (match) {
-        return JSON.parse(match[0]);
-      }
-      throw new Error("Não foi possível extrair JSON da resposta");
-    }
-  }
-}
-
-async function callPerplexity(apiKey: string, query: string): Promise<string> {
-  const res = await fetch("https://api.perplexity.ai/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "sonar",
-      messages: [{ role: "user", content: query }],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Perplexity API error ${res.status}: ${errText}`);
-  }
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "";
-}
-
-async function callClaude(
-  apiKey: string,
-  systemPrompt: string,
-  userPrompt: string,
-): Promise<Record<string, unknown>> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
-      stream: false,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Anthropic API error ${res.status}: ${errText}`);
-  }
-
-  const data = await res.json();
-  const content = data.content?.[0]?.text;
-  if (!content) {
-    throw new Error("Resposta vazia do Claude");
-  }
-
-  return extractJSON(content);
+interface Candidate {
+  handle: string;
+  confidence: "high" | "medium" | "low";
+  source: string;
+  display_name?: string;
+  reason?: string;
+  country?: string;
+  specialty?: string;
+  followers_estimate?: string;
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return handleOptions();
 
   try {
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
@@ -96,53 +36,76 @@ serve(async (req) => {
     if (!perplexityKey) throw new Error("PERPLEXITY_API_KEY not configured");
 
     const body = await req.json();
-    const { especialidade, subespecialidade, pilares, pais } = body;
+    const { especialidade, subespecialidade, pilares } = body;
 
     if (!especialidade) throw new Error("Campo 'especialidade' é obrigatório");
 
     const subEsp = subespecialidade ? ` (${subespecialidade})` : "";
-    const pilaresStr = Array.isArray(pilares) ? pilares.join(", ") : (pilares ?? "");
+    const pilaresStr = pilares && Array.isArray(pilares) && pilares.length > 0
+      ? pilares.join(", ")
+      : "";
 
-    const searchQuery = `Top medical Instagram accounts in ${especialidade}${subEsp}. Include both Brazilian (@dra, @dr) and international accounts. For each, provide: handle, name, country, follower estimate, content style, why they stand out. Focus on doctors known for educational content, strong visual identity, and high engagement. Include at least 5 Brazilian and 5 international profiles.${pilaresStr ? ` Content pillars of interest: ${pilaresStr}.` : ""}`;
+    // Targeted Perplexity searches — specific queries, not generic
+    const queries = [
+      `Quais são os @handles reais de médicos brasileiros de ${especialidade}${subEsp} no Instagram que produzem conteúdo educativo? Preciso dos handles EXATOS com @ que existem no Instagram. Foque em perfis com mais de 10k seguidores que postam regularmente.${pilaresStr ? ` Temas relevantes: ${pilaresStr}` : ""}`,
+      `Best international ${especialidade} doctors on Instagram 2024 2025. List their real Instagram @handles. Focus on physicians who create educational content, carousels, reels about ${especialidade}${subEsp}. Only list handles you are confident actually exist.`,
+      `site:instagram.com "${especialidade}" médico médica doutor doutora Brasil conteúdo educativo. Liste os @handles encontrados.${pilaresStr ? ` Foco em: ${pilaresStr}` : ""}`,
+    ];
 
-    const perplexityResult = await callPerplexity(perplexityKey, searchQuery);
+    const searchResults = await Promise.all(
+      queries.map((q) =>
+        callPerplexityText(perplexityKey, [{ role: "user", content: q }])
+      ),
+    );
 
-    const systemPrompt = `You are an expert in medical social media marketing. Your task is to structure research about top medical Instagram profiles into a clean JSON format. Always respond with valid JSON only, no markdown or extra text.`;
+    const combinedResearch = searchResults
+      .map((r, i) => `### Busca ${i + 1}\n${r}`)
+      .join("\n\n---\n\n");
 
-    const userPrompt = `Based on the following research about top medical Instagram profiles in ${especialidade}${subEsp}, structure the data into this exact JSON format:
+    // Ask Claude to extract ONLY candidate handles — no analysis, no verification claims
+    const systemPrompt = `Você é um especialista em marketing médico no Instagram. Sua tarefa é extrair CANDIDATOS a perfis reais do Instagram mencionados na pesquisa. NUNCA invente handles. Se não encontrar handles explícitos, retorne lista vazia. Responda APENAS com JSON válido.`;
 
+    const userPrompt = `Analise os resultados de pesquisa abaixo e extraia CANDIDATOS a perfis de Instagram.
+
+REGRAS CRÍTICAS:
+- APENAS inclua handles que foram EXPLICITAMENTE mencionados com @ na pesquisa
+- NUNCA invente ou adivinhe handles
+- NÃO afirme que perfis são verificados — eles são apenas CANDIDATOS
+- Atribua um nível de confiança: "high" se o handle apareceu em múltiplas buscas com contexto claro, "medium" se apareceu uma vez com contexto, "low" se foi mencionado vagamente
+- É melhor retornar 3 candidatos reais do que 10 duvidosos
+
+Formato de resposta:
 {
-  "profiles": [
+  "candidates": [
     {
-      "handle": "@example",
-      "nome": "Dr. Example",
-      "pais": "BR",
-      "especialidade": "${especialidade}",
-      "seguidores_estimado": "150K",
-      "estilo_conteudo": "Description of content style",
-      "por_que_inspirar": "Why this profile is inspiring",
-      "pilares_conteudo": ["pillar1", "pillar2"],
-      "formatos_destaque": ["carrossel", "reels educativos"],
-      "nivel_referencia": "alto"
+      "handle": "@handle_exato",
+      "confidence": "high",
+      "source": "Descricao breve de onde veio",
+      "display_name": "Nome se mencionado",
+      "reason": "Por que é relevante para ${especialidade}",
+      "country": "BR",
+      "specialty": "${especialidade}",
+      "followers_estimate": "numero se mencionado ou null"
     }
-  ],
-  "insights_gerais": "Summary of trends found across profiles"
+  ]
 }
 
-Rules:
-- "pais" must be "BR" for Brazilian profiles or the 2-letter country code for international ones (US, UK, etc.)
-- "nivel_referencia" must be "alto", "medio", or "emergente"
-- Include at least 5 Brazilian and 5 international profiles if available
-- If the research doesn't have enough data for a field, make a reasonable inference based on the specialty
+Pesquisa:
+${combinedResearch}`;
 
-Research data:
-${perplexityResult}`;
+    const structured = await callClaude(anthropicKey, systemPrompt, userPrompt) as {
+      candidates?: Candidate[];
+    };
 
-    const structured = await callClaude(anthropicKey, systemPrompt, userPrompt);
+    const candidates = (structured.candidates ?? []).map((c) => ({
+      ...c,
+      handle: c.handle.startsWith("@") ? c.handle : `@${c.handle}`,
+    }));
 
-    return new Response(JSON.stringify(structured), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ candidates }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (err) {
     return new Response(
       JSON.stringify({ error: (err as Error).message }),

@@ -31,37 +31,38 @@ import {
   LineChart,
   Globe,
 } from "lucide-react";
+import { ROUTES } from "@/lib/routes";
 
 const configLinks = [
-  { label: "Setup", icon: Settings, path: "/setup" },
+  { label: "Setup", icon: Settings, path: ROUTES.setup },
 ];
 
 const diagnosticoLinks = [
-  { label: "Diagnóstico", icon: Target, path: "/diagnostico" },
-  { label: "Análise de Perfil", icon: Users, path: "/analise-perfil" },
-  { label: "Concorrência", icon: Eye, path: "/concorrencia" },
-  { label: "Radar Instagram", icon: Instagram, path: "/radar-instagram" },
-  { label: "Inspiração", icon: Globe, path: "/inspiracao" },
+  { label: "Diagnóstico", icon: Target, path: ROUTES.diagnostico },
+  { label: "Análise de Perfil", icon: Users, path: ROUTES.analisePerfil },
+  { label: "Concorrência", icon: Eye, path: ROUTES.concorrencia },
+  { label: "Radar Instagram", icon: Instagram, path: ROUTES.radarInstagram },
+  { label: "Inspiração", icon: Globe, path: ROUTES.inspiracao },
 ];
 
 const estrategiaLinks = [
-  { label: "Tendências", icon: TrendingUp, path: "/tendencias" },
-  { label: "Radar Mercado", icon: Sparkles, path: "/radar-mercado" },
-  { label: "Estratégia IA", icon: Zap, path: "/estrategia-ia" },
-  { label: "Carrossel", icon: Layers, path: "/carrossel" },
-  { label: "Produção", icon: PenTool, path: "/producao" },
-  { label: "Calendário", icon: Calendar, path: "/calendario" },
-  { label: "Séries", icon: BookOpen, path: "/series" },
+  { label: "Tendências", icon: TrendingUp, path: ROUTES.tendencias },
+  { label: "Radar Mercado", icon: Sparkles, path: ROUTES.radarMercado },
+  { label: "Estratégia IA", icon: Zap, path: ROUTES.estrategiaIa },
+  { label: "Carrossel", icon: Layers, path: ROUTES.carrossel },
+  { label: "Produção", icon: PenTool, path: ROUTES.producao },
+  { label: "Calendário", icon: Calendar, path: ROUTES.calendario },
+  { label: "Séries", icon: BookOpen, path: ROUTES.series },
 ];
 
 const performanceLinks = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { label: "Métricas", icon: BarChart3, path: "/metricas" },
-  { label: "Evolução", icon: LineChart, path: "/evolucao" },
-  { label: "Biblioteca", icon: Archive, path: "/biblioteca" },
-  { label: "Memória Viva", icon: Brain, path: "/memoria-viva" },
-  { label: "Atualizações", icon: RefreshCw, path: "/atualizacoes" },
-  { label: "Supervisor", icon: Bot, path: "/supervisor" },
+  { label: "Dashboard", icon: LayoutDashboard, path: ROUTES.dashboard },
+  { label: "Métricas", icon: BarChart3, path: ROUTES.metricas },
+  { label: "Evolução", icon: LineChart, path: ROUTES.evolucao },
+  { label: "Biblioteca", icon: Archive, path: ROUTES.biblioteca },
+  { label: "Memória Viva", icon: Brain, path: ROUTES.memoriaViva },
+  { label: "Atualizações", icon: RefreshCw, path: ROUTES.atualizacoes },
+  { label: "Supervisor", icon: Bot, path: ROUTES.supervisor },
 ];
 
 const sidebarSections = [

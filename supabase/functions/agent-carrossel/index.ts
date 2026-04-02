@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") ?? "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { callClaude } from "../_shared/anthropic.ts";
 
 /* ───────────────────────────────────────────
    TravessIA — 7 Layout System
@@ -106,31 +102,8 @@ Retorne APENAS JSON válido (sem markdown, sem texto fora do JSON):
 `;
 
 /* ───────────────────────────────────────────
-   Helpers
+   Validation
    ─────────────────────────────────────────── */
-
-function extractJSON(text: string): Record<string, unknown> {
-  // Try direct parse first
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Strip markdown code blocks
-    const stripped = text
-      .replace(/```json\s*/gi, "")
-      .replace(/```\s*/g, "")
-      .trim();
-    try {
-      return JSON.parse(stripped);
-    } catch {
-      // Last resort: find first { ... } block
-      const match = stripped.match(/\{[\s\S]*\}/);
-      if (match) {
-        return JSON.parse(match[0]);
-      }
-      throw new Error("Não foi possível extrair JSON da resposta do Claude");
-    }
-  }
-}
 
 function validateRoteiro(parsed: Record<string, unknown>): void {
   if (!parsed.titulo_carrossel) {
@@ -154,51 +127,12 @@ function validateRoteiro(parsed: Record<string, unknown>): void {
   }
 }
 
-async function callClaude(
-  apiKey: string,
-  systemPrompt: string,
-  userPrompt: string,
-): Promise<Record<string, unknown>> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
-      stream: false,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Anthropic API error ${res.status}: ${errText}`);
-  }
-
-  const data = await res.json();
-  const content = data.content?.[0]?.text;
-  if (!content) {
-    throw new Error("Resposta vazia do Claude");
-  }
-
-  const parsed = extractJSON(content);
-  validateRoteiro(parsed);
-  return parsed;
-}
-
 /* ───────────────────────────────────────────
    Main handler
    ─────────────────────────────────────────── */
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return handleOptions();
 
   try {
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
@@ -254,6 +188,7 @@ Retorne APENAS o JSON válido.`;
     }
 
     const parsed = await callClaude(apiKey, systemPrompt, userPrompt);
+    validateRoteiro(parsed);
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

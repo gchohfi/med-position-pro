@@ -1,82 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-// ── Inline shared helpers ──
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-const MAX_RETRIES = 3;
-const BASE_DELAY_MS = 5000;
-
-async function callGemini(apiKey: string, body: Record<string, unknown>): Promise<Response> {
-  let lastError: string | null = null;
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    if (attempt > 0) {
-      const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
-      console.log(`[Gemini] retry ${attempt}/${MAX_RETRIES} after ${delay}ms...`);
-      await new Promise((r) => setTimeout(r, delay));
-    }
-    const res = await fetch(GEMINI_BASE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: "gemini-2.5-flash", ...body }),
-    });
-    if (res.ok) return res;
-    if (res.status === 429 && attempt < MAX_RETRIES) {
-      lastError = await res.text();
-      console.log(`[Gemini] 429 (attempt ${attempt + 1}): ${lastError.slice(0, 120)}`);
-      continue;
-    }
-    return res;
-  }
-  throw new Error(`Gemini failed after ${MAX_RETRIES} retries: ${lastError}`);
-}
-
-async function callGeminiStream(apiKey: string, body: Record<string, unknown>): Promise<Response> {
-  return callGemini(apiKey, { stream: true, ...body });
-}
-
-async function callPerplexity(apiKey: string, body: Record<string, unknown>): Promise<Response | null> {
-  try {
-    const res = await fetch("https://api.perplexity.ai/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "sonar", ...body }),
-    });
-    if (res.ok) return res;
-    console.log(`[Perplexity] error: ${res.status}`);
-    return null;
-  } catch (e) {
-    console.log(`[Perplexity] exception: ${e}`);
-    return null;
-  }
-}
-
-function errorResponse(message: string, status = 500) {
-  return new Response(JSON.stringify({ error: message }), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-function jsonResponse(data: unknown) {
-  return new Response(JSON.stringify(data), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-function streamResponse(body: ReadableStream | null) {
-  return new Response(body, {
-    headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-  });
-}
+import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { callGemini } from "../_shared/gemini.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS")
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return handleOptions();
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -109,7 +36,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get positioning for tone context
     const { data: positioning } = await supabase
       .from("positioning")
       .select("archetype, tone")
@@ -242,10 +168,10 @@ REGRAS:
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     const aiRes = await callGemini(GEMINI_API_KEY, {
-messages: [{ role: "user", content: prompts[format] }],
-        temperature: 0.7,
-        response_format: { type: "json_object" },
-      });
+      messages: [{ role: "user", content: prompts[format] }],
+      temperature: 0.7,
+      response_format: { type: "json_object" },
+    });
 
     if (!aiRes.ok) {
       const errText = await aiRes.text();
@@ -264,7 +190,7 @@ messages: [{ role: "user", content: prompts[format] }],
     );
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

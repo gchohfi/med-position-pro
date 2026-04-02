@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") ?? "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { callClaudeStream, buildAnthropicStream } from "../_shared/anthropic.ts";
 
 const SYSTEM_PROMPT = `Você é um analista de métricas de Instagram para médicos. Analise os dados de performance fornecidos e identifique padrões, melhores horários, tipos de conteúdo mais eficazes e recomendações de otimização. Respeite a Resolução CFM 2.336/2023.
 
@@ -26,9 +22,7 @@ Estruture sua análise em:
 8. Projeções e metas sugeridas`;
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return handleOptions();
 
   try {
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
@@ -48,61 +42,8 @@ ${JSON.stringify(metrics ?? [], null, 2)}
 
 Forneça uma análise completa de performance com recomendações práticas de otimização.`;
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4096,
-        stream: true,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userPrompt }],
-      }),
-    });
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        const reader = res.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const data = line.slice(6);
-            if (data === "[DONE]") continue;
-            try {
-              const parsed = JSON.parse(data);
-              if (
-                parsed.type === "content_block_delta" &&
-                parsed.delta?.text
-              ) {
-                const chunk = JSON.stringify({
-                  choices: [{ delta: { content: parsed.delta.text } }],
-                });
-                controller.enqueue(
-                  new TextEncoder().encode(`data: ${chunk}\n\n`)
-                );
-              }
-            } catch {
-              // skip non-JSON lines
-            }
-          }
-        }
-        controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
-        controller.close();
-      },
-    });
+    const res = await callClaudeStream(apiKey, SYSTEM_PROMPT, userPrompt);
+    const stream = buildAnthropicStream(res);
 
     return new Response(stream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },

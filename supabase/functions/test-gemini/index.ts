@@ -1,14 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return handleOptions();
 
   try {
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
@@ -33,9 +27,9 @@ serve(async (req) => {
 
     const status = response.status;
     const text = await response.text();
-    
-    return new Response(JSON.stringify({ 
-      gemini_status: status, 
+
+    return new Response(JSON.stringify({
+      gemini_status: status,
       gemini_response: text.substring(0, 500),
       key_length: GEMINI_API_KEY.length,
       key_prefix: GEMINI_API_KEY.substring(0, 8)
@@ -43,7 +37,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message, stack: err.stack }), {
+    return new Response(JSON.stringify({ error: (err as Error).message, stack: (err as Error).stack }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }

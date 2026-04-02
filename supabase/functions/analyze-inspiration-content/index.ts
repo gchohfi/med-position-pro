@@ -1,92 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { callClaude } from "../_shared/anthropic.ts";
+import { callPerplexityText } from "../_shared/perplexity.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") ?? "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
-
-function extractJSON(text: string): Record<string, unknown> {
-  try {
-    return JSON.parse(text);
-  } catch {
-    const stripped = text
-      .replace(/```json\s*/gi, "")
-      .replace(/```\s*/g, "")
-      .trim();
-    try {
-      return JSON.parse(stripped);
-    } catch {
-      const match = stripped.match(/\{[\s\S]*\}/);
-      if (match) {
-        return JSON.parse(match[0]);
-      }
-      throw new Error("Não foi possível extrair JSON da resposta");
-    }
-  }
-}
-
-async function callPerplexity(apiKey: string, query: string): Promise<string> {
-  const res = await fetch("https://api.perplexity.ai/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "sonar",
-      messages: [{ role: "user", content: query }],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Perplexity API error ${res.status}: ${errText}`);
-  }
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "";
-}
-
-async function callClaude(
-  apiKey: string,
-  systemPrompt: string,
-  userPrompt: string,
-): Promise<Record<string, unknown>> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 8192,
-      stream: false,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Anthropic API error ${res.status}: ${errText}`);
-  }
-
-  const data = await res.json();
-  const content = data.content?.[0]?.text;
-  if (!content) {
-    throw new Error("Resposta vazia do Claude");
-  }
-
-  return extractJSON(content);
-}
+/**
+ * analyze-inspiration-content — Analysis ONLY (on verified profiles)
+ *
+ * Input:  { handles: string[], especialidade, objetivo? }
+ * Output: { analises: [...], oportunidades_cruzadas: [...], tendencias_formato: "..." }
+ *
+ * This function ONLY accepts handles that the frontend has already verified.
+ * It uses Perplexity for web research and Claude for structuring.
+ */
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return handleOptions();
 
   try {
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
@@ -99,59 +27,64 @@ serve(async (req) => {
     const { handles, especialidade, objetivo } = body;
 
     if (!handles || !Array.isArray(handles) || handles.length === 0) {
-      throw new Error("Campo 'handles' é obrigatório (array de handles)");
+      throw new Error("Campo 'handles' é obrigatório (array de handles verificados)");
     }
 
-    // Research each handle via Perplexity
-    const researchResults: { handle: string; research: string }[] = [];
+    // Step 1: Research each handle via Perplexity (parallel)
+    const researchResults = await Promise.all(
+      handles.map(async (handle: string) => {
+        const cleanHandle = handle.replace(/^@/, "");
+        const query = `Analise a estratégia de conteúdo do perfil @${cleanHandle} no Instagram (profissional de ${especialidade ?? "saúde"}). Quais são os tópicos mais engajados? Quais formatos usa (carrossel, reels, stories)? Quais hooks/títulos funcionam melhor? Qual o estilo visual? Que gaps de conteúdo existem? Dê exemplos específicos de posts se possível.${objetivo ? ` Foco: ${objetivo}` : ""}`;
 
-    for (const handle of handles) {
-      const query = `Analyze the Instagram content strategy of ${handle} (medical/health professional in ${especialidade ?? "medicine"}). What are their most engaging post topics? What formats do they use (carrossel, reels, stories)? What hooks/headlines work best? What's their visual style? What content gaps exist? Provide specific post examples if possible. ${objetivo ? `Focus on: ${objetivo}` : ""}`;
-
-      const research = await callPerplexity(perplexityKey, query);
-      researchResults.push({ handle, research });
-    }
+        const research = await callPerplexityText(perplexityKey, [
+          { role: "user", content: query },
+        ]);
+        return { handle, research };
+      }),
+    );
 
     const allResearch = researchResults
       .map((r) => `### ${r.handle}\n${r.research}`)
       .join("\n\n---\n\n");
 
-    const systemPrompt = `You are an expert in medical Instagram content strategy. Your task is to create a structured analysis of medical Instagram profiles. Always respond with valid JSON only, no markdown or extra text.`;
+    // Step 2: Structure with Claude
+    const systemPrompt = `Você é um especialista em estratégia de conteúdo médico no Instagram. Sua tarefa é criar uma análise estruturada dos perfis pesquisados e gerar ideias de conteúdo inspiradas. Responda APENAS com JSON válido, sem markdown ou texto extra.`;
 
-    const userPrompt = `Based on the following research about medical Instagram profiles, create a structured analysis in this exact JSON format:
+    const userPrompt = `Com base na pesquisa abaixo sobre perfis médicos no Instagram, crie uma análise estruturada neste formato JSON exato:
 
 {
   "analises": [
     {
-      "handle": "@example",
-      "estrategia_resumo": "Brief summary of their content strategy",
-      "topicos_mais_engajados": ["topic1", "topic2"],
+      "handle": "@exemplo",
+      "estrategia_resumo": "Resumo breve da estratégia de conteúdo",
+      "topicos_mais_engajados": ["topico1", "topico2"],
       "formatos_eficazes": ["carrossel 7-10 slides", "reels < 30s"],
       "hooks_eficazes": ["Você sabia que...", "O erro mais comum..."],
-      "estilo_visual": "Description of visual style",
-      "gaps_conteudo": ["Doesn't cover X", "Little content about Y"],
+      "estilo_visual": "Descrição do estilo visual",
+      "gaps_conteudo": ["Não cobre X", "Pouco conteúdo sobre Y"],
       "ideias_inspiradas": [
         {
-          "titulo": "Content idea title",
+          "titulo": "Título da ideia de conteúdo",
           "formato": "carrossel",
-          "tese": "Main thesis for this content piece",
-          "por_que_funciona": "Why this idea would work"
+          "tese": "Tese principal para este conteúdo",
+          "por_que_funciona": "Por que essa ideia funcionaria"
         }
       ]
     }
   ],
-  "oportunidades_cruzadas": ["Cross-opportunity 1", "Cross-opportunity 2"],
-  "tendencias_formato": "Description of format trends across all analyzed profiles"
+  "oportunidades_cruzadas": ["Oportunidade cruzada 1", "Oportunidade cruzada 2"],
+  "tendencias_formato": "Descrição das tendências de formato entre todos os perfis analisados"
 }
 
-Rules:
-- Generate at least 3 content ideas per profile in "ideias_inspiradas"
-- "formato" must be one of: "carrossel", "reels", "static", "stories"
-- Write all text in Brazilian Portuguese
-- Be specific with hooks and topics, not generic
-- Each "tese" should be a complete thesis that could be directly used to create content
+Regras:
+- Gere ao menos 3 ideias de conteúdo por perfil em "ideias_inspiradas"
+- "formato" deve ser um de: "carrossel", "reels", "static", "stories"
+- Escreva TODO o texto em português brasileiro
+- Seja específico com hooks e tópicos, não genérico
+- Cada "tese" deve ser uma tese completa que possa ser usada diretamente para criar conteúdo
+- Foque em ideias ACIONÁVEIS que o médico pode produzir imediatamente
 
-Research data:
+Dados da pesquisa:
 ${allResearch}`;
 
     const structured = await callClaude(anthropicKey, systemPrompt, userPrompt);

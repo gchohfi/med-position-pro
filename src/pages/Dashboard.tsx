@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AppLayout from "@/components/AppLayout";
+import { ROUTES } from "@/lib/routes";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -58,12 +59,12 @@ function resolveStage(data: DashboardData): UserStage {
 }
 
 const journeySteps = [
-  { key: "onboarding", label: "Onboarding", path: "/onboarding" },
-  { key: "diagnosis", label: "Diagnóstico", path: "/diagnostico" },
-  { key: "strategy", label: "Estratégia", path: "/estrategia-ia" },
-  { key: "series", label: "Séries", path: "/series" },
-  { key: "calendar", label: "Calendário", path: "/calendario" },
-  { key: "production", label: "Criação", path: "/producao" },
+  { key: "onboarding", label: "Onboarding", path: ROUTES.onboarding },
+  { key: "diagnosis", label: "Diagnóstico", path: ROUTES.diagnostico },
+  { key: "strategy", label: "Estratégia", path: ROUTES.estrategiaIa },
+  { key: "series", label: "Séries", path: ROUTES.series },
+  { key: "calendar", label: "Calendário", path: ROUTES.calendario },
+  { key: "production", label: "Criação", path: ROUTES.producao },
 ];
 
 function getStepStatus(step: string, data: DashboardData): "done" | "current" | "pending" {
@@ -146,7 +147,7 @@ const Dashboard = () => {
   // Redirect new users to onboarding
   useEffect(() => {
     if (!loading && stage === "pre_onboarding") {
-      navigate("/onboarding", { replace: true });
+      navigate(ROUTES.onboarding, { replace: true });
     }
   }, [loading, stage, navigate]);
 
@@ -188,11 +189,11 @@ const Dashboard = () => {
 
   // Next move
   const nextMove: Record<UserStage, { label: string; path: string; cta: string }> = {
-    pre_onboarding: { label: "Definir sua base estratégica", path: "/onboarding", cta: "Começar onboarding" },
-    post_onboarding: { label: "Gerar diagnóstico de posicionamento", path: "/diagnostico", cta: "Gerar diagnóstico" },
-    has_diagnosis: { label: "Refinar direção estratégica", path: "/estrategia-ia", cta: "Definir estratégia" },
-    has_strategy: { label: "Criar sua primeira série editorial", path: "/series", cta: "Criar série" },
-    active: { label: "Estruturar próxima peça de conteúdo", path: "/producao", cta: "Criar conteúdo" },
+    pre_onboarding: { label: "Definir sua base estratégica", path: ROUTES.onboarding, cta: "Começar onboarding" },
+    post_onboarding: { label: "Gerar diagnóstico de posicionamento", path: ROUTES.diagnostico, cta: "Gerar diagnóstico" },
+    has_diagnosis: { label: "Refinar direção estratégica", path: ROUTES.estrategiaIa, cta: "Definir estratégia" },
+    has_strategy: { label: "Criar sua primeira série editorial", path: ROUTES.series, cta: "Criar série" },
+    active: { label: "Estruturar próxima peça de conteúdo", path: ROUTES.producao, cta: "Criar conteúdo" },
   };
 
   // Strategic snapshot cards — only show cards with real data
@@ -233,21 +234,21 @@ const Dashboard = () => {
   // Quick actions based on stage
   const quickActions: { label: string; icon: any; path: string; primary?: boolean }[] = [];
   if (stage === "pre_onboarding") {
-    quickActions.push({ label: "Começar onboarding", icon: ArrowRight, path: "/onboarding", primary: true });
+    quickActions.push({ label: "Começar onboarding", icon: ArrowRight, path: ROUTES.onboarding, primary: true });
   } else {
     if (!data.hasDiagnosis) {
-      quickActions.push({ label: "Gerar diagnóstico", icon: Target, path: "/diagnostico", primary: !data.hasDiagnosis });
+      quickActions.push({ label: "Gerar diagnóstico", icon: Target, path: ROUTES.diagnostico, primary: !data.hasDiagnosis });
     }
     if (data.hasDiagnosis && !data.hasStrategy) {
-      quickActions.push({ label: "Definir estratégia", icon: Sparkles, path: "/estrategia-ia", primary: true });
+      quickActions.push({ label: "Definir estratégia", icon: Sparkles, path: ROUTES.estrategiaIa, primary: true });
     }
     if (data.hasStrategy) {
-      quickActions.push({ label: "Criar conteúdo", icon: PenTool, path: "/producao", primary: true });
-      if (data.seriesCount === 0) quickActions.push({ label: "Criar primeira série", icon: BookOpen, path: "/series" });
-      if (data.calendarCount === 0) quickActions.push({ label: "Montar calendário", icon: Calendar, path: "/calendario" });
+      quickActions.push({ label: "Criar conteúdo", icon: PenTool, path: ROUTES.producao, primary: true });
+      if (data.seriesCount === 0) quickActions.push({ label: "Criar primeira série", icon: BookOpen, path: ROUTES.series });
+      if (data.calendarCount === 0) quickActions.push({ label: "Montar calendário", icon: Calendar, path: ROUTES.calendario });
     }
     if (data.contentCount > 0) {
-      quickActions.push({ label: "Revisar acervo", icon: Archive, path: "/biblioteca" });
+      quickActions.push({ label: "Revisar acervo", icon: Archive, path: ROUTES.biblioteca });
     }
   }
 

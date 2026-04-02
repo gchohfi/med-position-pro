@@ -1,126 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.1";
-
-// ── Inline shared helpers ──
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-const MAX_RETRIES = 3;
-const BASE_DELAY_MS = 5000;
-
-async function callGemini(apiKey: string, body: Record<string, unknown>): Promise<Response> {
-  let lastError: string | null = null;
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    if (attempt > 0) {
-      const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
-      console.log(`[Gemini] retry ${attempt}/${MAX_RETRIES} after ${delay}ms...`);
-      await new Promise((r) => setTimeout(r, delay));
-    }
-    const res = await fetch(GEMINI_BASE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: "gemini-2.5-flash", ...body }),
-    });
-    if (res.ok) return res;
-    if (res.status === 429 && attempt < MAX_RETRIES) {
-      lastError = await res.text();
-      console.log(`[Gemini] 429 (attempt ${attempt + 1}): ${lastError.slice(0, 120)}`);
-      continue;
-    }
-    return res;
-  }
-  throw new Error(`Gemini failed after ${MAX_RETRIES} retries: ${lastError}`);
-}
-
-async function callGeminiStream(apiKey: string, body: Record<string, unknown>): Promise<Response> {
-  return callGemini(apiKey, { stream: true, ...body });
-}
-
-async function callPerplexity(apiKey: string, body: Record<string, unknown>): Promise<Response | null> {
-  try {
-    const res = await fetch("https://api.perplexity.ai/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "sonar", ...body }),
-    });
-    if (res.ok) return res;
-    console.log(`[Perplexity] error: ${res.status}`);
-    return null;
-  } catch (e) {
-    console.log(`[Perplexity] exception: ${e}`);
-    return null;
-  }
-}
-
-function errorResponse(message: string, status = 500) {
-  return new Response(JSON.stringify({ error: message }), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-function jsonResponse(data: unknown) {
-  return new Response(JSON.stringify(data), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-function streamResponse(body: ReadableStream | null) {
-  return new Response(body, {
-    headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-  });
-}
-
-
-/**
- * Search Perplexity for real-time market intelligence
- */
-async function searchPerplexity(
-  query: string,
-  apiKey: string
-): Promise<string> {
-  try {
-    const response = await fetch("https://api.perplexity.ai/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "sonar",
-        messages: [
-          {
-            role: "system",
-            content:
-              "Você é um analista de posicionamento estratégico de marcas médicas no Instagram brasileiro. Foque em percepção, narrativa, saturação e diferenciação — NÃO em métricas de vaidade. Responda em Português do Brasil.",
-          },
-          { role: "user", content: query },
-        ],
-        max_tokens: 1500,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error("Perplexity error:", response.status);
-      return "";
-    }
-
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || "";
-  } catch (err) {
-    console.error("Perplexity search failed:", err);
-    return "";
-  }
-}
+import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { callGemini } from "../_shared/gemini.ts";
+import { callPerplexityText } from "../_shared/perplexity.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return handleOptions();
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -138,27 +23,11 @@ serve(async (req) => {
     } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
 
-    // Gather user context from existing MEDSHIFT data
     const [posRes, profileRes, diagRes, trackedRes] = await Promise.all([
-      supabase
-        .from("positioning")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("profiles")
-        .select("specialty, full_name")
-        .eq("id", user.id)
-        .single(),
-      supabase
-        .from("diagnosis_outputs")
-        .select("diagnosis, estrategia")
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("instagram_tracked_profiles")
-        .select("*")
-        .eq("user_id", user.id),
+      supabase.from("positioning").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("profiles").select("specialty, full_name").eq("id", user.id).single(),
+      supabase.from("diagnosis_outputs").select("diagnosis, estrategia").eq("user_id", user.id).maybeSingle(),
+      supabase.from("instagram_tracked_profiles").select("*").eq("user_id", user.id),
     ]);
 
     const positioning = posRes.data;
@@ -175,7 +44,6 @@ serve(async (req) => {
     const archetype = positioning?.archetype || "";
     const pillars = positioning?.pillars?.join(", ") || "";
     const tone = positioning?.tone || "";
-    const ownProfile = trackedProfiles.find((p: any) => p.profile_type === "own");
     const competitors = trackedProfiles.filter((p: any) => p.profile_type === "competitor");
     const competitorUsernames = competitors.map((p: any) => p.username);
 
@@ -194,8 +62,17 @@ serve(async (req) => {
         );
       }
 
+      const systemMsg = "Você é um analista de posicionamento estratégico de marcas médicas no Instagram brasileiro. Foque em percepção, narrativa, saturação e diferenciação — NÃO em métricas de vaidade. Responda em Português do Brasil.";
+
       const results = await Promise.all(
-        queries.map((q) => searchPerplexity(q, PERPLEXITY_API_KEY))
+        queries.map((q) =>
+          callPerplexityText(
+            PERPLEXITY_API_KEY,
+            [{ role: "system", content: systemMsg }, { role: "user", content: q }],
+            "sonar",
+            { max_tokens: 1500 },
+          ).catch((e) => { console.error("Perplexity search failed:", e); return ""; })
+        )
       );
       marketResearch = results.filter(Boolean).join("\n\n---\n\n");
     }
@@ -364,10 +241,7 @@ Retorne um JSON com EXATAMENTE esta estrutura:
     };
 
     if (existing) {
-      await supabase
-        .from("instagram_analyses")
-        .update(analysisPayload)
-        .eq("id", existing.id);
+      await supabase.from("instagram_analyses").update(analysisPayload).eq("id", existing.id);
     } else {
       await supabase.from("instagram_analyses").insert(analysisPayload);
     }

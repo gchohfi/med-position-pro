@@ -1,14 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS")
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return handleOptions();
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -18,14 +12,12 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // User client for auth
     const userClient = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) throw new Error("Unauthorized");
 
-    // Service client for writes
     const adminClient = createClient(supabaseUrl, serviceKey);
 
     const body = await req.json();
@@ -33,7 +25,6 @@ Deno.serve(async (req) => {
     const sourceModule = body.source_module || "sistema";
     const details = body.details || {};
 
-    // Log the event
     await adminClient.from("refresh_logs").insert({
       user_id: user.id,
       event_type: eventType,
@@ -41,11 +32,9 @@ Deno.serve(async (req) => {
       details,
     });
 
-    // Generate contextual recommendations based on event type
     const recommendations = generateRecommendations(eventType, details);
 
     if (recommendations.length > 0) {
-      // Clear old unconsumed recommendations of same type
       await adminClient
         .from("recommended_actions")
         .delete()
@@ -68,7 +57,7 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

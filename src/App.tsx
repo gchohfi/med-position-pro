@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DoctorProvider } from "@/contexts/DoctorContext";
+import { ROUTES } from "@/lib/routes";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -45,31 +46,40 @@ const App = () => (
         <AuthProvider>
           <DoctorProvider>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/diagnostico" element={<Diagnostico />} />
-              <Route path="/producao" element={<Producao />} />
-              <Route path="/biblioteca" element={<Biblioteca />} />
-              <Route path="/memoria-viva" element={<MemoriaViva />} />
-              <Route path="/evolucao" element={<Evolucao />} />
-              <Route path="/calendario" element={<Calendario />} />
-              <Route path="/series" element={<Series />} />
-              <Route path="/radar-mercado" element={<RadarMercado />} />
-              <Route path="/radar-instagram" element={<RadarInstagram />} />
-              <Route path="/atualizacoes" element={<AtualizacoesInteligentes />} />
-              {/* IA Squad */}
-              <Route path="/setup" element={<Setup />} />
-              <Route path="/supervisor" element={<Supervisor />} />
-              <Route path="/analise-perfil" element={<AnalisePerfil />} />
-              <Route path="/concorrencia" element={<Concorrencia />} />
-              <Route path="/tendencias" element={<Tendencias />} />
-              <Route path="/estrategia-ia" element={<Estrategia />} />
-              <Route path="/carrossel" element={<Carrossel />} />
-              <Route path="/metricas" element={<Metricas />} />
-              <Route path="/inspiracao" element={<Inspiracao />} />
+              {/* Auth & onboarding */}
+              <Route path={ROUTES.index} element={<Index />} />
+              <Route path={ROUTES.auth} element={<Auth />} />
+              <Route path={ROUTES.resetPassword} element={<ResetPassword />} />
+              <Route path={ROUTES.onboarding} element={<Onboarding />} />
+
+              {/* Core */}
+              <Route path={ROUTES.dashboard} element={<Dashboard />} />
+              <Route path={ROUTES.setup} element={<Setup />} />
+
+              {/* Diagnóstico & Análise */}
+              <Route path={ROUTES.diagnostico} element={<Diagnostico />} />
+              <Route path={ROUTES.analisePerfil} element={<AnalisePerfil />} />
+              <Route path={ROUTES.concorrencia} element={<Concorrencia />} />
+              <Route path={ROUTES.radarInstagram} element={<RadarInstagram />} />
+              <Route path={ROUTES.inspiracao} element={<Inspiracao />} />
+
+              {/* Estratégia & Conteúdo */}
+              <Route path={ROUTES.tendencias} element={<Tendencias />} />
+              <Route path={ROUTES.radarMercado} element={<RadarMercado />} />
+              <Route path={ROUTES.estrategiaIa} element={<Estrategia />} />
+              <Route path={ROUTES.carrossel} element={<Carrossel />} />
+              <Route path={ROUTES.producao} element={<Producao />} />
+              <Route path={ROUTES.calendario} element={<Calendario />} />
+              <Route path={ROUTES.series} element={<Series />} />
+
+              {/* Performance & Gestão */}
+              <Route path={ROUTES.metricas} element={<Metricas />} />
+              <Route path={ROUTES.evolucao} element={<Evolucao />} />
+              <Route path={ROUTES.biblioteca} element={<Biblioteca />} />
+              <Route path={ROUTES.memoriaViva} element={<MemoriaViva />} />
+              <Route path={ROUTES.atualizacoes} element={<AtualizacoesInteligentes />} />
+              <Route path={ROUTES.supervisor} element={<Supervisor />} />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </DoctorProvider>
