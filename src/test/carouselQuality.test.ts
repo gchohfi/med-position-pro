@@ -80,4 +80,41 @@ describe("qualidade e validacao do roteiro de carrossel", () => {
     expect(review.parecer).toBe("aprovado");
     expect(review.scientificFeedback.length).toBeGreaterThan(10);
   });
+
+  it("avisa quando primeiro slide não é capa e último não é final", () => {
+    const roteiro: TravessIARoteiro = {
+      titulo_carrossel: "Erro de estrutura",
+      tese: "Tese",
+      slides: [
+        { numero: 1, layout: "tonly", big_text: "Abertura errada", texto: "Texto" },
+        { numero: 2, layout: "light", mini_titulo: "Meio", texto: "Texto" },
+        { numero: 3, layout: "stat", stat_number: "40%", stat_unit: "casos", texto: "Texto" },
+        { numero: 4, layout: "turning", turn_text: "Virada", opinion: "Texto" },
+        { numero: 5, layout: "light", mini_titulo: "Aplicação", texto: "Texto" },
+        { numero: 6, layout: "timg", mini_titulo: "Exemplo", texto: "Texto" },
+        { numero: 7, layout: "light", mini_titulo: "Fim sem final", texto: "Texto" },
+      ],
+    };
+
+    const avisos = validarRoteiro(roteiro);
+    expect(avisos.some((a) => a.includes("Slide 1 nao e capa"))).toBe(true);
+    expect(avisos.some((a) => a.includes("Ultimo slide nao e final"))).toBe(true);
+  });
+
+  it("simulação de nutróloga pede ajuste quando faltam evidência e pergunta final", () => {
+    const roteiro: TravessIARoteiro = {
+      titulo_carrossel: "Sem âncora",
+      tese: "Tese",
+      slides: [
+        { numero: 1, layout: "capa", headline: "Tema amplo" },
+        { numero: 2, layout: "tonly", big_text: "Conceito", texto: "Explicação genérica." },
+        { numero: 3, layout: "light", mini_titulo: "Dica", texto: "Dica sem passo prático concreto." },
+        { numero: 4, layout: "final", conclusion: "Fim" },
+      ],
+    };
+
+    const review = simularRevisaoNutrologa(roteiro);
+    expect(review.parecer).toBe("ajustar_antes_de_publicar");
+    expect(review.ctaFeedback.toLowerCase()).toContain("pergunta");
+  });
 });
