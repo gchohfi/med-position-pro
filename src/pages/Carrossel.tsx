@@ -4,7 +4,11 @@ import { useDoctor } from "@/contexts/DoctorContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { TravessIARoteiro, TravessIASlide, travessiaToSlideData, validarRoteiro } from "@/types/carousel";
+import {
+  TravessIARoteiro,
+  travessiaToSlideData,
+  validarRoteiro,
+} from "@/types/carousel";
 import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
 import type { SlideData } from "@/components/carousel/SlideRenderer";
 import { Button } from "@/components/ui/button";
@@ -25,7 +29,13 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
+  Sparkles,
+  Zap,
+  TrendingUp,
+  ArrowRight,
 } from "lucide-react";
+
+/* ── Types ─────────────────────────────────────────────── */
 
 interface PautaResult {
   titulo: string;
@@ -35,10 +45,47 @@ interface PautaResult {
   fonte?: string;
 }
 
+interface TopicSuggestion {
+  titulo: string;
+  tese: string;
+  objetivo: string;
+  formato: string;
+  por_que: string;
+  urgencia: string;
+}
+
+/* ── Helpers ───────────────────────────────────────────── */
+
+const formatoBadge: Record<string, string> = {
+  mitos_verdades: "Mitos vs Verdades",
+  passo_a_passo: "Passo a Passo",
+  dados_impacto: "Dados de Impacto",
+  comparativo: "Comparativo",
+  erros_comuns: "Erros Comuns",
+  explicacao: "Explicação",
+  dica_pratica: "Dica Prática",
+  alerta: "Alerta",
+};
+
+const urgenciaCor: Record<string, string> = {
+  alta: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  media:
+    "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  baixa:
+    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+};
+
+/* ── Component ─────────────────────────────────────────── */
+
 const Carrossel = () => {
   const { profile, isConfigured } = useDoctor();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Auto-suggestions
+  const [suggestions, setSuggestions] = useState<TopicSuggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [suggestionsLoaded, setSuggestionsLoaded] = useState(false);
 
   // Brief form
   const [tese, setTese] = useState("");
@@ -60,6 +107,13 @@ const Carrossel = () => {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // View toggle
+  const [viewMode, setViewMode] = useState<"texto" | "visual">("texto");
+
+  // Rewrite feedback
+  const [feedback, setFeedback] = useState("");
+  const [rewriteLoading, setRewriteLoading] = useState(false);
+
   // Pre-fill from navigation state (e.g. from Inspiração page)
   useEffect(() => {
     if (location.state?.tese) {
@@ -68,14 +122,83 @@ const Carrossel = () => {
     }
   }, [location.state]);
 
-  // View toggle
-  const [viewMode, setViewMode] = useState<"texto" | "visual">("texto");
+  // ─── AUTO-LOAD suggestions on mount ───────────────────────────────
+  useEffect(() => {
+    if (isConfigured && profile && !suggestionsLoaded && !location.state?.tese) {
+      loadSuggestions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConfigured, profile]);
 
-  // Rewrite feedback
-  const [feedback, setFeedback] = useState("");
-  const [rewriteLoading, setRewriteLoading] = useState(false);
+  const loadSuggestions = async () => {
+    if (!profile || suggestionsLoading) return;
+    setSuggestionsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "suggest-carousel-topics",
+        {
+          body: {
+            especialidade: profile.especialidade,
+            subespecialidade: profile.subespecialidade ?? "",
+            publico_alvo: profile.publico_alvo ?? "",
+            tom_de_voz: profile.tom_de_voz ?? "",
+            pilares: profile.objetivos ?? [],
+          },
+        },
+      );
+      if (error) throw error;
+      const result = data as { sugestoes?: TopicSuggestion[] };
+      if (result.sugestoes && result.sugestoes.length > 0) {
+        setSuggestions(result.sugestoes);
+      }
+    } catch (err: any) {
+      console.error("Erro ao carregar sugestões:", err);
+      // Silent fail — suggestions are optional
+    } finally {
+      setSuggestionsLoading(false);
+      setSuggestionsLoaded(true);
+    }
+  };
 
-  // ─── Research: Pesquisar Pautas ───────────────────────────────────
+  const handleSelectSuggestion = (s: TopicSuggestion) => {
+    setTese(s.tese);
+    setObjetivo(s.objetivo);
+    toast.success(`Tema selecionado: ${s.titulo}`);
+    // Scroll to form
+    document.getElementById("brief-form")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleGenerateFromSuggestion = async (s: TopicSuggestion) => {
+    setTese(s.tese);
+    setObjetivo(s.objetivo);
+    // Generate immediately
+    if (!profile) return;
+    setLoading(true);
+    setRoteiro(null);
+    setSlideDataList([]);
+    setWarnings([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("agent-carrossel", {
+        body: {
+          profile,
+          tese: s.tese,
+          objetivo: s.objetivo,
+          action: "generate",
+          skill: profile?.skill,
+        },
+      });
+      if (error) throw error;
+      const parsed = data as TravessIARoteiro;
+      applyRoteiro(parsed);
+    } catch (err: any) {
+      console.error("Erro ao gerar carrossel:", err);
+      toast.error(err.message || "Erro ao gerar roteiro do carrossel.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Research: Pesquisar Pautas ─────────────────────────────────
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       toast.error("Digite um tema para pesquisar.");
@@ -83,15 +206,15 @@ const Carrossel = () => {
     }
     setSearchLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("agent-pesquisador", {
-        body: { query: searchQuery, profile },
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "agent-pesquisador",
+        { body: { query: searchQuery, profile } },
+      );
       if (error) throw error;
       const results = (data?.pautas || data?.results || data || []) as PautaResult[];
       setPautas(results);
       if (results.length === 0) toast.info("Nenhuma pauta encontrada.");
     } catch (err: any) {
-      console.error("Erro ao pesquisar pautas:", err);
       toast.error(err.message || "Erro ao pesquisar pautas.");
     } finally {
       setSearchLoading(false);
@@ -102,10 +225,10 @@ const Carrossel = () => {
     if (pauta.tese_sugerida) setTese(pauta.tese_sugerida);
     else setTese(pauta.titulo);
     if (pauta.objetivo_sugerido) setObjetivo(pauta.objetivo_sugerido);
-    toast.success("Pauta selecionada! Tese e objetivo preenchidos.");
+    toast.success("Pauta selecionada!");
   };
 
-  // ─── Research: Scraper ────────────────────────────────────────────
+  // ─── Research: Scraper ──────────────────────────────────────────
   const handleScrape = async () => {
     if (!scraperUrl.trim()) {
       toast.error("Informe a URL para extrair.");
@@ -120,22 +243,23 @@ const Carrossel = () => {
       const extractedTese = data?.tese || data?.titulo || data?.content || "";
       if (extractedTese) {
         setTese(extractedTese);
-        toast.success("Conteudo extraido! Tese preenchida.");
+        toast.success("Conteudo extraido!");
       } else {
         toast.warning("Nao foi possivel extrair conteudo relevante.");
       }
     } catch (err: any) {
-      console.error("Erro ao extrair link:", err);
       toast.error(err.message || "Erro ao extrair conteudo do link.");
     } finally {
       setScraperLoading(false);
     }
   };
 
-  // ─── Generate ─────────────────────────────────────────────────────
+  // ─── Generate ───────────────────────────────────────────────────
   const applyRoteiro = (parsed: TravessIARoteiro) => {
     setRoteiro(parsed);
-    const slides = parsed.slides.map((s) => travessiaToSlideData(s, parsed.slides.length));
+    const slides = parsed.slides.map((s) =>
+      travessiaToSlideData(s, parsed.slides.length),
+    );
     setSlideDataList(slides);
     const avisos = validarRoteiro(parsed);
     setWarnings(avisos);
@@ -152,28 +276,24 @@ const Carrossel = () => {
       toast.error("Informe a tese central do carrossel.");
       return;
     }
-
     setLoading(true);
     setRoteiro(null);
     setSlideDataList([]);
     setWarnings([]);
-
     try {
       const { data, error } = await supabase.functions.invoke("agent-carrossel", {
         body: { profile, tese, objetivo, action: "generate", skill: profile?.skill },
       });
       if (error) throw error;
-      const parsed = data as TravessIARoteiro;
-      applyRoteiro(parsed);
+      applyRoteiro(data as TravessIARoteiro);
     } catch (err: any) {
-      console.error("Erro ao gerar carrossel:", err);
       toast.error(err.message || "Erro ao gerar roteiro do carrossel.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ─── Rewrite ──────────────────────────────────────────────────────
+  // ─── Rewrite ────────────────────────────────────────────────────
   const handleRewrite = async () => {
     if (!roteiro || !feedback.trim()) {
       toast.error("Escreva o que deseja mudar no roteiro.");
@@ -182,15 +302,19 @@ const Carrossel = () => {
     setRewriteLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("agent-carrossel", {
-        body: { action: "rewrite", roteiro: roteiro.slides, feedback, profile, skill: profile?.skill },
+        body: {
+          action: "rewrite",
+          roteiro: roteiro.slides,
+          feedback,
+          profile,
+          skill: profile?.skill,
+        },
       });
       if (error) throw error;
-      const parsed = data as TravessIARoteiro;
-      applyRoteiro(parsed);
+      applyRoteiro(data as TravessIARoteiro);
       setFeedback("");
-      toast.success("Roteiro reescrito com sucesso!");
+      toast.success("Roteiro reescrito!");
     } catch (err: any) {
-      console.error("Erro ao reescrever:", err);
       toast.error(err.message || "Erro ao reescrever roteiro.");
     } finally {
       setRewriteLoading(false);
@@ -206,6 +330,8 @@ const Carrossel = () => {
     setFeedback("");
   };
 
+  /* ── Render ──────────────────────────────────────────── */
+
   return (
     <AppLayout>
       <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -215,7 +341,8 @@ const Carrossel = () => {
           <h1 className="text-3xl font-bold">Gerador de Carrossel</h1>
         </div>
         <p className="text-muted-foreground">
-          Gere roteiros de carrossel com estrutura narrativa otimizada para Instagram medico.
+          Gere roteiros de carrossel com estrutura narrativa otimizada para
+          Instagram medico.
         </p>
 
         {!isConfigured ? (
@@ -235,95 +362,214 @@ const Carrossel = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            {/* ── Research Panel (collapsible) ──────────────────────────── */}
-            <Card>
-              <CardHeader
-                className="cursor-pointer select-none"
-                onClick={() => setResearchOpen(!researchOpen)}
-              >
+            {/* ═══════════ AUTO-SUGGESTIONS ═══════════ */}
+            {!roteiro && (
+              <section className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Search className="h-4 w-4" />
-                    Pesquisar Pautas e Extrair Links
-                  </CardTitle>
-                  {researchOpen ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </div>
-              </CardHeader>
-              {researchOpen && (
-                <CardContent className="space-y-5 pt-0">
-                  {/* Pesquisar Pautas */}
-                  <div className="space-y-2">
-                    <Label className="font-medium">Pesquisar Pautas</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Ex: acne adulta, tratamento laser, microbioma"
-                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                      />
-                      <Button onClick={handleSearch} disabled={searchLoading} size="sm">
-                        {searchLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Search className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                    {pautas.length > 0 && (
-                      <div className="grid gap-2 mt-2">
-                        {pautas.map((p, i) => (
-                          <div
-                            key={i}
-                            onClick={() => handleSelectPauta(p)}
-                            className="p-3 border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
-                          >
-                            <p className="font-medium text-sm">{p.titulo}</p>
-                            <p className="text-xs text-muted-foreground line-clamp-2">
-                              {p.resumo}
-                            </p>
-                            {p.fonte && (
-                              <p className="text-xs text-muted-foreground/60 mt-1">
-                                Fonte: {p.fonte}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold">
+                      Sugestoes para voce
+                    </h2>
+                    {suggestionsLoading && (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                     )}
                   </div>
+                  {suggestionsLoaded && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={loadSuggestions}
+                      disabled={suggestionsLoading}
+                      className="text-xs"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Novas sugestoes
+                    </Button>
+                  )}
+                </div>
 
-                  {/* Transformar um Link */}
-                  <div className="space-y-2">
-                    <Label className="font-medium flex items-center gap-2">
-                      <Link className="h-4 w-4" />
-                      Transformar um Link
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={scraperUrl}
-                        onChange={(e) => setScraperUrl(e.target.value)}
-                        placeholder="https://artigo-ou-post.com/..."
-                        type="url"
-                      />
-                      <Button onClick={handleScrape} disabled={scraperLoading} size="sm">
-                        {scraperLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Extrair"
-                        )}
-                      </Button>
-                    </div>
+                {suggestionsLoading && suggestions.length === 0 && (
+                  <Card>
+                    <CardContent className="py-8 flex flex-col items-center gap-3">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      <p className="text-sm text-muted-foreground">
+                        Buscando tendencias reais para {profile?.especialidade}...
+                      </p>
+                      <p className="text-xs text-muted-foreground/60">
+                        Perplexity + Claude analisando dados atuais
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {suggestions.length > 0 && (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {suggestions.map((s, i) => (
+                      <Card
+                        key={i}
+                        className="hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group"
+                      >
+                        <CardContent className="pt-4 pb-3 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="text-sm font-semibold leading-tight">
+                              {s.titulo}
+                            </h3>
+                            <Badge
+                              className={`text-[10px] shrink-0 ${urgenciaCor[s.urgencia] ?? ""}`}
+                            >
+                              {s.urgencia}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {s.tese}
+                          </p>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Badge variant="outline" className="text-[10px]">
+                              {formatoBadge[s.formato] ?? s.formato}
+                            </Badge>
+                            <Badge variant="secondary" className="text-[10px]">
+                              <TrendingUp className="h-2.5 w-2.5 mr-0.5" />
+                              {s.por_que?.slice(0, 40)}
+                              {(s.por_que?.length ?? 0) > 40 ? "..." : ""}
+                            </Badge>
+                          </div>
+                          <div className="flex gap-2 pt-1">
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleGenerateFromSuggestion(s);
+                              }}
+                              disabled={loading}
+                            >
+                              {loading ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <Zap className="h-3 w-3 mr-1" />
+                                  Gerar Carrossel
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectSuggestion(s);
+                              }}
+                            >
+                              Editar
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
-                </CardContent>
-              )}
-            </Card>
+                )}
+              </section>
+            )}
 
-            {/* ── Brief Form ───────────────────────────────────────────── */}
-            <Card>
+            {/* ═══════════ RESEARCH PANEL (collapsible) ═══════════ */}
+            {!roteiro && (
+              <Card>
+                <CardHeader
+                  className="cursor-pointer select-none"
+                  onClick={() => setResearchOpen(!researchOpen)}
+                >
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Search className="h-4 w-4" />
+                      Pesquisar Pautas e Extrair Links
+                    </CardTitle>
+                    {researchOpen ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </CardHeader>
+                {researchOpen && (
+                  <CardContent className="space-y-5 pt-0">
+                    <div className="space-y-2">
+                      <Label className="font-medium">Pesquisar Pautas</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Ex: acne adulta, tratamento laser, microbioma"
+                          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                        />
+                        <Button
+                          onClick={handleSearch}
+                          disabled={searchLoading}
+                          size="sm"
+                        >
+                          {searchLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Search className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      {pautas.length > 0 && (
+                        <div className="grid gap-2 mt-2">
+                          {pautas.map((p, i) => (
+                            <div
+                              key={i}
+                              onClick={() => handleSelectPauta(p)}
+                              className="p-3 border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                            >
+                              <p className="font-medium text-sm">{p.titulo}</p>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                {p.resumo}
+                              </p>
+                              {p.fonte && (
+                                <p className="text-xs text-muted-foreground/60 mt-1">
+                                  Fonte: {p.fonte}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="font-medium flex items-center gap-2">
+                        <Link className="h-4 w-4" />
+                        Transformar um Link
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={scraperUrl}
+                          onChange={(e) => setScraperUrl(e.target.value)}
+                          placeholder="https://artigo-ou-post.com/..."
+                          type="url"
+                        />
+                        <Button
+                          onClick={handleScrape}
+                          disabled={scraperLoading}
+                          size="sm"
+                        >
+                          {scraperLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Extrair"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            )}
+
+            {/* ═══════════ BRIEF FORM ═══════════ */}
+            <Card id="brief-form">
               <CardContent className="pt-6 space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="tese">Tese central do carrossel</Label>
@@ -346,7 +592,10 @@ const Carrossel = () => {
                   />
                 </div>
                 <div className="flex gap-3">
-                  <Button onClick={handleGenerate} disabled={loading || !tese.trim()}>
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={loading || !tese.trim()}
+                  >
                     {loading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -366,7 +615,7 @@ const Carrossel = () => {
               </CardContent>
             </Card>
 
-            {/* ── Results ──────────────────────────────────────────────── */}
+            {/* ═══════════ RESULTS ═══════════ */}
             {roteiro && (
               <div className="space-y-4">
                 {/* Warnings */}
@@ -440,7 +689,12 @@ const Carrossel = () => {
                             </div>
                             <div className="flex-1 space-y-1">
                               <h4 className="font-semibold">
-                                {slide.headline || slide.mini_titulo || slide.big_text || slide.turn_text || slide.conclusion || `Slide ${slide.numero}`}
+                                {slide.headline ||
+                                  slide.mini_titulo ||
+                                  slide.big_text ||
+                                  slide.turn_text ||
+                                  slide.conclusion ||
+                                  `Slide ${slide.numero}`}
                               </h4>
                               {slide.texto && (
                                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">
@@ -454,7 +708,8 @@ const Carrossel = () => {
                               )}
                               {slide.stat_number && (
                                 <p className="text-sm font-mono">
-                                  {slide.stat_number}{slide.stat_unit && ` ${slide.stat_unit}`}
+                                  {slide.stat_number}
+                                  {slide.stat_unit && ` ${slide.stat_unit}`}
                                 </p>
                               )}
                               {slide.e_dai && (
@@ -485,7 +740,7 @@ const Carrossel = () => {
                   <CarouselVisualPreview slides={slideDataList} />
                 )}
 
-                {/* ── Feedback / Rewrite ─────────────────────────────── */}
+                {/* Feedback / Rewrite */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
@@ -520,18 +775,26 @@ const Carrossel = () => {
                   </CardContent>
                 </Card>
 
-                {/* ── Legenda / Hashtags placeholder ─────────────────── */}
+                {/* Legenda / Hashtags */}
                 {roteiro.legenda && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Legenda e Hashtags</CardTitle>
+                      <CardTitle className="text-base">
+                        Legenda e Hashtags
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <p className="text-sm whitespace-pre-wrap">{roteiro.legenda}</p>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {roteiro.legenda}
+                      </p>
                       {roteiro.hashtags && (
                         <div className="flex flex-wrap gap-1">
                           {roteiro.hashtags.map((h) => (
-                            <Badge key={h} variant="secondary" className="text-xs">
+                            <Badge
+                              key={h}
+                              variant="secondary"
+                              className="text-xs"
+                            >
                               {h.startsWith("#") ? h : `#${h}`}
                             </Badge>
                           ))}
