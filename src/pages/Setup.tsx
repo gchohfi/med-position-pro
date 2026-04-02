@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Instagram, Loader2 } from "lucide-react";
+import { Camera, Instagram, Loader2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const especialidades: Especialidade[] = [
@@ -70,6 +70,33 @@ const Setup = () => {
     profile?.skill?.handle || ""
   );
   const [importLoading, setImportLoading] = useState(false);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(form.foto_url ?? null);
+
+  const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem (JPG, PNG, etc.)");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Imagem muito grande. Maximo 5MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setFotoPreview(dataUrl);
+      updateField("foto_url", dataUrl);
+      toast.success("Foto adicionada!");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeFoto = () => {
+    setFotoPreview(null);
+    updateField("foto_url", undefined as any);
+  };
 
   const handleInstagramImport = async () => {
     if (!instagramHandle.trim()) {
@@ -204,6 +231,53 @@ const Setup = () => {
               <p className="text-xs text-muted-foreground">
                 Preencha automaticamente os campos a partir do perfil do Instagram.
               </p>
+            </div>
+
+            {/* Photo upload */}
+            <div className="rounded-lg border border-dashed border-blue-300 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-3">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Camera className="h-4 w-4" />
+                Foto para Carrosséis
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Sua foto aparecerá nos slides do tipo capa, texto+imagem e final dos carrosséis.
+              </p>
+              <div className="flex items-center gap-4">
+                {fotoPreview ? (
+                  <div className="relative">
+                    <img
+                      src={fotoPreview}
+                      alt="Foto do médico"
+                      className="w-24 h-24 rounded-full object-cover border-2 border-blue-200"
+                    />
+                    <button
+                      onClick={removeFoto}
+                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground/30">
+                    <Camera className="h-8 w-8 text-muted-foreground/40" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFotoUpload}
+                      className="hidden"
+                    />
+                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors cursor-pointer">
+                      <Camera className="h-4 w-4" />
+                      {fotoPreview ? "Trocar foto" : "Escolher foto"}
+                    </span>
+                  </label>
+                  <p className="text-xs text-muted-foreground mt-1">JPG ou PNG, max 5MB</p>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

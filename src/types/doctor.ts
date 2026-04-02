@@ -32,5 +32,6 @@ export interface DoctorProfile {
   concorrentes?: string[];
   referencia_visual?: string;
   bio_instagram?: string;
+  foto_url?: string;
   skill?: CarouselSkill;
 }

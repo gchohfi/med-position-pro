@@ -737,7 +737,12 @@ const Carrossel = () => {
 
                 {/* Visual view */}
                 {viewMode === "visual" && slideDataList.length > 0 && (
-                  <CarouselVisualPreview slides={slideDataList} />
+                  <CarouselVisualPreview
+                    slides={slideDataList}
+                    brandName={profile?.nome}
+                    brandHandle={profile?.bio_instagram}
+                    doctorImageUrl={profile?.foto_url}
+                  />
                 )}
 
                 {/* Feedback / Rewrite */}

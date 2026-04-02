@@ -50,12 +50,11 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   onSlidesChange,
 }) => {
   // Auto-detect style: content type takes priority over archetype
-  const autoStyle = contentType ? getStyleForContentType(contentType) : getStyleForArchetype(archetype);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [activeStyle, setActiveStyle] = useState<ArchetypeStyle>(autoStyle);
+  const [activeStyle, setActiveStyle] = useState<ArchetypeStyle>("travessia");
 
   const handleSlideEdit = (index: number, updated: SlideData) => {
     const newSlides = [...slides];
@@ -133,21 +132,21 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             {slides.length} slides · 1080×1350
           </span>
         </div>
-        {/* Theme selector */}
+        {/* Theme selector — only TravessIA + Clinical */}
         <div className="flex items-center gap-1.5 ml-2">
           <Palette className="h-3.5 w-3.5 text-muted-foreground" />
-          {(Object.entries(VISUAL_SYSTEMS) as [ArchetypeStyle, typeof VISUAL_SYSTEMS[ArchetypeStyle]][]).map(([key, system]) => (
+          {(["travessia", "clinical"] as ArchetypeStyle[]).map((key) => (
             <button
               key={key}
               onClick={() => setActiveStyle(key)}
-              title={system.description}
+              title={VISUAL_SYSTEMS[key].description}
               className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all ${
                 activeStyle === key
                   ? "bg-accent text-accent-foreground shadow-sm"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"
               }`}
             >
-              {system.label}
+              {VISUAL_SYSTEMS[key].label}
             </button>
           ))}
         </div>
