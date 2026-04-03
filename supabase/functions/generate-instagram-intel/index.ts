@@ -186,7 +186,7 @@ Retorne um JSON com EXATAMENTE esta estrutura:
         { role: "user", content: userPrompt },
       ],
       response_format: { type: "json_object" },
-      max_completion_tokens: 3000,
+      max_completion_tokens: 8000,
       temperature: 0.7,
     });
 
