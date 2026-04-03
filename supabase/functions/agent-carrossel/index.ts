@@ -129,8 +129,8 @@ function validateRoteiro(parsed: Record<string, unknown>): void {
   if (!parsed.titulo_carrossel) {
     throw new Error("Roteiro sem titulo_carrossel");
   }
-  if (!Array.isArray(parsed.slides) || parsed.slides.length < 3) {
-    throw new Error("Roteiro deve ter pelo menos 3 slides");
+  if (!Array.isArray(parsed.slides) || parsed.slides.length < 7 || parsed.slides.length > 10) {
+    throw new Error("Roteiro deve ter entre 7 e 10 slides");
   }
   const slides = parsed.slides as Array<Record<string, unknown>>;
   if (slides[0]?.layout !== "capa") {
@@ -190,6 +190,15 @@ Mantenha os layouts válidos do sistema TravessIA. Retorne APENAS o JSON complet
       /* ── Generate mode ── */
       const { profile, tese, objetivo } = body;
       if (!profile) throw new Error("Campo 'profile' é obrigatório");
+      const especialidade = String(profile.especialidade ?? "");
+      const nutrologiaHint = /nutrol/i.test(especialidade)
+        ? `
+Instruções extras para NUTROLOGIA:
+- Escreva como uma nutróloga em consultório (didático, direto e sem sensacionalismo).
+- Traga pelo menos 1 dado clínico em layout "stat" com contexto.
+- Inclua 1 orientação prática de rotina alimentar/exames sem prescrever tratamento individual.
+- Finalize com pergunta que convide o paciente a relatar sua dificuldade principal.`
+        : "";
 
       userPrompt = `Crie um roteiro completo de carrossel para este médico:
 
@@ -202,6 +211,7 @@ Diferenciais: ${profile.diferenciais ?? "Não informados"}
 
 Tese central: ${tese ?? "Não informada"}
 Objetivo: ${objetivo ?? "Educar e engajar"}
+${nutrologiaHint}
 
 Gere entre 7 e 10 slides usando os layouts do sistema TravessIA.
 Retorne APENAS o JSON válido.`;

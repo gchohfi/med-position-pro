@@ -5,6 +5,16 @@ import { callGemini } from "../_shared/gemini.ts";
 import { callPerplexityText } from "../_shared/perplexity.ts";
 import { safeJsonParse } from "../_shared/json-utils.ts";
 
+function normalizeHandle(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\/(www\.)?instagram\.com\//, "")
+    .replace(/^@/, "")
+    .split(/[/?#]/)[0]
+    .replace(/[^a-z0-9._]/g, "");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
@@ -45,7 +55,12 @@ serve(async (req) => {
     const archetype = positioning?.archetype || "";
     const pillars = positioning?.pillars?.join(", ") || "";
     const tone = positioning?.tone || "";
-    const competitors = trackedProfiles.filter((p: any) => p.profile_type === "competitor");
+    const sanitizedProfiles = trackedProfiles
+      .map((p: any) => ({ ...p, username: normalizeHandle(String(p.username || "")) }))
+      .filter((p: any) => !!p.username);
+
+    const ownProfile = sanitizedProfiles.find((p: any) => p.profile_type === "own");
+    const competitors = sanitizedProfiles.filter((p: any) => p.profile_type === "competitor");
     const competitorUsernames = competitors.map((p: any) => p.username);
 
     // ── STEP 1: Market research via Perplexity ──
@@ -90,7 +105,7 @@ serve(async (req) => {
       contextParts.push(`ESTRATÉGIA: ${typeof diagnosis.estrategia === "string" ? diagnosis.estrategia : JSON.stringify(diagnosis.estrategia).substring(0, 500)}`);
     }
 
-    const profilesDescription = trackedProfiles.map((p: any) => {
+    const profilesDescription = sanitizedProfiles.map((p: any) => {
       const type = p.profile_type === "own" ? "PRÓPRIO" : "CONCORRENTE";
       return `@${p.username} (${type})${p.notes ? ` — ${p.notes}` : ""}`;
     }).join("\n");

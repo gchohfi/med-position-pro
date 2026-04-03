@@ -36,4 +36,5 @@ export interface DoctorProfile {
   referencias_conteudo?: string[];
   referencias_design?: string[];
   skill?: CarouselSkill;
+  inspiration_handles?: string[];
 }
