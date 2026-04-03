@@ -13,6 +13,9 @@ import {
   type CarouselQualityReport,
   simularRevisaoNutrologa,
   type NutrologaReviewReport,
+  validarVisualAntiMediocridade,
+  type VisualQualityReport,
+  type PreferredVisualStyle,
 } from "@/types/carousel";
 import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
 import type { SlideData } from "@/components/carousel/SlideRenderer";
@@ -112,10 +115,12 @@ const Carrossel = () => {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [quality, setQuality] = useState<CarouselQualityReport | null>(null);
   const [nutrologaReview, setNutrologaReview] = useState<NutrologaReviewReport | null>(null);
+  const [visualQuality, setVisualQuality] = useState<VisualQualityReport | null>(null);
+  const [visualStyle, setVisualStyle] = useState<PreferredVisualStyle>("editorial_black_gold");
   const [loading, setLoading] = useState(false);
 
-  // View toggle
-  const [viewMode, setViewMode] = useState<"texto" | "visual">("texto");
+  // View toggle — default to visual when premium style
+  const [viewMode, setViewMode] = useState<"texto" | "visual">("visual");
 
   // Rewrite feedback
   const [feedback, setFeedback] = useState("");
@@ -272,6 +277,8 @@ const Carrossel = () => {
     setWarnings(avisos);
     setQuality(avaliarQualidadeRoteiro(parsed));
     setNutrologaReview(simularRevisaoNutrologa(parsed));
+    setVisualQuality(validarVisualAntiMediocridade(parsed));
+    setVisualStyle(parsed.preferredVisualStyle || profile?.skill?.estilo_visual?.preferredVisualStyle || "editorial_black_gold");
     if (avisos.length > 0) {
       toast.warning(`Roteiro gerado com ${avisos.length} aviso(s).`);
     } else {
@@ -336,6 +343,7 @@ const Carrossel = () => {
     setWarnings([]);
     setQuality(null);
     setNutrologaReview(null);
+    setVisualQuality(null);
     setTese("");
     setObjetivo("");
     setFeedback("");
@@ -693,6 +701,45 @@ const Carrossel = () => {
                   </Card>
                 )}
 
+                {/* Visual anti-mediocrity */}
+                {visualQuality && visualQuality.issues.length > 0 && (
+                  <Card className={`border-l-4 ${
+                    visualQuality.verdict === "premium" ? "border-l-emerald-500" :
+                    visualQuality.verdict === "bom" ? "border-l-blue-500" :
+                    visualQuality.verdict === "morno" ? "border-l-amber-500" : "border-l-red-500"
+                  }`}>
+                    <CardContent className="py-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium flex items-center gap-2">
+                          <Eye className="h-4 w-4" />
+                          Avaliacao Visual
+                        </p>
+                        <Badge variant={visualQuality.score >= 75 ? "default" : visualQuality.score >= 55 ? "secondary" : "destructive"}>
+                          {visualQuality.score}/100 · {visualQuality.verdict}
+                        </Badge>
+                      </div>
+                      {visualQuality.issues.filter(i => i.severity === "error").map((issue, idx) => (
+                        <p key={`e-${idx}`} className="text-xs text-red-600 dark:text-red-400 ml-1">
+                          {issue.slide ? `Slide ${issue.slide}: ` : ""}{issue.message}
+                          <span className="block text-muted-foreground mt-0.5 ml-2">→ {issue.suggestion}</span>
+                        </p>
+                      ))}
+                      {visualQuality.issues.filter(i => i.severity === "warning").map((issue, idx) => (
+                        <p key={`w-${idx}`} className="text-xs text-amber-600 dark:text-amber-400 ml-1">
+                          {issue.slide ? `Slide ${issue.slide}: ` : ""}{issue.message}
+                          <span className="block text-muted-foreground mt-0.5 ml-2">→ {issue.suggestion}</span>
+                        </p>
+                      ))}
+                      {visualQuality.issues.filter(i => i.severity === "opportunity").map((issue, idx) => (
+                        <p key={`o-${idx}`} className="text-xs text-blue-600 dark:text-blue-400 ml-1">
+                          {issue.slide ? `Slide ${issue.slide}: ` : ""}{issue.message}
+                          <span className="block text-muted-foreground mt-0.5 ml-2">→ {issue.suggestion}</span>
+                        </p>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Roteiro header */}
                 <Card>
                   <CardHeader>
@@ -800,6 +847,7 @@ const Carrossel = () => {
                     brandName={profile?.nome}
                     brandHandle={profile?.bio_instagram}
                     doctorImageUrl={profile?.foto_url}
+                    visualStyle={visualStyle}
                   />
                 )}
 

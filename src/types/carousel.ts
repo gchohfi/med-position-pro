@@ -67,6 +67,8 @@ export interface TravessIASlide {
   pergunta_comentario?: string;
 }
 
+export type PreferredVisualStyle = "travessia" | "editorial_black_gold";
+
 export interface TravessIARoteiro {
   titulo_carrossel: string;
   tese: string;
@@ -75,6 +77,7 @@ export interface TravessIARoteiro {
   legenda?: string;
   hashtags?: string[];
   cta_final?: string;
+  preferredVisualStyle?: PreferredVisualStyle;
 }
 
 export interface CarouselQualityReport {
@@ -109,6 +112,7 @@ export interface CarouselSkill {
     fonte_corpo: string;
     referencia_visual: string;
     estilo_imagem: string;
+    preferredVisualStyle?: PreferredVisualStyle;
   };
 }
 
@@ -129,6 +133,7 @@ export const DEFAULT_SKILL: CarouselSkill = {
     fonte_corpo: "Inter",
     referencia_visual: "Editorial medico premium",
     estilo_imagem: "cinematic, editorial, dark and moody, medical",
+    preferredVisualStyle: "editorial_black_gold",
   },
 };
 
@@ -240,6 +245,163 @@ export function simularRevisaoNutrologa(roteiro: TravessIARoteiro): NutrologaRev
       ? "Boa chamada final para comentários, isso tende a gerar conversa qualificada."
       : "Sugiro fechar com pergunta clínica simples para estimular comentários e dúvidas reais.",
   };
+}
+
+// ─── VISUAL ANTI-MEDIOCRITY VALIDATION ─────────────────────────────────────
+
+export type VisualSeverity = "error" | "warning" | "opportunity";
+
+export interface VisualIssue {
+  severity: VisualSeverity;
+  slide?: number;
+  message: string;
+  suggestion: string;
+}
+
+export interface VisualQualityReport {
+  score: number;
+  verdict: "premium" | "bom" | "morno" | "fraco";
+  issues: VisualIssue[];
+}
+
+export function validarVisualAntiMediocridade(roteiro: TravessIARoteiro): VisualQualityReport {
+  const issues: VisualIssue[] = [];
+  const slides = roteiro.slides ?? [];
+  let score = 100;
+
+  // ── Capa fraca ──
+  const capa = slides.find(s => s.layout === "capa");
+  if (capa) {
+    const hlWords = countWords(capa.headline);
+    if (hlWords > 8) {
+      score -= 15;
+      issues.push({
+        severity: "error", slide: 1,
+        message: `Headline da capa com ${hlWords} palavras — longa demais para impacto visual.`,
+        suggestion: "Cortar para 3-6 palavras. A capa é um manifesto, não um resumo.",
+      });
+    } else if (hlWords > 6) {
+      score -= 5;
+      issues.push({
+        severity: "warning", slide: 1,
+        message: "Headline da capa poderia ser mais curta para punch visual.",
+        suggestion: "O ideal são 3-5 palavras que criam tensão não resolvida.",
+      });
+    }
+    if (!capa.eyebrow) {
+      score -= 3;
+      issues.push({
+        severity: "opportunity", slide: 1,
+        message: "Capa sem eyebrow (contexto acima do título).",
+        suggestion: "Adicionar especialidade ou tema curto como eyebrow reforça autoridade.",
+      });
+    }
+  } else {
+    score -= 20;
+    issues.push({
+      severity: "error",
+      message: "Carrossel sem slide de capa.",
+      suggestion: "Toda campanha precisa abrir com layout capa.",
+    });
+  }
+
+  // ── Monotonia: layouts consecutivos iguais ──
+  for (let i = 1; i < slides.length; i++) {
+    if (slides[i].layout === slides[i - 1].layout && slides[i].layout !== "tonly") {
+      score -= 8;
+      issues.push({
+        severity: "warning", slide: i + 1,
+        message: `Slides ${i} e ${i + 1} usam o mesmo layout "${slides[i].layout}" consecutivamente.`,
+        suggestion: "Alternar layouts cria ritmo visual. Troque um deles por stat, turning ou light.",
+      });
+    }
+  }
+
+  // ── Variedade de layouts ──
+  const uniqueLayouts = new Set(slides.map(s => s.layout)).size;
+  if (uniqueLayouts < 4) {
+    score -= 10;
+    issues.push({
+      severity: "warning",
+      message: `Apenas ${uniqueLayouts} layouts distintos — visual fica monótono.`,
+      suggestion: "Usar pelo menos 4 layouts diferentes para ritmo editorial.",
+    });
+  }
+
+  // ── Falta de respiro (light slide) ──
+  const hasLight = slides.some(s => s.layout === "light");
+  if (!hasLight) {
+    score -= 5;
+    issues.push({
+      severity: "opportunity",
+      message: "Nenhum slide light (fundo branco) para respiro visual.",
+      suggestion: "Inserir 1 slide light no meio do carrossel quebra a monotonia dark.",
+    });
+  }
+
+  // ── Falta de dado (stat) ──
+  const hasStat = slides.some(s => s.layout === "stat");
+  if (!hasStat) {
+    score -= 5;
+    issues.push({
+      severity: "opportunity",
+      message: "Sem slide de dado/estatística.",
+      suggestion: "Um número de impacto aumenta credibilidade e salva-lives.",
+    });
+  }
+
+  // ── Excesso de texto por slide ──
+  for (const s of slides) {
+    const textLength = countWords(s.texto) + countWords(s.opinion) + countWords(s.e_dai);
+    if (textLength > 60) {
+      score -= 5;
+      issues.push({
+        severity: "warning", slide: s.numero,
+        message: `Slide ${s.numero} com ~${textLength} palavras — excesso de texto.`,
+        suggestion: "Instagram é visual. Reduzir para max 40-50 palavras por slide.",
+      });
+    }
+  }
+
+  // ── Final sem assinatura ──
+  const final = slides.find(s => s.layout === "final");
+  if (final) {
+    if (!final.conclusion) {
+      score -= 10;
+      issues.push({
+        severity: "error", slide: slides.length,
+        message: "Slide final sem frase de conclusão.",
+        suggestion: "O final precisa de uma frase de fechamento que amarre a narrativa.",
+      });
+    }
+    if (!final.pergunta_comentario) {
+      score -= 7;
+      issues.push({
+        severity: "warning", slide: slides.length,
+        message: "Slide final sem pergunta para comentários.",
+        suggestion: "Uma pergunta específica gera 3-5x mais comentários que um CTA genérico.",
+      });
+    }
+  }
+
+  // ── Headline pouco memorável (genérica) ──
+  if (capa) {
+    const genericPatterns = /^(tudo sobre|como|o que é|dicas para|guia completo|você sabia)/i;
+    if (capa.headline && genericPatterns.test(capa.headline)) {
+      score -= 10;
+      issues.push({
+        severity: "warning", slide: 1,
+        message: "Headline da capa começa com padrão genérico.",
+        suggestion: "Substituir por provocação, pergunta retórica ou afirmação contraintuitiva.",
+      });
+    }
+  }
+
+  score = Math.max(0, Math.min(100, score));
+  const verdict: VisualQualityReport["verdict"] =
+    score >= 90 ? "premium" : score >= 75 ? "bom" : score >= 55 ? "morno" : "fraco";
+
+  return { score, verdict, issues };
 }
 
 // Convert TravessIA slide to SlideData for the renderer

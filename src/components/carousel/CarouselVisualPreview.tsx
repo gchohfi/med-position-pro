@@ -15,7 +15,7 @@ import {
   RefreshCw,
   Palette,
 } from "lucide-react";
-import SlideRenderer, { type SlideData } from "./SlideRenderer";
+import SlideRenderer, { type SlideData, type ArchetypeStyle, VISUAL_SYSTEMS } from "./SlideRenderer";
 import SlideEditor from "./SlideEditor";
 
 interface CarouselVisualPreviewProps {
@@ -26,6 +26,7 @@ interface CarouselVisualPreviewProps {
   archetype?: string | null;
   contentType?: string;
   doctorImageUrl?: string;
+  visualStyle?: ArchetypeStyle;
   onRegenerate?: () => void;
   onClose?: () => void;
   onSlidesChange?: (slides: SlideData[]) => void;
@@ -45,16 +46,17 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   archetype,
   contentType,
   doctorImageUrl,
+  visualStyle,
   onRegenerate,
   onClose,
   onSlidesChange,
 }) => {
-  // Auto-detect style: content type takes priority over archetype
   const [currentSlide, setCurrentSlide] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const activeStyle = "travessia" as const;
+  const [styleOverride, setStyleOverride] = useState<ArchetypeStyle | null>(null);
+  const activeStyle: ArchetypeStyle = styleOverride ?? visualStyle ?? "editorial_black_gold";
 
   const handleSlideEdit = (index: number, updated: SlideData) => {
     const newSlides = [...slides];
@@ -132,12 +134,23 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             {slides.length} slides · 1080×1350
           </span>
         </div>
-        {/* TravessIA badge */}
+        {/* Visual style toggle */}
         <div className="flex items-center gap-1.5 ml-2">
           <Palette className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="h-7 px-2.5 rounded-md text-[11px] font-medium bg-accent text-accent-foreground shadow-sm flex items-center">
-            TravessIA
-          </span>
+          {(Object.keys(VISUAL_SYSTEMS) as ArchetypeStyle[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setStyleOverride(key)}
+              title={VISUAL_SYSTEMS[key].description}
+              className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all ${
+                activeStyle === key
+                  ? "bg-accent text-accent-foreground shadow-sm"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {VISUAL_SYSTEMS[key].label}
+            </button>
+          ))}
         </div>
         <div className="flex items-center gap-2">
           {onRegenerate && (

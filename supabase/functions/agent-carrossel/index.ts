@@ -117,7 +117,8 @@ Retorne APENAS JSON válido (sem markdown, sem texto fora do JSON):
   ],
   "legenda": "Legenda completa para o post do Instagram (2-3 parágrafos curtos)",
   "hashtags": ["hashtag1", "hashtag2", "...até 15 hashtags relevantes"],
-  "cta_final": "Frase de call-to-action para a legenda (ex: Salve este post e compartilhe com quem precisa)"
+  "cta_final": "Frase de call-to-action para a legenda (ex: Salve este post e compartilhe com quem precisa)",
+  "preferredVisualStyle": "editorial_black_gold"
 }
 `;
 
@@ -144,6 +145,14 @@ function validateRoteiro(parsed: Record<string, unknown>): void {
     if (!validLayouts.includes(slide.layout as string)) {
       throw new Error(`Layout inválido: ${slide.layout}`);
     }
+  }
+  // Ensure preferredVisualStyle is valid
+  const validStyles = ["travessia", "editorial_black_gold"];
+  if (parsed.preferredVisualStyle && !validStyles.includes(parsed.preferredVisualStyle as string)) {
+    parsed.preferredVisualStyle = "editorial_black_gold";
+  }
+  if (!parsed.preferredVisualStyle) {
+    parsed.preferredVisualStyle = "editorial_black_gold";
   }
 }
 
