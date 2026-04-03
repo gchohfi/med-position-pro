@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callClaude } from "../_shared/anthropic.ts";
+import { safeJsonParse } from "../_shared/json-utils.ts";
 
 /* ───────────────────────────────────────────
    TravessIA — 7 Layout System
@@ -164,6 +165,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
+    // ── Auth check ──
+    const authHeader = req.headers.get("authorization") || req.headers.get("apikey");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
@@ -226,7 +235,9 @@ Gere entre 7 e 10 slides usando os layouts do sistema TravessIA.
 Retorne APENAS o JSON válido.`;
     }
 
-    const parsed = await callClaude(apiKey, systemPrompt, userPrompt);
+    const raw = await callClaude(apiKey, systemPrompt, userPrompt);
+    // Normalize: callClaude may return string or object depending on response format
+    const parsed = typeof raw === "string" ? safeJsonParse(raw) : safeJsonParse(raw);
     validateRoteiro(parsed);
 
     return new Response(JSON.stringify(parsed), {
