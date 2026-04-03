@@ -15,7 +15,7 @@ import {
   RefreshCw,
   Palette,
 } from "lucide-react";
-import SlideRenderer, { type SlideData, type ArchetypeStyle, VISUAL_SYSTEMS, getStyleForArchetype, getStyleForContentType } from "./SlideRenderer";
+import SlideRenderer, { type SlideData } from "./SlideRenderer";
 import SlideEditor from "./SlideEditor";
 
 interface CarouselVisualPreviewProps {
@@ -54,7 +54,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [activeStyle, setActiveStyle] = useState<ArchetypeStyle>("travessia");
+  const activeStyle = "travessia" as const;
 
   const handleSlideEdit = (index: number, updated: SlideData) => {
     const newSlides = [...slides];
@@ -132,23 +132,12 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             {slides.length} slides · 1080×1350
           </span>
         </div>
-        {/* Theme selector — only TravessIA + Clinical */}
+        {/* TravessIA badge */}
         <div className="flex items-center gap-1.5 ml-2">
           <Palette className="h-3.5 w-3.5 text-muted-foreground" />
-          {(["travessia", "clinical"] as ArchetypeStyle[]).map((key) => (
-            <button
-              key={key}
-              onClick={() => setActiveStyle(key)}
-              title={VISUAL_SYSTEMS[key].description}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all ${
-                activeStyle === key
-                  ? "bg-accent text-accent-foreground shadow-sm"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {VISUAL_SYSTEMS[key].label}
-            </button>
-          ))}
+          <span className="h-7 px-2.5 rounded-md text-[11px] font-medium bg-accent text-accent-foreground shadow-sm flex items-center">
+            TravessIA
+          </span>
         </div>
         <div className="flex items-center gap-2">
           {onRegenerate && (
