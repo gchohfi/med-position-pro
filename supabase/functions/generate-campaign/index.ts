@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callGemini } from "../_shared/gemini.ts";
+import { safeJsonParse } from "../_shared/json-utils.ts";
 
 const CAMPAIGN_MODES: Record<string, string> = {
   manifesto_editorial:
@@ -150,7 +151,7 @@ Gere o plano de slides completo para esta campanha, respeitando o tipo "${campai
     const content = data.choices?.[0]?.message?.content;
     if (!content) throw new Error("Empty response from Gemini");
 
-    const result = JSON.parse(content);
+    const result = safeJsonParse(content);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

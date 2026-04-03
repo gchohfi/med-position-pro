@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.1";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callGemini } from "../_shared/gemini.ts";
 import { callPerplexityText } from "../_shared/perplexity.ts";
+import { safeJsonParse } from "../_shared/json-utils.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
@@ -199,14 +200,7 @@ Retorne um JSON com EXATAMENTE esta estrutura:
     const content = aiData.choices?.[0]?.message?.content;
     if (!content) throw new Error("Empty AI response");
 
-    let result: any;
-    try {
-      result = typeof content === "object" ? content : JSON.parse(content);
-    } catch {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("Could not parse AI response as JSON");
-      result = JSON.parse(jsonMatch[0]);
-    }
+    const result = safeJsonParse(content);
 
     // ── STEP 4: Store the analysis in Supabase ──
     const { data: existing } = await supabase

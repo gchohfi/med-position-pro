@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callGemini, errorResponse, jsonResponse } from "../_shared/gemini.ts";
+import { safeJsonParse } from "../_shared/json-utils.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
@@ -125,7 +126,7 @@ REGRAS:
     const content = aiData.choices?.[0]?.message?.content;
     if (!content) throw new Error("Empty AI response");
 
-    const result = JSON.parse(content);
+    const result = safeJsonParse(content);
 
     await adminClient.from("strategic_updates").delete().eq("user_id", user.id);
 
