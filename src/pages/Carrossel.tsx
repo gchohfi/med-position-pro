@@ -5,7 +5,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
+  CarouselVisualScore,
   TravessIARoteiro,
+  avaliarVisualCarousel,
   travessiaToSlideData,
   validarRoteiro,
 } from "@/types/carousel";
@@ -33,6 +35,7 @@ import {
   Zap,
   TrendingUp,
   ArrowRight,
+  Gauge,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────── */
@@ -105,6 +108,7 @@ const Carrossel = () => {
   const [roteiro, setRoteiro] = useState<TravessIARoteiro | null>(null);
   const [slideDataList, setSlideDataList] = useState<SlideData[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [visualScore, setVisualScore] = useState<CarouselVisualScore | null>(null);
   const [loading, setLoading] = useState(false);
 
   // View toggle
@@ -263,10 +267,19 @@ const Carrossel = () => {
     setSlideDataList(slides);
     const avisos = validarRoteiro(parsed);
     setWarnings(avisos);
+    const avaliacaoVisual = avaliarVisualCarousel(slides, {
+      doctorImageUrl: profile?.foto_url ?? null,
+    });
+    setVisualScore(avaliacaoVisual);
     if (avisos.length > 0) {
       toast.warning(`Roteiro gerado com ${avisos.length} aviso(s).`);
     } else {
       toast.success("Roteiro gerado com sucesso!");
+    }
+    if (avaliacaoVisual.statusGeral === "morno" || avaliacaoVisual.statusGeral === "critico") {
+      toast.warning(
+        `Visual ${avaliacaoVisual.statusGeral} (${avaliacaoVisual.scoreGeral}/100). Veja sugestões de refinamento.`,
+      );
     }
   };
 
@@ -325,6 +338,7 @@ const Carrossel = () => {
     setRoteiro(null);
     setSlideDataList([]);
     setWarnings([]);
+    setVisualScore(null);
     setTese("");
     setObjetivo("");
     setFeedback("");
@@ -631,6 +645,67 @@ const Carrossel = () => {
                           {w}
                         </p>
                       ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {visualScore && (
+                  <Card
+                    className={
+                      visualScore.statusGeral === "forte"
+                        ? "border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20"
+                        : visualScore.statusGeral === "ok"
+                          ? "border-primary/40 bg-primary/5"
+                          : "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20"
+                    }
+                  >
+                    <CardContent className="py-4 space-y-3">
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="text-sm font-semibold flex items-center gap-2">
+                          <Gauge className="h-4 w-4" />
+                          Score Visual Anti-mediocridade
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          {visualScore.scoreGeral}/100 · {visualScore.statusGeral}
+                        </Badge>
+                      </div>
+
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {visualScore.slideScores.map((slideScore) => (
+                          <div
+                            key={slideScore.slideNumber}
+                            className="rounded-lg border border-border/60 p-2 bg-background/50"
+                          >
+                            <p className="text-xs font-medium">
+                              Slide {slideScore.slideNumber} ({slideScore.layout ?? "n/a"}) ·{" "}
+                              {slideScore.score}/100
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Status: {slideScore.status}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {visualScore.issues.length > 0 && (
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-medium flex items-center gap-1.5">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            Crítica visual útil
+                          </p>
+                          {visualScore.issues.slice(0, 10).map((issue, index) => (
+                            <p key={`${issue.code}-${index}`} className="text-xs text-muted-foreground">
+                              • [{issue.severity}] {issue.slideNumber ? `Slide ${issue.slideNumber}: ` : ""}
+                              {issue.message}
+                            </p>
+                          ))}
+                          {visualScore.issues.length > 10 && (
+                            <p className="text-xs text-muted-foreground/80">
+                              +{visualScore.issues.length - 10} observações adicionais.
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 )}

@@ -1,3 +1,5 @@
+import type { SlideData } from "@/components/carousel/SlideRenderer";
+
 export interface CarouselSlide {
   numero: number;
   papel: "gancho" | "desconstrucao" | "revelacao" | "metodo" | "prova" | "ampliacao" | "identidade" | "cta" | "transicao" | "humanizacao";
@@ -134,6 +136,284 @@ export function validarRoteiro(roteiro: TravessIARoteiro): string[] {
     }
   }
   return avisos;
+}
+
+export type VisualSeverity = "erro_estrutural" | "warning_visual" | "oportunidade_refino";
+
+export interface VisualIssue {
+  severity: VisualSeverity;
+  code: string;
+  message: string;
+  slideNumber?: number;
+}
+
+export interface SlideVisualScore {
+  slideNumber: number;
+  layout?: SlideData["travessiaLayout"];
+  score: number;
+  status: "forte" | "ok" | "morno" | "critico";
+  issues: VisualIssue[];
+}
+
+export interface CarouselVisualScore {
+  scoreGeral: number;
+  statusGeral: "forte" | "ok" | "morno" | "critico";
+  slideScores: SlideVisualScore[];
+  issues: VisualIssue[];
+}
+
+const clampScore = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+
+const scoreStatus = (score: number): SlideVisualScore["status"] => {
+  if (score >= 82) return "forte";
+  if (score >= 67) return "ok";
+  if (score >= 48) return "morno";
+  return "critico";
+};
+
+const buildIssue = (
+  severity: VisualSeverity,
+  code: string,
+  message: string,
+  slideNumber?: number,
+): VisualIssue => ({ severity, code, message, slideNumber });
+
+function avaliarSlideVisual(
+  slide: SlideData,
+  doctorImageUrl?: string | null,
+): SlideVisualScore {
+  let score = 78;
+  const issues: VisualIssue[] = [];
+  const headline = slide.headline?.trim() || "";
+  const body = slide.body?.trim() || "";
+  const layout = slide.travessiaLayout;
+  const words = headline ? headline.split(/\s+/).length : 0;
+  const hasDoctorImage = !!doctorImageUrl;
+
+  if (!headline) {
+    score -= 26;
+    issues.push(buildIssue("erro_estrutural", "headline_missing", "Headline ausente.", slide.slideNumber));
+  } else if (words >= 18) {
+    score -= 12;
+    issues.push(
+      buildIssue(
+        "warning_visual",
+        "headline_overlong",
+        "Headline longa demais para impacto editorial. Considere reduzir e criar mais tensão.",
+        slide.slideNumber,
+      ),
+    );
+  } else if (words <= 3) {
+    score -= 6;
+    issues.push(
+      buildIssue(
+        "oportunidade_refino",
+        "headline_short",
+        "Headline curta demais; pode perder memorabilidade.",
+        slide.slideNumber,
+      ),
+    );
+  }
+
+  if (body.length > 260) {
+    score -= 14;
+    issues.push(
+      buildIssue(
+        "warning_visual",
+        "text_overload",
+        "Texto secundário excessivo. O slide pode parecer denso e pouco premium.",
+        slide.slideNumber,
+      ),
+    );
+  } else if (body.length > 180) {
+    score -= 8;
+    issues.push(
+      buildIssue(
+        "oportunidade_refino",
+        "text_dense",
+        "Texto secundário pode ser condensado para aumentar respiro visual.",
+        slide.slideNumber,
+      ),
+    );
+  }
+
+  if (layout === "capa") {
+    if (words > 14) {
+      score -= 10;
+      issues.push(
+        buildIssue(
+          "warning_visual",
+          "cover_no_tension",
+          "Capa com headline longa reduz tensão de abertura.",
+          slide.slideNumber,
+        ),
+      );
+    }
+    if (!slide.eyebrow) {
+      score -= 5;
+      issues.push(
+        buildIssue(
+          "oportunidade_refino",
+          "cover_no_eyebrow",
+          "Capa sem eyebrow perde camada editorial de autoridade.",
+          slide.slideNumber,
+        ),
+      );
+    }
+    if (!hasDoctorImage) {
+      score -= 8;
+      issues.push(
+        buildIssue(
+          "oportunidade_refino",
+          "cover_no_doctor",
+          "Sem presença da doutora na capa, a assinatura premium pode enfraquecer.",
+          slide.slideNumber,
+        ),
+      );
+    }
+  }
+
+  if (layout === "timg") {
+    if (!slide.imgQuery && !hasDoctorImage) {
+      score -= 12;
+      issues.push(
+        buildIssue(
+          "warning_visual",
+          "image_weak_usage",
+          "Slide texto+imagem sem direção visual clara de imagem.",
+          slide.slideNumber,
+        ),
+      );
+    }
+    if (body.length > 210) {
+      score -= 8;
+      issues.push(
+        buildIssue(
+          "oportunidade_refino",
+          "timg_body_long",
+          "Muito texto no layout texto+imagem; composição pode perder elegância.",
+          slide.slideNumber,
+        ),
+      );
+    }
+  }
+
+  if (layout === "final") {
+    if (!slide.conclusion || slide.conclusion.trim().length < 24) {
+      score -= 14;
+      issues.push(
+        buildIssue(
+          "warning_visual",
+          "closing_weak",
+          "Fechamento sem frase de conclusão forte o suficiente.",
+          slide.slideNumber,
+        ),
+      );
+    }
+    if (!slide.perguntaComentario) {
+      score -= 6;
+      issues.push(
+        buildIssue(
+          "oportunidade_refino",
+          "closing_no_prompt",
+          "Slide final sem pergunta/comando pode reduzir ação e lembrança.",
+          slide.slideNumber,
+        ),
+      );
+    }
+    if (!hasDoctorImage) {
+      score -= 8;
+      issues.push(
+        buildIssue(
+          "oportunidade_refino",
+          "closing_no_doctor_presence",
+          "Sem presença da doutora no fechamento, a assinatura visual perde força.",
+          slide.slideNumber,
+        ),
+      );
+    }
+  }
+
+  const finalScore = clampScore(score);
+  return {
+    slideNumber: slide.slideNumber,
+    layout,
+    score: finalScore,
+    status: scoreStatus(finalScore),
+    issues,
+  };
+}
+
+export function avaliarVisualCarousel(
+  slides: SlideData[],
+  options?: { doctorImageUrl?: string | null },
+): CarouselVisualScore {
+  const issues: VisualIssue[] = [];
+  if (!slides.length) {
+    return {
+      scoreGeral: 0,
+      statusGeral: "critico",
+      slideScores: [],
+      issues: [buildIssue("erro_estrutural", "slides_empty", "Nenhum slide para avaliar.")],
+    };
+  }
+
+  const slideScores = slides.map((slide) => avaliarSlideVisual(slide, options?.doctorImageUrl));
+  issues.push(...slideScores.flatMap((s) => s.issues));
+
+  const first = slides[0];
+  const last = slides[slides.length - 1];
+  if (first.travessiaLayout !== "capa") {
+    issues.push(buildIssue("erro_estrutural", "first_not_cover", "Primeiro slide não é capa.", first.slideNumber));
+  }
+  if (last.travessiaLayout !== "final") {
+    issues.push(buildIssue("erro_estrutural", "last_not_final", "Último slide não é final.", last.slideNumber));
+  }
+
+  const uniqueLayouts = new Set(slides.map((s) => s.travessiaLayout).filter(Boolean));
+  if (uniqueLayouts.size <= 4) {
+    issues.push(
+      buildIssue(
+        "warning_visual",
+        "rhythm_monotony",
+        "Pouca variação de layout entre slides; risco de monotonia visual.",
+      ),
+    );
+  }
+
+  const longBodySlides = slides.filter((s) => (s.body?.trim().length ?? 0) > 200).length;
+  if (longBodySlides >= Math.ceil(slides.length * 0.45)) {
+    issues.push(
+      buildIssue(
+        "warning_visual",
+        "text_weight_unbalanced",
+        "Muitos slides densos em texto; distribuição de peso visual está pesada.",
+      ),
+    );
+  }
+
+  const doctorImageMissing = !options?.doctorImageUrl;
+  if (doctorImageMissing) {
+    issues.push(
+      buildIssue(
+        "oportunidade_refino",
+        "doctor_image_missing",
+        "Sem foto da doutora no perfil. A assinatura premium pode ficar subaproveitada.",
+      ),
+    );
+  }
+
+  const average = slideScores.reduce((acc, s) => acc + s.score, 0) / slideScores.length;
+  const structuralPenalty = issues.filter((i) => i.severity === "erro_estrutural").length * 6;
+  const warningPenalty = issues.filter((i) => i.severity === "warning_visual").length * 2.5;
+  const scoreGeral = clampScore(average - structuralPenalty - warningPenalty);
+
+  return {
+    scoreGeral,
+    statusGeral: scoreStatus(scoreGeral),
+    slideScores,
+    issues,
+  };
 }
 
 // Convert TravessIA slide to SlideData for the renderer

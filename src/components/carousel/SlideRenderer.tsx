@@ -176,6 +176,7 @@ function renderTravessia(
   PAD: number,
   handle: string,
   name: string,
+  doctorImageUrl?: string,
 ): React.ReactElement {
   const layout = slide.travessiaLayout!;
   const DISPLAY = vs.headlineFont;
@@ -184,168 +185,476 @@ function renderTravessia(
   const H = 1350;
 
   const base: React.CSSProperties = {
-    width: W, height: H, boxSizing: "border-box",
-    fontFamily: BODY, position: "relative", overflow: "hidden",
+    width: W,
+    height: H,
+    boxSizing: "border-box",
+    fontFamily: BODY,
+    position: "relative",
+    overflow: "hidden",
+    backgroundColor: layout === "light" ? "#FBFBFA" : c.bg,
   };
 
-  const isDark = layout !== "light";
-  const bgColor = isDark ? c.bg : "#FFFFFF";
-  const textColor = isDark ? c.text : "#111111";
-  const mutedColor = isDark ? c.textMuted : "rgba(0,0,0,0.45)";
-  const accentColor = isDark ? c.accent : "#111111";
+  const isLight = layout === "light";
+  const textColor = isLight ? "#141414" : c.text;
+  const mutedColor = isLight ? "rgba(20,20,20,0.54)" : c.textMuted;
+  const accentColor = isLight ? "#121212" : c.accent;
+  const softBorder = isLight ? "rgba(17,17,17,0.15)" : "rgba(255,255,255,0.16)";
+  const hasDoctorImage = !!doctorImageUrl;
 
-  // Header: brand name left, handle right
+  const editorialGrid = {
+    left: PAD,
+    right: PAD,
+    top: 112,
+    bottom: 170,
+  };
+
   const header = (
-    <div style={{
-      position: "absolute", top: 0, left: 0, right: 0,
-      padding: `${PAD}px ${PAD}px 0`,
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      zIndex: 3,
-    }}>
-      <span style={{
-        fontFamily: DISPLAY, fontSize: 28, fontWeight: 700,
-        color: accentColor, textTransform: "uppercase",
-        letterSpacing: "0.06em",
-      }}>
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        padding: `${PAD - 4}px ${PAD}px 0`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        zIndex: 5,
+      }}
+    >
+      <span
+        style={{
+          fontFamily: DISPLAY,
+          fontSize: 28,
+          fontWeight: 700,
+          color: accentColor,
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+        }}
+      >
         {name}
       </span>
-      <span style={{
-        fontFamily: BODY, fontSize: 18, fontWeight: 400,
-        color: mutedColor,
-      }}>
+      <span
+        style={{
+          fontFamily: BODY,
+          fontSize: 16,
+          fontWeight: 500,
+          color: mutedColor,
+          letterSpacing: "0.06em",
+          textTransform: "lowercase",
+        }}
+      >
         {handle}
       </span>
     </div>
   );
 
-  // Footer: slide counter left, dots center, CTA on first/last
   const counter = `${String(slide.slideNumber).padStart(2, "0")}/${String(slide.totalSlides).padStart(2, "0")}`;
-  const isFirstOrLast = slide.slideNumber === 1 || slide.slideNumber === slide.totalSlides;
-  const ctaText = slide.slideNumber === 1 ? "DESLIZE PARA O LADO" : slide.slideNumber === slide.totalSlides ? "SALVE E COMPARTILHE" : "";
-
-  const dots = Array.from({ length: Math.min(slide.totalSlides, 15) }, (_, i) => (
-    <div key={i} style={{
-      width: i === slide.slideNumber - 1 ? 16 : 6,
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: i === slide.slideNumber - 1 ? accentColor : mutedColor,
-      opacity: i === slide.slideNumber - 1 ? 1 : 0.3,
-      transition: "width 0.2s",
-    }} />
-  ));
+  const ctaText =
+    slide.slideNumber === 1
+      ? "deslize"
+      : slide.slideNumber === slide.totalSlides
+        ? "salve e compartilhe"
+        : "";
 
   const footer = (
-    <div style={{
-      position: "absolute", bottom: 0, left: 0, right: 0,
-      padding: `0 ${PAD}px ${40}px`,
-      display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-      zIndex: 3,
-    }}>
-      {isFirstOrLast && ctaText && (
-        <span style={{
-          fontFamily: BODY, fontSize: 13, fontWeight: 600,
-          color: mutedColor, letterSpacing: "0.18em", textTransform: "uppercase",
-        }}>
-          {ctaText}
-        </span>
-      )}
-      <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-        {dots}
-      </div>
-      <div style={{
-        width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
-      }}>
-        <span style={{ fontFamily: BODY, fontSize: 14, fontWeight: 500, color: mutedColor }}>
+    <div
+      style={{
+        position: "absolute",
+        left: PAD,
+        right: PAD,
+        bottom: 42,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        zIndex: 5,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span
+          style={{
+            fontFamily: BODY,
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            color: mutedColor,
+          }}
+        >
           {counter}
         </span>
-        <span style={{ fontFamily: BODY, fontSize: 11, color: mutedColor, opacity: 0.5 }}>
-          {handle}
+        <span
+          style={{
+            fontFamily: BODY,
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
+            color: mutedColor,
+          }}
+        >
+          travessia
         </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {Array.from({ length: Math.min(slide.totalSlides, 15) }, (_, i) => (
+            <div
+              key={i}
+              style={{
+                width: i === slide.slideNumber - 1 ? 26 : 8,
+                height: 4,
+                borderRadius: 999,
+                backgroundColor: i === slide.slideNumber - 1 ? accentColor : mutedColor,
+                opacity: i === slide.slideNumber - 1 ? 1 : 0.35,
+                transition: "width 0.2s ease",
+              }}
+            />
+          ))}
+        </div>
+        {ctaText ? (
+          <span
+            style={{
+              fontFamily: BODY,
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: accentColor,
+            }}
+          >
+            {ctaText}
+          </span>
+        ) : (
+          <span />
+        )}
       </div>
     </div>
   );
 
-  // ── CAPA ──
   if (layout === "capa") {
     return (
-      <div ref={ref} style={{ ...base, backgroundColor: bgColor }}>
-        {/* Background gradient fallback for image */}
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-          background: `linear-gradient(155deg, #0a0a0a 0%, #1a1a1a 40%, #111111 100%)`,
-        }} />
-        {/* Overlay gradient */}
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-          background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.15) 100%)",
-          zIndex: 1,
-        }} />
+      <div ref={ref} style={base}>
+        {hasDoctorImage && (
+          <>
+            <div
+              style={{
+                position: "absolute",
+                top: -44,
+                right: -70,
+                width: 640,
+                height: 1430,
+                backgroundImage: `url(${doctorImageUrl})`,
+                backgroundSize: "cover",
+                backgroundPosition: "56% 10%",
+                filter: "contrast(1.14) brightness(0.78) saturate(0.72)",
+                opacity: 0.62,
+                zIndex: 0,
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(94deg, rgba(5,5,5,0.98) 0%, rgba(5,5,5,0.88) 38%, rgba(5,5,5,0.54) 68%, rgba(5,5,5,0.26) 100%)",
+                zIndex: 1,
+              }}
+            />
+          </>
+        )}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(circle at 82% 14%, rgba(207,168,99,0.24) 0%, rgba(207,168,99,0.02) 34%, transparent 55%), radial-gradient(circle at 18% 78%, rgba(255,255,255,0.12) 0%, transparent 44%), linear-gradient(162deg, #040404 0%, #0D0D0D 44%, #181818 100%)",
+          }}
+        />
+        <div style={{ ...grain(0.05), zIndex: 1 }} />
+        <div
+          style={{
+            position: "absolute",
+            top: 130,
+            right: PAD,
+            width: 140,
+            height: 140,
+            borderRadius: "50%",
+            border: "1px solid rgba(207,168,99,0.35)",
+            boxShadow: "0 0 60px rgba(207,168,99,0.14)",
+            zIndex: 2,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: editorialGrid.top,
+            left: editorialGrid.left,
+            width: 2,
+            bottom: editorialGrid.bottom,
+            background: `linear-gradient(to bottom, transparent 0%, ${accentColor} 24%, transparent 100%)`,
+            opacity: 0.8,
+            zIndex: 2,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: 208,
+            left: editorialGrid.left + 36,
+            right: editorialGrid.right + 10,
+            height: 1,
+            background: "linear-gradient(90deg, rgba(207,168,99,0.5) 0%, rgba(207,168,99,0.02) 84%, transparent 100%)",
+            zIndex: 2,
+          }}
+        />
         {header}
-        <div style={{
-          position: "absolute", bottom: 140, left: PAD, right: PAD,
-          zIndex: 2, display: "flex", flexDirection: "column",
-        }}>
+        <div
+          style={{
+            position: "absolute",
+            left: editorialGrid.left + 36,
+            right: editorialGrid.right,
+            bottom: 236,
+            zIndex: 4,
+            display: "flex",
+            flexDirection: "column",
+            gap: 30,
+          }}
+        >
           {slide.eyebrow && (
-            <span style={{
-              fontFamily: BODY, fontSize: 18, fontWeight: 600,
-              color: accentColor, textTransform: "uppercase",
-              letterSpacing: "0.2em", marginBottom: 24,
-            }}>
+            <span
+              style={{
+                fontFamily: BODY,
+                fontSize: 14,
+                fontWeight: 700,
+                color: "#CFA863",
+                textTransform: "uppercase",
+                letterSpacing: "0.34em",
+              }}
+            >
               {slide.eyebrow}
             </span>
           )}
-          <h1 style={{
-            fontFamily: DISPLAY, fontSize: 120, fontWeight: 700,
-            lineHeight: 0.92, color: "#FFFFFF",
-            margin: 0, textTransform: "uppercase",
-            letterSpacing: "-0.02em",
-          }}>
-            {travessiaEmphasis(slide.headline, accentColor)}
+          <h1
+            style={{
+              fontFamily: DISPLAY,
+              fontSize: 140,
+              fontWeight: 700,
+              lineHeight: 0.86,
+              color: "#FFFFFF",
+              margin: 0,
+              textTransform: "uppercase",
+              letterSpacing: "-0.028em",
+              maxWidth: "96%",
+              textShadow: "0 18px 60px rgba(0,0,0,0.65)",
+            }}
+          >
+            {travessiaEmphasis(slide.headline, "#D5B47A")}
           </h1>
+          <div
+            style={{
+              width: "78%",
+              borderTop: "1px solid rgba(207,168,99,0.42)",
+              paddingTop: 20,
+              display: "grid",
+              gap: 10,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: BODY,
+                fontSize: 11,
+                fontWeight: 700,
+                lineHeight: 1.3,
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.74)",
+              }}
+            >
+              campanha editorial · autoridade médica
+            </span>
+            <span
+              style={{
+                fontFamily: BODY,
+                fontSize: 19,
+                lineHeight: 1.6,
+                color: mutedColor,
+              }}
+            >
+              Abertura de tensão para posicionar sua assinatura clínica com presença premium e narrativa de marca.
+            </span>
+          </div>
+          {hasDoctorImage && (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                border: "1px solid rgba(207,168,99,0.52)",
+                padding: "8px 14px",
+                width: "fit-content",
+                background: "rgba(8,8,8,0.48)",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: BODY,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.2em",
+                  color: "rgba(255,255,255,0.82)",
+                }}
+              >
+                presença médica
+              </span>
+              <span
+                style={{
+                  fontFamily: DISPLAY,
+                  fontSize: 20,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: "#D5B47A",
+                  lineHeight: 1,
+                }}
+              >
+                {name}
+              </span>
+            </div>
+          )}
         </div>
         {footer}
       </div>
     );
   }
 
-  // ── TIMG ──
   if (layout === "timg") {
     return (
-      <div ref={ref} style={{ ...base, backgroundColor: bgColor }}>
+      <div ref={ref} style={base}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: `linear-gradient(180deg, ${c.bgAlt} 0%, ${c.bg} 68%, ${c.bg} 100%)`,
+          }}
+        />
+        <div style={{ ...grain(0.035), zIndex: 1 }} />
         {header}
-        {/* Image block placeholder */}
-        <div style={{
-          position: "absolute", top: 80, left: 0, right: 0, height: 520,
-          background: `linear-gradient(135deg, ${c.bgAlt} 0%, ${c.bg} 100%)`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <span style={{
-            fontFamily: BODY, fontSize: 16, color: mutedColor, opacity: 0.4,
-            letterSpacing: "0.1em", textTransform: "uppercase",
-          }}>
-            {slide.imgQuery || "IMAGE"}
+        <div
+          style={{
+            position: "absolute",
+            top: 112,
+            left: PAD,
+            right: PAD,
+            height: 590,
+            borderRadius: 6,
+            overflow: "hidden",
+            border: `1px solid ${softBorder}`,
+            background: hasDoctorImage
+              ? `linear-gradient(150deg, rgba(4,4,4,0.66) 0%, rgba(4,4,4,0.48) 45%, rgba(4,4,4,0.7) 100%), url(${doctorImageUrl})`
+              : "linear-gradient(140deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%), linear-gradient(135deg, #1F1F1F 0%, #131313 50%, #1B1B1B 100%)",
+            backgroundSize: hasDoctorImage ? "cover" : undefined,
+            backgroundPosition: hasDoctorImage ? "52% 18%" : undefined,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            padding: "28px 30px",
+            zIndex: 3,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: BODY,
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.24em",
+              color: "rgba(255,255,255,0.62)",
+            }}
+          >
+            {hasDoctorImage ? "retrato editorial" : "imagem"}
+          </span>
+          <span
+            style={{
+              fontFamily: BODY,
+              fontSize: 12,
+              maxWidth: "56%",
+              textAlign: "right",
+              color: "rgba(255,255,255,0.56)",
+              lineHeight: 1.5,
+            }}
+          >
+            {slide.imgQuery || "CENA CLÍNICA / RETRATO EDITORIAL"}
           </span>
         </div>
-        <div style={{
-          position: "absolute", top: 630, left: PAD, right: PAD, bottom: 140,
-          display: "flex", flexDirection: "column", justifyContent: "center",
-          zIndex: 2,
-        }}>
+        {hasDoctorImage && (
+          <div
+            style={{
+              position: "absolute",
+              top: 138,
+              left: PAD + 18,
+              zIndex: 4,
+              padding: "7px 12px",
+              border: "1px solid rgba(207,168,99,0.46)",
+              backgroundColor: "rgba(0,0,0,0.46)",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: BODY,
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                color: "#D7B980",
+              }}
+            >
+              assinatura médica
+            </span>
+          </div>
+        )}
+
+        <div
+          style={{
+            position: "absolute",
+            top: 750,
+            left: PAD,
+            right: PAD,
+            bottom: 178,
+            zIndex: 4,
+            display: "grid",
+            gridTemplateColumns: "1fr",
+            alignContent: "start",
+            gap: 28,
+          }}
+        >
           {slide.miniTitulo && (
-            <h2 style={{
-              fontFamily: DISPLAY, fontSize: 80, fontWeight: 700,
-              lineHeight: 0.92, color: textColor,
-              margin: 0, marginBottom: 28, textTransform: "uppercase",
-            }}>
+            <h2
+              style={{
+                fontFamily: DISPLAY,
+                fontSize: 84,
+                fontWeight: 700,
+                lineHeight: 0.9,
+                margin: 0,
+                color: textColor,
+                textTransform: "uppercase",
+                letterSpacing: "-0.018em",
+              }}
+            >
               {travessiaEmphasis(slide.miniTitulo, accentColor)}
             </h2>
           )}
           {slide.body && (
-            <p style={{
-              fontFamily: BODY, fontSize: 40, fontWeight: 400,
-              lineHeight: 1.55, color: textColor,
-              margin: 0, opacity: 0.85,
-            }}>
+            <p
+              style={{
+                margin: 0,
+                fontFamily: BODY,
+                fontSize: 35,
+                lineHeight: 1.48,
+                color: textColor,
+                maxWidth: "94%",
+              }}
+            >
               {travessiaEmphasis(slide.body, accentColor)}
             </p>
           )}
@@ -355,43 +664,78 @@ function renderTravessia(
     );
   }
 
-  // ── TONLY ──
   if (layout === "tonly") {
     return (
-      <div ref={ref} style={{ ...base, backgroundColor: bgColor }}>
+      <div ref={ref} style={base}>
+        <div style={{ position: "absolute", inset: 0, backgroundColor: c.bg }} />
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: PAD,
+            width: 1,
+            background: `linear-gradient(to bottom, transparent 0%, ${softBorder} 16%, ${softBorder} 84%, transparent 100%)`,
+            zIndex: 2,
+          }}
+        />
         {header}
-        <div style={{
-          position: "absolute", top: 0, left: PAD, right: PAD, bottom: 140,
-          display: "flex", flexDirection: "column", justifyContent: "center",
-          zIndex: 2,
-        }}>
+        <div
+          style={{
+            position: "absolute",
+            top: 180,
+            left: PAD + 40,
+            right: PAD,
+            bottom: 180,
+            zIndex: 4,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: 34,
+          }}
+        >
           {slide.zoneLabel && (
-            <span style={{
-              fontFamily: BODY, fontSize: 18, fontWeight: 600,
-              color: accentColor, textTransform: "uppercase",
-              letterSpacing: "0.2em", marginBottom: 20,
-            }}>
+            <span
+              style={{
+                fontFamily: BODY,
+                fontSize: 14,
+                fontWeight: 600,
+                color: accentColor,
+                letterSpacing: "0.24em",
+                textTransform: "uppercase",
+              }}
+            >
               {slide.zoneLabel}
             </span>
           )}
-          {/* Divider bar */}
-          <div style={{
-            width: 64, height: 4, backgroundColor: accentColor,
-            marginBottom: 40, borderRadius: 2,
-          }} />
-          <h2 style={{
-            fontFamily: DISPLAY, fontSize: 88, fontWeight: 700,
-            lineHeight: 0.92, color: textColor,
-            margin: 0, marginBottom: 32, textTransform: "uppercase",
-          }}>
+          <h2
+            style={{
+              fontFamily: DISPLAY,
+              fontSize: 102,
+              fontWeight: 700,
+              lineHeight: 0.88,
+              color: textColor,
+              margin: 0,
+              textTransform: "uppercase",
+              maxWidth: "95%",
+              letterSpacing: "-0.022em",
+            }}
+          >
             {travessiaEmphasis(slide.headline, accentColor)}
           </h2>
           {slide.body && (
-            <p style={{
-              fontFamily: BODY, fontSize: 40, fontWeight: 400,
-              lineHeight: 1.55, color: textColor,
-              margin: 0, opacity: 0.85, maxWidth: "90%",
-            }}>
+            <p
+              style={{
+                margin: 0,
+                borderTop: `1px solid ${softBorder}`,
+                paddingTop: 24,
+                fontFamily: BODY,
+                fontSize: 34,
+                lineHeight: 1.52,
+                color: textColor,
+                maxWidth: "92%",
+              }}
+            >
               {travessiaEmphasis(slide.body, accentColor)}
             </p>
           )}
@@ -401,53 +745,90 @@ function renderTravessia(
     );
   }
 
-  // ── STAT ──
   if (layout === "stat") {
     return (
-      <div ref={ref} style={{ ...base, backgroundColor: bgColor }}>
+      <div ref={ref} style={base}>
+        <div style={{ position: "absolute", inset: 0, background: `linear-gradient(155deg, ${c.bg} 0%, ${c.bgAlt} 100%)` }} />
+        <div style={{ ...grain(0.04), zIndex: 1 }} />
         {header}
-        <div style={{
-          position: "absolute", top: 0, left: PAD, right: PAD, bottom: 140,
-          display: "flex", flexDirection: "column", justifyContent: "center",
-          zIndex: 2,
-        }}>
-          {slide.statNumber && (
-            <span style={{
-              fontFamily: DISPLAY, fontSize: 220, fontWeight: 700,
-              lineHeight: 0.85, color: accentColor,
-              letterSpacing: "-0.03em",
-            }}>
-              {slide.statNumber}
+        <div
+          style={{
+            position: "absolute",
+            top: 170,
+            left: PAD,
+            right: PAD,
+            bottom: 190,
+            display: "grid",
+            gridTemplateRows: "auto auto 1fr",
+            alignContent: "start",
+            rowGap: 26,
+            zIndex: 4,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <span
+              style={{
+                fontFamily: DISPLAY,
+                fontSize: 240,
+                lineHeight: 0.78,
+                fontWeight: 700,
+                letterSpacing: "-0.04em",
+                color: accentColor,
+              }}
+            >
+              {slide.statNumber || "00"}
             </span>
-          )}
-          {slide.statUnit && (
-            <span style={{
-              fontFamily: BODY, fontSize: 22, fontWeight: 600,
-              color: mutedColor, textTransform: "uppercase",
-              letterSpacing: "0.2em", marginTop: 8, marginBottom: 40,
-            }}>
-              {slide.statUnit}
-            </span>
-          )}
+            {slide.statUnit && (
+              <span
+                style={{
+                  marginTop: 42,
+                  fontFamily: BODY,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: mutedColor,
+                  letterSpacing: "0.24em",
+                  textTransform: "uppercase",
+                  writingMode: "vertical-rl",
+                  transform: "rotate(180deg)",
+                }}
+              >
+                {slide.statUnit}
+              </span>
+            )}
+          </div>
           {slide.body && (
-            <p style={{
-              fontFamily: BODY, fontSize: 40, fontWeight: 400,
-              lineHeight: 1.55, color: textColor,
-              margin: 0, marginBottom: 32, opacity: 0.85, maxWidth: "90%",
-            }}>
+            <p
+              style={{
+                margin: 0,
+                maxWidth: "88%",
+                fontFamily: BODY,
+                fontSize: 35,
+                lineHeight: 1.45,
+                color: textColor,
+              }}
+            >
               {travessiaEmphasis(slide.body, accentColor)}
             </p>
           )}
           {slide.eDai && (
-            <div style={{
-              borderLeft: `4px solid ${accentColor}`,
-              paddingLeft: 24, marginTop: 16,
-            }}>
-              <p style={{
-                fontFamily: BODY, fontSize: 32, fontWeight: 400,
-                lineHeight: 1.5, color: mutedColor,
-                margin: 0, fontStyle: "italic",
-              }}>
+            <div
+              style={{
+                marginTop: 12,
+                borderTop: `1px solid ${softBorder}`,
+                paddingTop: 22,
+                maxWidth: "82%",
+              }}
+            >
+              <p
+                style={{
+                  margin: 0,
+                  fontFamily: BODY,
+                  fontSize: 29,
+                  lineHeight: 1.5,
+                  color: mutedColor,
+                  fontStyle: "italic",
+                }}
+              >
                 {travessiaEmphasis(slide.eDai, accentColor)}
               </p>
             </div>
@@ -458,36 +839,63 @@ function renderTravessia(
     );
   }
 
-  // ── TURNING ──
   if (layout === "turning") {
     return (
-      <div ref={ref} style={{ ...base, backgroundColor: bgColor }}>
+      <div ref={ref} style={base}>
+        <div style={{ position: "absolute", inset: 0, backgroundColor: c.bg }} />
+        <div
+          style={{
+            position: "absolute",
+            top: 238,
+            left: PAD,
+            right: PAD,
+            height: 12,
+            background: `linear-gradient(90deg, transparent 0%, ${accentColor} 22%, ${accentColor} 78%, transparent 100%)`,
+            zIndex: 2,
+          }}
+        />
         {header}
-        {/* Full-width accent bar */}
-        <div style={{
-          position: "absolute", top: 300, left: 0, right: 0,
-          height: 10, backgroundColor: accentColor,
-          zIndex: 2,
-        }} />
-        <div style={{
-          position: "absolute", top: 340, left: PAD, right: PAD, bottom: 140,
-          display: "flex", flexDirection: "column", justifyContent: "center",
-          zIndex: 2,
-        }}>
-          <h2 style={{
-            fontFamily: DISPLAY, fontSize: 96, fontWeight: 700,
-            lineHeight: 0.92, color: textColor,
-            margin: 0, marginBottom: 40, textTransform: "uppercase",
-          }}>
+        <div
+          style={{
+            position: "absolute",
+            top: 296,
+            left: PAD,
+            right: PAD,
+            bottom: 190,
+            zIndex: 4,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: 40,
+          }}
+        >
+          <h2
+            style={{
+              margin: 0,
+              fontFamily: DISPLAY,
+              fontSize: 108,
+              lineHeight: 0.88,
+              textTransform: "uppercase",
+              letterSpacing: "-0.024em",
+              color: textColor,
+            }}
+          >
             {travessiaEmphasis(slide.headline, accentColor)}
           </h2>
           {slide.opinion && (
-            <p style={{
-              fontFamily: BODY, fontSize: 44, fontWeight: 400,
-              lineHeight: 1.45, color: textColor,
-              margin: 0, fontStyle: "italic", opacity: 0.85,
-              maxWidth: "92%",
-            }}>
+            <p
+              style={{
+                margin: 0,
+                maxWidth: "90%",
+                fontFamily: BODY,
+                fontSize: 37,
+                lineHeight: 1.45,
+                color: textColor,
+                borderLeft: `3px solid ${accentColor}`,
+                paddingLeft: 22,
+                fontStyle: "italic",
+              }}
+            >
               {travessiaEmphasis(slide.opinion, accentColor)}
             </p>
           )}
@@ -497,148 +905,87 @@ function renderTravessia(
     );
   }
 
-  // ── LIGHT ──
   if (layout === "light") {
-    const lightBg = "#FFFFFF";
-    const lightText = "#111111";
-    const lightMuted = "rgba(0,0,0,0.45)";
-    const lightAccent = "#111111";
     return (
-      <div ref={ref} style={{ ...base, backgroundColor: lightBg }}>
-        {/* Light header override */}
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0,
-          padding: `${PAD}px ${PAD}px 0`,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          zIndex: 3,
-        }}>
-          <span style={{
-            fontFamily: DISPLAY, fontSize: 28, fontWeight: 700,
-            color: lightAccent, textTransform: "uppercase",
-            letterSpacing: "0.06em",
-          }}>
-            {name}
-          </span>
-          <span style={{
-            fontFamily: BODY, fontSize: 18, fontWeight: 400,
-            color: lightMuted,
-          }}>
-            {handle}
-          </span>
-        </div>
-        <div style={{
-          position: "absolute", top: 100, left: PAD, right: PAD, bottom: 140,
-          display: "flex", flexDirection: "column", justifyContent: "center",
-          zIndex: 2,
-        }}>
+      <div ref={ref} style={base}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(circle at 80% 15%, rgba(0,0,0,0.07), transparent 42%), linear-gradient(180deg, #FFFFFF 0%, #F5F5F3 100%)",
+          }}
+        />
+        <div style={{ ...grain(0.024), zIndex: 1 }} />
+        {header}
+        <div
+          style={{
+            position: "absolute",
+            top: 178,
+            left: PAD,
+            right: PAD,
+            bottom: 190,
+            zIndex: 4,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: 30,
+          }}
+        >
           {slide.miniTitulo && (
-            <h2 style={{
-              fontFamily: DISPLAY, fontSize: 80, fontWeight: 700,
-              lineHeight: 0.92, color: lightText,
-              margin: 0, marginBottom: 28, textTransform: "uppercase",
-            }}>
-              {travessiaEmphasis(slide.miniTitulo, lightAccent)}
+            <h2
+              style={{
+                margin: 0,
+                fontFamily: DISPLAY,
+                fontSize: 88,
+                lineHeight: 0.88,
+                textTransform: "uppercase",
+                letterSpacing: "-0.02em",
+                color: textColor,
+              }}
+            >
+              {travessiaEmphasis(slide.miniTitulo, accentColor)}
             </h2>
           )}
           {slide.body && (
-            <p style={{
-              fontFamily: BODY, fontSize: 40, fontWeight: 400,
-              lineHeight: 1.55, color: lightText,
-              margin: 0, opacity: 0.85, maxWidth: "90%",
-            }}>
-              {travessiaEmphasis(slide.body, lightAccent)}
+            <p
+              style={{
+                margin: 0,
+                maxWidth: "92%",
+                fontFamily: BODY,
+                fontSize: 34,
+                lineHeight: 1.5,
+                color: textColor,
+              }}
+            >
+              {travessiaEmphasis(slide.body, accentColor)}
             </p>
           )}
-          {/* Optional image area */}
           {slide.imgQuery && (
-            <div style={{
-              marginTop: 40, width: "100%", height: 300,
-              background: `linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%)`,
-              borderRadius: 8,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <span style={{
-                fontFamily: BODY, fontSize: 14, color: lightMuted, opacity: 0.5,
-                letterSpacing: "0.1em", textTransform: "uppercase",
-              }}>
-                {slide.imgQuery}
+            <div
+              style={{
+                marginTop: 8,
+                border: `1px solid rgba(17,17,17,0.2)`,
+                borderRadius: 6,
+                padding: "24px 26px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: BODY,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  color: mutedColor,
+                }}
+              >
+                referência visual
               </span>
-            </div>
-          )}
-        </div>
-        {/* Light footer override */}
-        <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0,
-          padding: `0 ${PAD}px ${40}px`,
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-          zIndex: 3,
-        }}>
-          <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-            {Array.from({ length: Math.min(slide.totalSlides, 15) }, (_, i) => (
-              <div key={i} style={{
-                width: i === slide.slideNumber - 1 ? 16 : 6,
-                height: 6, borderRadius: 3,
-                backgroundColor: i === slide.slideNumber - 1 ? lightAccent : lightMuted,
-                opacity: i === slide.slideNumber - 1 ? 1 : 0.3,
-              }} />
-            ))}
-          </div>
-          <div style={{
-            width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
-          }}>
-            <span style={{ fontFamily: BODY, fontSize: 14, fontWeight: 500, color: lightMuted }}>
-              {counter}
-            </span>
-            <span style={{ fontFamily: BODY, fontSize: 11, color: lightMuted, opacity: 0.5 }}>
-              {handle}
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── FINAL ──
-  if (layout === "final") {
-    return (
-      <div ref={ref} style={{ ...base, backgroundColor: bgColor }}>
-        {header}
-        <div style={{
-          position: "absolute", top: 0, left: PAD, right: PAD, bottom: 140,
-          display: "flex", flexDirection: "column", justifyContent: "center",
-          zIndex: 2,
-        }}>
-          {slide.conclusion && (
-            <h2 style={{
-              fontFamily: DISPLAY, fontSize: 96, fontWeight: 700,
-              lineHeight: 0.92, color: textColor,
-              margin: 0, marginBottom: 48, textTransform: "uppercase",
-            }}>
-              {travessiaEmphasis(slide.conclusion, accentColor)}
-            </h2>
-          )}
-          {/* CTA box */}
-          <div style={{
-            backgroundColor: accentColor, padding: 44,
-            borderRadius: 4, marginBottom: 40,
-          }}>
-            <span style={{
-              fontFamily: DISPLAY, fontSize: 36, fontWeight: 700,
-              color: bgColor, textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}>
-              SALVE ESTE CARROSSEL
-            </span>
-          </div>
-          {slide.perguntaComentario && (
-            <div style={{ borderTop: `1px solid ${mutedColor}`, paddingTop: 28 }}>
-              <p style={{
-                fontFamily: BODY, fontSize: 32, fontWeight: 400,
-                lineHeight: 1.5, color: mutedColor,
-                margin: 0,
-              }}>
-                {travessiaEmphasis(slide.perguntaComentario, accentColor)}
-              </p>
+              <span style={{ fontFamily: BODY, fontSize: 14, color: mutedColor }}>{slide.imgQuery}</span>
             </div>
           )}
         </div>
@@ -647,12 +994,258 @@ function renderTravessia(
     );
   }
 
-  // Fallback for unknown TravessIA layout
+  if (layout === "final") {
+    return (
+      <div ref={ref} style={base}>
+        {hasDoctorImage && (
+          <>
+            <div
+              style={{
+                position: "absolute",
+                right: -120,
+                bottom: -110,
+                width: 620,
+                height: 1020,
+                backgroundImage: `url(${doctorImageUrl})`,
+                backgroundSize: "cover",
+                backgroundPosition: "58% 20%",
+                filter: "grayscale(0.2) contrast(1.1) brightness(0.58) saturate(0.78)",
+                opacity: 0.35,
+                zIndex: 0,
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(90deg, rgba(7,7,7,0.96) 0%, rgba(7,7,7,0.78) 50%, rgba(7,7,7,0.5) 100%)",
+                zIndex: 1,
+              }}
+            />
+          </>
+        )}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(circle at 84% 12%, rgba(207,168,99,0.26) 0%, rgba(207,168,99,0.05) 36%, transparent 58%), linear-gradient(170deg, #070707 0%, #111111 56%, #1B1B1B 100%)",
+          }}
+        />
+        <div style={{ ...grain(0.04), zIndex: 1 }} />
+        <div
+          style={{
+            position: "absolute",
+            top: 142,
+            left: PAD,
+            right: PAD,
+            height: 1,
+            background: "linear-gradient(90deg, rgba(207,168,99,0.6) 0%, rgba(207,168,99,0.04) 70%, transparent 100%)",
+            zIndex: 2,
+          }}
+        />
+        {header}
+        <div
+          style={{
+            position: "absolute",
+            top: 178,
+            left: PAD,
+            right: PAD,
+            bottom: 190,
+            zIndex: 4,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: 30,
+          }}
+        >
+          {slide.conclusion && (
+            <h2
+              style={{
+                margin: 0,
+                fontFamily: DISPLAY,
+                fontSize: 112,
+                lineHeight: 0.84,
+                textTransform: "uppercase",
+                letterSpacing: "-0.026em",
+                color: textColor,
+                textShadow: "0 14px 44px rgba(0,0,0,0.6)",
+                maxWidth: "94%",
+              }}
+            >
+              {travessiaEmphasis(slide.conclusion, "#D4B377")}
+            </h2>
+          )}
+          <div
+            style={{
+              border: "1px solid rgba(207,168,99,0.5)",
+              padding: "30px 32px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 24,
+              background:
+                "linear-gradient(120deg, rgba(207,168,99,0.2) 0%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.01) 100%)",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.3)",
+            }}
+          >
+            <div style={{ display: "grid", gap: 8 }}>
+              <span
+                style={{
+                  fontFamily: BODY,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.24em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.74)",
+                }}
+              >
+                próximo passo
+              </span>
+              <span
+                style={{
+                  fontFamily: DISPLAY,
+                  fontSize: 40,
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "#F6EFE2",
+                }}
+              >
+                salve este carrossel
+              </span>
+            </div>
+            <span
+              style={{
+                fontFamily: BODY,
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: "0.24em",
+                textTransform: "uppercase",
+                color: "#D4B377",
+              }}
+            >
+              assinatura
+            </span>
+          </div>
+          {slide.perguntaComentario && (
+            <p
+              style={{
+                margin: 0,
+                maxWidth: "92%",
+                fontFamily: BODY,
+                fontSize: 34,
+                lineHeight: 1.52,
+                color: mutedColor,
+                borderTop: `1px solid ${softBorder}`,
+                paddingTop: 22,
+              }}
+            >
+              {travessiaEmphasis(slide.perguntaComentario, accentColor)}
+            </p>
+          )}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              borderTop: `1px solid ${softBorder}`,
+              paddingTop: 14,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: BODY,
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.2em",
+                color: "rgba(255,255,255,0.7)",
+              }}
+            >
+              posicionamento médico premium
+            </span>
+            <span
+              style={{
+                fontFamily: DISPLAY,
+                fontSize: 24,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: "#D4B377",
+              }}
+            >
+              {name}
+            </span>
+          </div>
+          {hasDoctorImage && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 18,
+                border: "1px solid rgba(207,168,99,0.42)",
+                background: "rgba(8,8,8,0.46)",
+                padding: "12px 14px",
+              }}
+            >
+              <div style={{ display: "grid", gap: 4 }}>
+                <span
+                  style={{
+                    fontFamily: BODY,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.2em",
+                    color: "rgba(255,255,255,0.74)",
+                  }}
+                >
+                  assinatura visual da doutora
+                </span>
+                <span
+                  style={{
+                    fontFamily: BODY,
+                    fontSize: 15,
+                    color: "#F4F0E8",
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Presença editorial que sustenta autoridade clínica e memória de marca.
+                </span>
+              </div>
+              <div
+                style={{
+                  width: 82,
+                  height: 82,
+                  borderRadius: "50%",
+                  backgroundImage: `url(${doctorImageUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "56% 14%",
+                  border: "1px solid rgba(207,168,99,0.68)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                  flexShrink: 0,
+                }}
+              />
+            </div>
+          )}
+        </div>
+        {footer}
+      </div>
+    );
+  }
+
   return (
-    <div ref={ref} style={{ ...base, backgroundColor: bgColor, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <p style={{ color: mutedColor, fontFamily: BODY, fontSize: 40 }}>
-        {slide.headline}
-      </p>
+    <div
+      ref={ref}
+      style={{
+        ...base,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <p style={{ color: mutedColor, fontFamily: BODY, fontSize: 40 }}>{slide.headline}</p>
     </div>
   );
 }
@@ -724,7 +1317,7 @@ const SlideRenderer = React.forwardRef<HTMLDivElement, SlideRendererProps>(
 
     // ═══ TRAVESSIA VISUAL SYSTEM ═══
     if (style === "travessia" && slide.travessiaLayout) {
-      return renderTravessia(slide, ref, vs, c, PAD, handle, name);
+      return renderTravessia(slide, ref, vs, c, PAD, handle, name, doctorImageUrl);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
