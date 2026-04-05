@@ -105,9 +105,9 @@ export default function ImageUpload({
       setSelectedFile(null);
       setPreview(null);
       if (inputRef.current) inputRef.current.value = "";
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error("Erro ao fazer upload. Tente novamente.");
-      console.error(err);
+      console.error("Upload error:", err);
     } finally {
       setUploading(false);
     }

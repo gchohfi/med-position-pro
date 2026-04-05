@@ -289,7 +289,8 @@ const RadarInstagram = () => {
           newProfileType === "own" ? "perfil próprio" : "concorrente"
         }.`
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
+      console.error("Erro ao adicionar perfil:", err);
       toast.error("Erro ao adicionar perfil. Tente novamente.");
     } finally {
       setAddingProfile(false);
@@ -342,9 +343,9 @@ const RadarInstagram = () => {
         logStrategicEvent("instagram_intel_generated", "instagram_radar");
         toast.success("Radar de mercado atualizado.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Generate error:", err);
-      toast.error(err.message || "Erro ao gerar análise. Tente novamente.");
+      toast.error(err instanceof Error ? err.message : "Erro ao gerar análise. Tente novamente.");
     } finally {
       setGenerating(false);
     }

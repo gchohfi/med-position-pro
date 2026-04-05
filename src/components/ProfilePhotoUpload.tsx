@@ -56,7 +56,7 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
 
       onPhotoUpdated(photoUrl);
       toast.success("Foto atualizada!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Upload error:", err);
       toast.error("Erro ao enviar foto.");
     } finally {

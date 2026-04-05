@@ -31,8 +31,8 @@ const Auth = () => {
         await signIn(email, password);
         navigate("/dashboard");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao processar. Tente novamente.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao processar. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -51,8 +51,8 @@ const Auth = () => {
       });
       if (error) throw error;
       setForgotSent(true);
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao enviar. Tente novamente.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao enviar. Tente novamente.");
     } finally {
       setLoading(false);
     }
