@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DoctorProvider } from "@/contexts/DoctorContext";
 import { ROUTES } from "@/lib/routes";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -46,39 +47,41 @@ const App = () => (
         <AuthProvider>
           <DoctorProvider>
             <Routes>
-              {/* Auth & onboarding */}
+              {/* Public routes */}
               <Route path={ROUTES.index} element={<Index />} />
               <Route path={ROUTES.auth} element={<Auth />} />
               <Route path={ROUTES.resetPassword} element={<ResetPassword />} />
-              <Route path={ROUTES.onboarding} element={<Onboarding />} />
+
+              {/* Protected routes — require authentication */}
+              <Route path={ROUTES.onboarding} element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
               {/* Core */}
-              <Route path={ROUTES.dashboard} element={<Dashboard />} />
-              <Route path={ROUTES.setup} element={<Setup />} />
+              <Route path={ROUTES.dashboard} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path={ROUTES.setup} element={<ProtectedRoute><Setup /></ProtectedRoute>} />
 
               {/* Diagnóstico & Análise */}
-              <Route path={ROUTES.diagnostico} element={<Diagnostico />} />
-              <Route path={ROUTES.analisePerfil} element={<AnalisePerfil />} />
-              <Route path={ROUTES.concorrencia} element={<Concorrencia />} />
-              <Route path={ROUTES.radarInstagram} element={<RadarInstagram />} />
-              <Route path={ROUTES.inspiracao} element={<Inspiracao />} />
+              <Route path={ROUTES.diagnostico} element={<ProtectedRoute><Diagnostico /></ProtectedRoute>} />
+              <Route path={ROUTES.analisePerfil} element={<ProtectedRoute><AnalisePerfil /></ProtectedRoute>} />
+              <Route path={ROUTES.concorrencia} element={<ProtectedRoute><Concorrencia /></ProtectedRoute>} />
+              <Route path={ROUTES.radarInstagram} element={<ProtectedRoute><RadarInstagram /></ProtectedRoute>} />
+              <Route path={ROUTES.inspiracao} element={<ProtectedRoute><Inspiracao /></ProtectedRoute>} />
 
               {/* Estratégia & Conteúdo */}
-              <Route path={ROUTES.tendencias} element={<Tendencias />} />
-              <Route path={ROUTES.radarMercado} element={<RadarMercado />} />
-              <Route path={ROUTES.estrategiaIa} element={<Estrategia />} />
-              <Route path={ROUTES.carrossel} element={<Carrossel />} />
-              <Route path={ROUTES.producao} element={<Producao />} />
-              <Route path={ROUTES.calendario} element={<Calendario />} />
-              <Route path={ROUTES.series} element={<Series />} />
+              <Route path={ROUTES.tendencias} element={<ProtectedRoute><Tendencias /></ProtectedRoute>} />
+              <Route path={ROUTES.radarMercado} element={<ProtectedRoute><RadarMercado /></ProtectedRoute>} />
+              <Route path={ROUTES.estrategiaIa} element={<ProtectedRoute><Estrategia /></ProtectedRoute>} />
+              <Route path={ROUTES.carrossel} element={<ProtectedRoute><Carrossel /></ProtectedRoute>} />
+              <Route path={ROUTES.producao} element={<ProtectedRoute><Producao /></ProtectedRoute>} />
+              <Route path={ROUTES.calendario} element={<ProtectedRoute><Calendario /></ProtectedRoute>} />
+              <Route path={ROUTES.series} element={<ProtectedRoute><Series /></ProtectedRoute>} />
 
               {/* Performance & Gestão */}
-              <Route path={ROUTES.metricas} element={<Metricas />} />
-              <Route path={ROUTES.evolucao} element={<Evolucao />} />
-              <Route path={ROUTES.biblioteca} element={<Biblioteca />} />
-              <Route path={ROUTES.memoriaViva} element={<MemoriaViva />} />
-              <Route path={ROUTES.atualizacoes} element={<AtualizacoesInteligentes />} />
-              <Route path={ROUTES.supervisor} element={<Supervisor />} />
+              <Route path={ROUTES.metricas} element={<ProtectedRoute><Metricas /></ProtectedRoute>} />
+              <Route path={ROUTES.evolucao} element={<ProtectedRoute><Evolucao /></ProtectedRoute>} />
+              <Route path={ROUTES.biblioteca} element={<ProtectedRoute><Biblioteca /></ProtectedRoute>} />
+              <Route path={ROUTES.memoriaViva} element={<ProtectedRoute><MemoriaViva /></ProtectedRoute>} />
+              <Route path={ROUTES.atualizacoes} element={<ProtectedRoute><AtualizacoesInteligentes /></ProtectedRoute>} />
+              <Route path={ROUTES.supervisor} element={<ProtectedRoute><Supervisor /></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>

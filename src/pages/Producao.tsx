@@ -86,7 +86,7 @@ const Producao = () => {
       setLoadingExisting(true);
       try {
         const { data, error } = await supabase
-          .from("content_items")
+          .from("content_outputs")
           .select("*")
           .eq("id", contentId)
           .single();
@@ -188,21 +188,22 @@ const Producao = () => {
       const payload = {
         user_id: user.id,
         title: campaign.titulo,
+        content_type: brief.tipo || "educativo",
         slide_plan_json: JSON.stringify({
           ...campaign,
           slides: approvedSlides,
         }),
-        status: "approved",
+        campaign_status: "approved",
       };
 
       if (contentId) {
         const { error } = await supabase
-          .from("content_items")
+          .from("content_outputs")
           .update(payload)
           .eq("id", contentId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("content_items").insert(payload);
+        const { error } = await supabase.from("content_outputs").insert(payload);
         if (error) throw error;
       }
 

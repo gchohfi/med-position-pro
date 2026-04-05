@@ -76,9 +76,9 @@ export function useStreamingResponse({ functionName, onComplete, onError }: UseS
       }
 
       onComplete?.(accumulated);
-    } catch (err: any) {
-      if (err.name === "AbortError") return;
-      const msg = err.message || "Erro ao processar resposta";
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      const msg = err instanceof Error ? err.message : "Erro ao processar resposta";
       setError(msg);
       onError?.(msg);
     } finally {
