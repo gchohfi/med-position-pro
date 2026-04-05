@@ -163,7 +163,7 @@ const Carrossel = () => {
       if (result.sugestoes && result.sugestoes.length > 0) {
         setSuggestions(result.sugestoes);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erro ao carregar sugestões:", err);
       // Silent fail — suggestions are optional
     } finally {
@@ -202,9 +202,9 @@ const Carrossel = () => {
       if (error) throw error;
       const parsed = data as TravessIARoteiro;
       applyRoteiro(parsed);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erro ao gerar carrossel:", err);
-      toast.error(err.message || "Erro ao gerar roteiro do carrossel.");
+      toast.error(err instanceof Error ? err.message : "Erro ao gerar roteiro do carrossel.");
     } finally {
       setLoading(false);
     }
@@ -226,8 +226,8 @@ const Carrossel = () => {
       const results = (data?.pautas || data?.results || data || []) as PautaResult[];
       setPautas(results);
       if (results.length === 0) toast.info("Nenhuma pauta encontrada.");
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao pesquisar pautas.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao pesquisar pautas.");
     } finally {
       setSearchLoading(false);
     }
@@ -259,8 +259,8 @@ const Carrossel = () => {
       } else {
         toast.warning("Nao foi possivel extrair conteudo relevante.");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao extrair conteudo do link.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao extrair conteudo do link.");
     } finally {
       setScraperLoading(false);
     }
@@ -302,8 +302,8 @@ const Carrossel = () => {
       });
       if (error) throw error;
       applyRoteiro(data as TravessIARoteiro);
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao gerar roteiro do carrossel.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao gerar roteiro do carrossel.");
     } finally {
       setLoading(false);
     }
@@ -330,8 +330,8 @@ const Carrossel = () => {
       applyRoteiro(data as TravessIARoteiro);
       setFeedback("");
       toast.success("Roteiro reescrito!");
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao reescrever roteiro.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao reescrever roteiro.");
     } finally {
       setRewriteLoading(false);
     }

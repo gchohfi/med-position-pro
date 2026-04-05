@@ -75,6 +75,7 @@ const Producao = () => {
   const [brief, setBrief] = useState<Brief>(emptyBrief());
   const [campaign, setCampaign] = useState<CampaignResult | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(false);
 
   // Load existing content if editing from Biblioteca
@@ -159,9 +160,9 @@ const Producao = () => {
       setCampaign(result);
       setStep(2);
       toast.success("Campanha gerada com sucesso!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erro ao gerar campanha:", err);
-      toast.error(err.message || "Erro ao gerar campanha.");
+      toast.error(err instanceof Error ? err.message : "Erro ao gerar campanha.");
     } finally {
       setGenerating(false);
     }
@@ -180,8 +181,9 @@ const Producao = () => {
   const approvedSlides = campaign?.slides.filter((s) => s.approved) || [];
 
   const handleExport = async () => {
-    if (!user || !campaign) return;
+    if (!user || !campaign || saving) return;
 
+    setSaving(true);
     try {
       const payload = {
         user_id: user.id,
@@ -205,9 +207,11 @@ const Producao = () => {
       }
 
       toast.success("Campanha salva na Biblioteca!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erro ao salvar:", err);
-      toast.error("Erro ao salvar campanha.");
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar campanha.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -515,9 +519,13 @@ const Producao = () => {
                 )}
 
                 <div className="flex gap-3 pt-2">
-                  <Button onClick={handleExport}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Salvar na Biblioteca
+                  <Button onClick={handleExport} disabled={saving}>
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    {saving ? "Salvando..." : "Salvar na Biblioteca"}
                   </Button>
                   <Button variant="outline" onClick={() => setStep(2)}>
                     <ChevronLeft className="h-4 w-4 mr-2" />

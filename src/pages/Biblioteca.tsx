@@ -14,6 +14,13 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { logStrategicEvent, STRATEGIC_EVENTS } from "@/lib/strategic-events";
 import {
+  getTitle,
+  getStrategicInput,
+  getBlocks,
+  filterItems,
+  type ContentItem,
+} from "@/lib/biblioteca-helpers";
+import {
   Archive,
   Star,
   ArrowRight,
@@ -36,27 +43,6 @@ const TYPE_META: Record<string, { label: string; color: string }> = {
   conexao: { label: "Conexão", color: "bg-pink-500/10 text-pink-600" },
   conversao: { label: "Conversão", color: "bg-green-500/10 text-green-600" },
 };
-
-const BLOCK_LABELS = [
-  "Gancho",
-  "Quebra de percepção",
-  "Explicação / visão",
-  "Método / lógica",
-  "Manifesto",
-  "Fechamento",
-];
-
-interface ContentItem {
-  id: string;
-  title: string | null;
-  content_type: string;
-  strategic_input: any;
-  generated_content: any;
-  golden_case: boolean;
-  golden_reason: string | null;
-  series_id: string | null;
-  created_at: string;
-}
 
 const FILTERS = [
   { key: "todos", label: "Todos os ativos" },
@@ -84,6 +70,8 @@ const Biblioteca = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("todos");
   const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) loadItems();
@@ -91,101 +79,81 @@ const Biblioteca = () => {
 
   const loadItems = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("content_outputs")
-      .select("*")
-      .eq("user_id", user!.id)
-      .order("created_at", { ascending: false });
-    setItems((data as unknown as ContentItem[]) || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("content_outputs")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setItems((data as unknown as ContentItem[]) || []);
+    } catch (err: unknown) {
+      console.error("Erro ao carregar biblioteca:", err);
+      toast.error("Erro ao carregar sua biblioteca. Tente recarregar a página.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleGolden = async (item: ContentItem) => {
+    if (togglingId) return;
+    setTogglingId(item.id);
     const newVal = !item.golden_case;
-    await supabase
-      .from("content_outputs")
-      .update({ golden_case: newVal })
-      .eq("id", item.id);
-    setItems((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, golden_case: newVal } : i))
-    );
-    if (selectedItem?.id === item.id) {
-      setSelectedItem({ ...item, golden_case: newVal });
+    try {
+      const { error } = await supabase
+        .from("content_outputs")
+        .update({ golden_case: newVal })
+        .eq("id", item.id);
+      if (error) throw error;
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, golden_case: newVal } : i))
+      );
+      if (selectedItem?.id === item.id) {
+        setSelectedItem({ ...item, golden_case: newVal });
+      }
+      if (newVal) {
+        logStrategicEvent(STRATEGIC_EVENTS.GOLDEN_CASE_MARKED, "biblioteca", { content_id: item.id });
+      }
+      toast.success(
+        newVal
+          ? "Peça adicionada aos seus casos de ouro."
+          : "Removida dos casos de ouro."
+      );
+    } catch (err: unknown) {
+      console.error("Erro ao alterar caso de ouro:", err);
+      toast.error("Erro ao alterar caso de ouro. Tente novamente.");
+    } finally {
+      setTogglingId(null);
     }
-    if (newVal) {
-      logStrategicEvent(STRATEGIC_EVENTS.GOLDEN_CASE_MARKED, "biblioteca", { content_id: item.id });
-    }
-    toast.success(
-      newVal
-        ? "Peça adicionada aos seus casos de ouro."
-        : "Removida dos casos de ouro."
-    );
   };
 
   const duplicateItem = async (item: ContentItem) => {
-    const { error } = await supabase.from("content_outputs").insert({
-      user_id: user!.id,
-      content_type: item.content_type,
-      title: `${getTitle(item)} (cópia)`,
-      strategic_input: item.strategic_input,
-      generated_content: item.generated_content,
-      golden_case: false,
-    });
-    if (!error) {
+    if (duplicatingId) return;
+    setDuplicatingId(item.id);
+    try {
+      const { error } = await supabase.from("content_outputs").insert({
+        user_id: user!.id,
+        content_type: item.content_type,
+        title: `${getTitle(item)} (cópia)`,
+        strategic_input: item.strategic_input,
+        generated_content: item.generated_content,
+        golden_case: false,
+      });
+      if (error) throw error;
       toast.success("Peça duplicada no acervo.");
       loadItems();
       setSelectedItem(null);
+    } catch (err: unknown) {
+      console.error("Erro ao duplicar peça:", err);
+      toast.error("Erro ao duplicar peça. Tente novamente.");
+    } finally {
+      setDuplicatingId(null);
     }
   };
 
-  const filtered = items.filter((item) => {
-    if (filter === "todos") return true;
-    if (filter === "golden") return item.golden_case;
-    return item.content_type === filter;
-  });
+  const filtered = filterItems(items, filter);
 
   const goldenCount = items.filter((i) => i.golden_case).length;
-
-  const getTitle = (item: ContentItem) => {
-    if (item.title) return item.title;
-    const input = item.strategic_input as any;
-    return input?.tese || input?.objetivo || "Peça sem título";
-  };
-
-  const getStrategicInput = (item: ContentItem) => {
-    const input = item.strategic_input as any;
-    return {
-      tese: input?.tese || null,
-      objetivo: input?.objetivo || null,
-      percepcao: input?.percepcao || null,
-      tipo: input?.tipo || item.content_type,
-    };
-  };
-
-  /** Extract the 6 blocks from generated_content, handling both object and other shapes */
-  const getBlocks = (item: ContentItem): { label: string; text: string }[] => {
-    const content = item.generated_content;
-    if (!content || typeof content !== "object") return [];
-
-    const blocks: { label: string; text: string }[] = [];
-    for (const label of BLOCK_LABELS) {
-      const text = (content as Record<string, string>)[label];
-      if (text && typeof text === "string" && text.trim()) {
-        blocks.push({ label, text: text.trim() });
-      }
-    }
-
-    // If no standard blocks found, try to render any keys as blocks
-    if (blocks.length === 0 && !Array.isArray(content)) {
-      for (const [key, val] of Object.entries(content)) {
-        if (typeof val === "string" && val.trim()) {
-          blocks.push({ label: key, text: val.trim() });
-        }
-      }
-    }
-
-    return blocks;
-  };
 
   const copyBlock = (text: string) => {
     navigator.clipboard.writeText(text);
