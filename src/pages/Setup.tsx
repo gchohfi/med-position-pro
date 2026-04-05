@@ -95,7 +95,7 @@ const Setup = () => {
 
   const removeFoto = () => {
     setFotoPreview(null);
-    updateField("foto_url", undefined as any);
+    updateField("foto_url", undefined);
   };
 
   const handleInstagramImport = async () => {
@@ -147,9 +147,9 @@ const Setup = () => {
       toast.success(
         `Perfil importado com ${Math.round(confidence * 100)}% de confiança.`
       );
-    } catch (err) {
+    } catch (err: unknown) {
       toast.error(
-        `Erro ao importar perfil: ${(err as Error).message}`
+        `Erro ao importar perfil: ${err instanceof Error ? err.message : "Erro desconhecido"}`
       );
     } finally {
       setImportLoading(false);
