@@ -131,14 +131,15 @@ const Biblioteca = () => {
     if (duplicatingId) return;
     setDuplicatingId(item.id);
     try {
-      const { error } = await supabase.from("content_outputs").insert({
+      const insertData: Record<string, unknown> = {
         user_id: user!.id,
         content_type: item.content_type,
         title: `${getTitle(item)} (cópia)`,
         strategic_input: item.strategic_input,
         generated_content: item.generated_content,
         golden_case: false,
-      });
+      };
+      const { error } = await supabase.from("content_outputs").insert(insertData as any);
       if (error) throw error;
       toast.success("Peça duplicada no acervo.");
       loadItems();

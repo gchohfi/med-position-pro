@@ -94,11 +94,13 @@ const Producao = () => {
         if (error) throw error;
         if (!data) return;
 
-        // Support both new slide_plan_json and legacy strategic_input/generated_content
-        if (data.slide_plan_json) {
-          const parsed = typeof data.slide_plan_json === "string"
-            ? JSON.parse(data.slide_plan_json)
-            : data.slide_plan_json;
+        // Support both new slide_plan_json (via generated_content) and legacy strategic_input
+        const rawData = data as Record<string, unknown>;
+        const slidePlan = rawData.slide_plan_json ?? rawData.generated_content;
+        if (slidePlan && typeof slidePlan === "object" && (slidePlan as any).slides) {
+          const parsed = typeof slidePlan === "string"
+            ? JSON.parse(slidePlan)
+            : slidePlan;
           setCampaign(parsed);
           setStep(2); // Go to approval
         } else if (data.strategic_input || data.generated_content) {
