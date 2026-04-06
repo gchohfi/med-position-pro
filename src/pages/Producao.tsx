@@ -201,11 +201,11 @@ const Producao = () => {
       if (contentId) {
         const { error } = await supabase
           .from("content_outputs")
-          .update(payload)
+          .update(payload as any)
           .eq("id", contentId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("content_outputs").insert(payload);
+        const { error } = await supabase.from("content_outputs").insert(payload as any);
         if (error) throw error;
       }
 
