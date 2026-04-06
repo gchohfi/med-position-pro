@@ -32,15 +32,37 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    const { brief, user_id } = await req.json();
-    if (!brief || !user_id) {
-      throw new Error("Missing required fields: brief, user_id");
+    // Verificar autenticação via JWT — nunca aceitar user_id do body
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    const { brief } = await req.json();
+    if (!brief) {
+      throw new Error("Missing required field: brief");
+    }
+
+    const user_id = user.id; // user_id vem SEMPRE do JWT, nunca do body
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
