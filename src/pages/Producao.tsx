@@ -151,10 +151,10 @@ const Producao = () => {
       if (error) throw error;
 
       const result: CampaignResult = {
-        titulo: data.titulo || "Campanha sem título",
+        titulo: data.titulo_campanha || data.titulo || "Campanha sem título",
         legenda: data.legenda || "",
         hashtags: data.hashtags || [],
-        slides: (data.slides || data.slide_plan_json?.slides || []).map(
+        slides: (data.slide_plan || data.slides || data.slide_plan_json?.slides || []).map(
           (s: CarouselSlide) => ({ ...s, approved: true })
         ),
       };
