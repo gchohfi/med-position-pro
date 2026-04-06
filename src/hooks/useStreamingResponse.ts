@@ -24,9 +24,12 @@ export function useStreamingResponse({ functionName, onComplete, onError }: UseS
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Sessão expirada. Faça login novamente.");
+      }
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const token = session?.access_token ?? supabaseKey;
+      const token = session.access_token;
 
       const res = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
         method: "POST",

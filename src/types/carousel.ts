@@ -7,17 +7,6 @@ export interface CarouselSlide {
   cta?: string;
 }
 
-export interface CarouselRoteiro {
-  titulo_carrossel: string;
-  tese_central: string;
-  slides: CarouselSlide[];
-  legenda: string;
-  hashtags: string[];
-  cta_final: string;
-  tom: string;
-  objetivo: string;
-}
-
 export interface BrandIdentity {
   cor_primaria: string;
   cor_secundaria: string;

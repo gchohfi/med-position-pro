@@ -122,15 +122,3 @@ export function getCreativeDirection(tipo?: string): CreativeDirection {
   }
   return CREATIVE_DIRECTIONS.hibrido;
 }
-
-/**
- * Returns the rhythm tension for a given slide index.
- * Cycles through the pattern to enforce visual variation.
- */
-export function getSlideTension(
-  direction: CreativeDirection,
-  slideIndex: number
-): "heavy" | "minimal" | "medium" {
-  const pattern = direction.rhythmPattern;
-  return pattern[slideIndex % pattern.length];
-}

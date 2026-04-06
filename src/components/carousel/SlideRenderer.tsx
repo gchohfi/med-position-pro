@@ -729,7 +729,6 @@ interface SlideRendererProps {
   brandName?: string;
   brandHandle?: string;
   brandColors?: { bg: string; text: string; accent: string; bgAlt?: string };
-  contentType?: string;
   doctorImageUrl?: string;
 }
 

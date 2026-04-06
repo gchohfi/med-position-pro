@@ -24,7 +24,6 @@ interface CarouselVisualPreviewProps {
   brandName?: string;
   brandHandle?: string;
   archetype?: string | null;
-  contentType?: string;
   doctorImageUrl?: string;
   visualStyle?: ArchetypeStyle;
   onRegenerate?: () => void;
@@ -32,19 +31,12 @@ interface CarouselVisualPreviewProps {
   onSlidesChange?: (slides: SlideData[]) => void;
 }
 
-const CAROUSEL_LOADING_MESSAGES = [
-  "Estruturando layout visual…",
-  "Aplicando direção estética…",
-  "Gerando slides…",
-];
-
 const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   slides,
   brandColors,
   brandName,
   brandHandle,
   archetype,
-  contentType,
   doctorImageUrl,
   visualStyle,
   onRegenerate,
@@ -217,7 +209,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                   visualSystem={activeStyle}
                   brandName={brandName}
                   brandHandle={brandHandle}
-                  contentType={contentType}
+                
                   doctorImageUrl={doctorImageUrl}
                 />
               </div>
@@ -335,7 +327,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                     visualSystem={activeStyle}
                     brandName={brandName}
                     brandHandle={brandHandle}
-                    contentType={contentType}
+                  
                     doctorImageUrl={doctorImageUrl}
                   />
                 </div>
@@ -388,7 +380,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             visualSystem={activeStyle}
             brandName={brandName}
             brandHandle={brandHandle}
-            contentType={contentType}
+          
             doctorImageUrl={doctorImageUrl}
           />
         ))}
@@ -397,5 +389,4 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   );
 };
 
-export { CAROUSEL_LOADING_MESSAGES };
 export default CarouselVisualPreview;

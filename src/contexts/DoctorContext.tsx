@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import type { DoctorProfile } from "@/types/doctor";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthContext";
 
 interface DoctorContextType {
   profile: DoctorProfile | null;
@@ -20,6 +22,7 @@ export const useDoctor = () => {
 };
 
 export const DoctorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [profile, setProfileState] = useState<DoctorProfile | null>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -28,7 +31,46 @@ export const DoctorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return null;
     }
   });
+  const syncedRef = useRef(false);
 
+  // On login: fetch profile from Supabase (source of truth)
+  useEffect(() => {
+    if (!user) {
+      syncedRef.current = false;
+      return;
+    }
+    if (syncedRef.current) return;
+    syncedRef.current = true;
+
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("doctor_profile")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (data?.doctor_profile) {
+          // Supabase has profile data — use it as source of truth
+          const remote = data.doctor_profile as DoctorProfile;
+          setProfileState(remote);
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
+          } catch { /* ignore quota errors */ }
+        } else if (profile) {
+          // No remote profile but local exists — push local to Supabase (migration)
+          await supabase
+            .from("profiles")
+            .update({ doctor_profile: profile } as Record<string, unknown>)
+            .eq("id", user.id);
+        }
+      } catch {
+        // Network error — keep using localStorage cache
+      }
+    })();
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist to localStorage + Supabase on profile change
   useEffect(() => {
     try {
       if (profile) {
@@ -37,10 +79,20 @@ export const DoctorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         localStorage.removeItem(STORAGE_KEY);
       }
     } catch {
-      // localStorage may fail (quota exceeded, e.g. base64 photos > 5MB)
       console.warn("Failed to persist doctor profile to localStorage");
     }
-  }, [profile]);
+
+    // Async persist to Supabase
+    if (user && profile) {
+      supabase
+        .from("profiles")
+        .update({ doctor_profile: profile } as Record<string, unknown>)
+        .eq("id", user.id)
+        .then(({ error }) => {
+          if (error) console.warn("Failed to sync profile to Supabase:", error.message);
+        });
+    }
+  }, [profile, user]);
 
   const setProfile = useCallback((p: DoctorProfile) => setProfileState(p), []);
 
