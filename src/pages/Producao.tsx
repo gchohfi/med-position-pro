@@ -187,15 +187,15 @@ const Producao = () => {
 
     setSaving(true);
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         user_id: user.id,
         title: campaign.titulo,
         content_type: brief.tipo || "educativo",
-        slide_plan_json: JSON.stringify({
+        generated_content: {
           ...campaign,
           slides: approvedSlides,
-        }),
-        campaign_status: "approved",
+        },
+        strategic_input: brief,
       };
 
       if (contentId) {
