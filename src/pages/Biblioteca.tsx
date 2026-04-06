@@ -78,12 +78,13 @@ const Biblioteca = () => {
   }, [user]);
 
   const loadItems = async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from("content_outputs")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       setItems((data as unknown as ContentItem[]) || []);
@@ -128,11 +129,11 @@ const Biblioteca = () => {
   };
 
   const duplicateItem = async (item: ContentItem) => {
-    if (duplicatingId) return;
+    if (duplicatingId || !user) return;
     setDuplicatingId(item.id);
     try {
       const { error } = await supabase.from("content_outputs").insert({
-        user_id: user!.id,
+        user_id: user.id,
         content_type: item.content_type,
         title: `${getTitle(item)} (cópia)`,
         strategic_input: item.strategic_input,

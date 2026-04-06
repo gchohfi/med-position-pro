@@ -118,8 +118,6 @@ Gere um calendário editorial estratégico de 30 dias.`;
 
     const result = JSON.parse(toolCall.function.arguments);
 
-    await supabase.from("calendar_items").delete().eq("user_id", user.id);
-
     const today = new Date();
     const items = result.items.map((item: any) => {
       const date = new Date(today);
@@ -136,11 +134,19 @@ Gere um calendário editorial estratégico de 30 dias.`;
       };
     });
 
+    // Insert-then-delete pattern: prevents data loss if insert fails
+    const beforeInsert = new Date().toISOString();
     const { error: insertError } = await supabase.from("calendar_items").insert(items);
     if (insertError) {
       console.error("Insert error:", insertError);
       throw new Error("Failed to save calendar items");
     }
+    // Delete old items (created before the new batch) only after successful insert
+    await supabase
+      .from("calendar_items")
+      .delete()
+      .eq("user_id", user.id)
+      .lt("created_at", beforeInsert);
 
     return new Response(JSON.stringify({ items: result.items, saved: items.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

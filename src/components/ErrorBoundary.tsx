@@ -35,17 +35,17 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="min-h-screen flex items-center justify-center bg-background p-6">
           <div className="max-w-md w-full text-center space-y-6">
             <div className="text-6xl">⚠️</div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-foreground">
               Algo deu errado
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Ocorreu um erro inesperado. Tente recarregar a página.
             </p>
             {this.state.error && (
-              <details className="text-left text-sm text-gray-500 bg-gray-100 rounded-lg p-4">
+              <details className="text-left text-sm text-muted-foreground bg-muted rounded-lg p-4">
                 <summary className="cursor-pointer font-medium">
                   Detalhes do erro
                 </summary>
@@ -57,13 +57,13 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleReset}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-colors"
               >
                 Tentar novamente
               </button>
               <button
                 onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                className="px-4 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors"
               >
                 Recarregar página
               </button>

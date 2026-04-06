@@ -128,7 +128,7 @@ REGRAS:
 
     const result = safeJsonParse(content);
 
-    await adminClient.from("strategic_updates").delete().eq("user_id", user.id);
+    const beforeInsert = new Date().toISOString();
 
     const updates = (result.updates || []).map((u: any) => ({
       user_id: user.id,
@@ -156,7 +156,11 @@ REGRAS:
 
     const allUpdates = [...updates, ...stalenessUpdates];
     if (allUpdates.length > 0) {
-      await adminClient.from("strategic_updates").insert(allUpdates);
+      // Insert-then-delete: prevents data loss if insert fails
+      const { error: insertError } = await adminClient.from("strategic_updates").insert(allUpdates);
+      if (insertError) throw new Error(`Failed to save updates: ${insertError.message}`);
+      // Only delete old items after successful insert
+      await adminClient.from("strategic_updates").delete().eq("user_id", user.id).lt("created_at", beforeInsert);
     }
 
     return jsonResponse({

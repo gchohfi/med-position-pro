@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,23 @@ const SlideEditor: React.FC<SlideEditorProps> = ({ slide, onSave, onCancel }) =>
   const [opinion, setOpinion] = useState(slide.opinion || "");
   const [conclusion, setConclusion] = useState(slide.conclusion || "");
   const [perguntaComentario, setPerguntaComentario] = useState(slide.perguntaComentario || "");
+
+  // Sync local state when the slide prop changes (e.g. after regeneration)
+  useEffect(() => {
+    setHeadline(slide.headline);
+    setBody(slide.body || "");
+    setItems(slide.items || []);
+    setEyebrow(slide.eyebrow || "");
+    setImgQuery(slide.imgQuery || "");
+    setZoneLabel(slide.zoneLabel || "");
+    setStatNumber(slide.statNumber || "");
+    setStatUnit(slide.statUnit || "");
+    setEDai(slide.eDai || "");
+    setMiniTitulo(slide.miniTitulo || "");
+    setOpinion(slide.opinion || "");
+    setConclusion(slide.conclusion || "");
+    setPerguntaComentario(slide.perguntaComentario || "");
+  }, [slide]);
 
   const handleSave = () => {
     const base: SlideData = {
