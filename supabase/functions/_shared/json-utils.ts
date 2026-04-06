@@ -5,6 +5,39 @@
  * include in their JSON output.
  */
 
+/**
+ * Extract a JSON object from AI text that may contain markdown fences or surrounding prose.
+ * For more robust parsing (control chars, truncation repair), use safeJsonParse instead.
+ */
+export function extractJSON(text: string): Record<string, unknown> {
+  // 1. Direct parse
+  try {
+    return JSON.parse(text);
+  } catch {
+    // fall through
+  }
+
+  // 2. Strip markdown code fences
+  const stripped = text
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  try {
+    return JSON.parse(stripped);
+  } catch {
+    // fall through
+  }
+
+  // 3. Find first { … } block
+  const match = stripped.match(/\{[\s\S]*\}/);
+  if (match) {
+    return JSON.parse(match[0]);
+  }
+
+  throw new Error("Não foi possível extrair JSON da resposta");
+}
+
 export function safeJsonParse(content: unknown): any {
   // If already an object, return as-is
   if (typeof content === "object" && content !== null) return content;

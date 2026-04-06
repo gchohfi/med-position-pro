@@ -3,6 +3,7 @@ import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callClaude } from "../_shared/anthropic.ts";
 import { safeJsonParse } from "../_shared/json-utils.ts";
 import { requireAuth, isAuthError } from "../_shared/auth.ts";
+import { sanitizeInput, sanitizeArray } from "../_shared/sanitize.ts";
 
 /* ───────────────────────────────────────────
    TravessIA — 7 Layout System
@@ -198,14 +199,14 @@ serve(async (req) => {
 ${JSON.stringify(roteiro, null, 2)}
 
 ## FEEDBACK DO CLIENTE
-${feedback}
+${sanitizeInput(feedback, 1000)}
 
 Mantenha os layouts válidos do sistema TravessIA. Retorne APENAS o JSON completo do novo roteiro.`;
     } else {
       /* ── Generate mode ── */
       const { profile, tese, objetivo } = body;
       if (!profile) throw new Error("Campo 'profile' é obrigatório");
-      const especialidade = String(profile.especialidade ?? "");
+      const especialidade = sanitizeInput(profile.especialidade, 200);
       const nutrologiaHint = /nutrol/i.test(especialidade)
         ? `
 Instruções extras para NUTROLOGIA:
@@ -217,15 +218,15 @@ Instruções extras para NUTROLOGIA:
 
       userPrompt = `Crie um roteiro completo de carrossel para este médico:
 
-Nome: ${profile.nome ?? "Não informado"}
-Especialidade: ${profile.especialidade ?? "Não informada"}
-Pilares de conteúdo: ${Array.isArray(profile.pilares) ? profile.pilares.join(", ") : (profile.pilares ?? "Não informados")}
-Público-alvo: ${profile.publico_alvo ?? "Não informado"}
-Tom de voz: ${profile.tom_de_voz ?? "Não informado"}
-Diferenciais: ${profile.diferenciais ?? "Não informados"}
+Nome: ${sanitizeInput(profile.nome, 200) || "Não informado"}
+Especialidade: ${especialidade || "Não informada"}
+Pilares de conteúdo: ${sanitizeArray(profile.pilares).join(", ") || "Não informados"}
+Público-alvo: ${sanitizeInput(profile.publico_alvo, 300) || "Não informado"}
+Tom de voz: ${sanitizeInput(profile.tom_de_voz, 200) || "Não informado"}
+Diferenciais: ${sanitizeInput(profile.diferenciais, 500) || "Não informados"}
 
-Tese central: ${tese ?? "Não informada"}
-Objetivo: ${objetivo ?? "Educar e engajar"}
+Tese central: ${sanitizeInput(tese, 500) || "Não informada"}
+Objetivo: ${sanitizeInput(objetivo, 500) || "Educar e engajar"}
 ${nutrologiaHint}
 
 Gere entre 7 e 10 slides usando os layouts do sistema TravessIA.

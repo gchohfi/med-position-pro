@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callGemini, errorResponse } from "../_shared/gemini.ts";
+import { sanitizeInput } from "../_shared/sanitize.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
@@ -56,10 +57,10 @@ REGRAS:
 - Adapte ao tipo de conteúdo solicitado
 - Use dados, tendências e referências reais quando possível para fundamentar o conteúdo`;
 
-    const userPrompt = `Tipo de conteúdo: ${tipo}
-Objetivo: ${objetivo}
-Tese central: ${tese}
-Percepção desejada: ${percepcao}
+    const userPrompt = `Tipo de conteúdo: ${sanitizeInput(tipo, 200)}
+Objetivo: ${sanitizeInput(objetivo, 500)}
+Tese central: ${sanitizeInput(tese, 500)}
+Percepção desejada: ${sanitizeInput(percepcao, 500)}
 
 Pesquise tendências e dados reais relevantes sobre o tema para fundamentar o conteúdo.
 Gere o conteúdo estratégico seguindo a estrutura de 6 blocos.`;

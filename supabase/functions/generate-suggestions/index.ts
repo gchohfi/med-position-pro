@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callGemini, errorResponse } from "../_shared/gemini.ts";
-import { extractJSON } from "../_shared/json.ts";
+import { extractJSON } from "../_shared/json-utils.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();

@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callGemini } from "../_shared/gemini.ts";
 import { safeJsonParse } from "../_shared/json-utils.ts";
+import { sanitizeInput } from "../_shared/sanitize.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
@@ -44,7 +45,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     const contentText = Object.entries(content)
-      .map(([k, v]) => `${k}:\n${v}`)
+      .map(([k, v]) => `${k}:\n${sanitizeInput(String(v), 1000)}`)
       .join("\n\n");
 
     const prompts: Record<string, string> = {
@@ -55,9 +56,9 @@ Transforme o conteúdo estratégico abaixo em um CARROSSEL de Instagram com 7-10
 CONTEXTO ESTRATÉGICO:
 - Arquétipo: ${positioning?.archetype || "não definido"}
 - Tom: ${positioning?.tone || "não definido"}
-- Tipo: ${strategic_input?.tipo || "estratégico"}
-- Tese: ${strategic_input?.tese || ""}
-- Objetivo: ${strategic_input?.objetivo || ""}
+- Tipo: ${sanitizeInput(strategic_input?.tipo, 200) || "estratégico"}
+- Tese: ${sanitizeInput(strategic_input?.tese, 500)}
+- Objetivo: ${sanitizeInput(strategic_input?.objetivo, 500)}
 
 CONTEÚDO BASE:
 ${contentText}
@@ -95,8 +96,8 @@ Transforme o conteúdo estratégico abaixo em um ROTEIRO DE REELS (30-60 segundo
 CONTEXTO ESTRATÉGICO:
 - Arquétipo: ${positioning?.archetype || "não definido"}
 - Tom: ${positioning?.tone || "não definido"}
-- Tese: ${strategic_input?.tese || ""}
-- Objetivo: ${strategic_input?.objetivo || ""}
+- Tese: ${sanitizeInput(strategic_input?.tese, 500)}
+- Objetivo: ${sanitizeInput(strategic_input?.objetivo, 500)}
 
 CONTEÚDO BASE:
 ${contentText}
@@ -141,8 +142,8 @@ Transforme o conteúdo estratégico abaixo em uma LEGENDA DE INSTAGRAM completa.
 CONTEXTO ESTRATÉGICO:
 - Arquétipo: ${positioning?.archetype || "não definido"}
 - Tom: ${positioning?.tone || "não definido"}
-- Tese: ${strategic_input?.tese || ""}
-- Objetivo: ${strategic_input?.objetivo || ""}
+- Tese: ${sanitizeInput(strategic_input?.tese, 500)}
+- Objetivo: ${sanitizeInput(strategic_input?.objetivo, 500)}
 
 CONTEÚDO BASE:
 ${contentText}

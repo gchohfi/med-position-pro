@@ -3,6 +3,7 @@ import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callClaude } from "../_shared/anthropic.ts";
 import { callPerplexityText } from "../_shared/perplexity.ts";
 import { requireAuth, isAuthError } from "../_shared/auth.ts";
+import { sanitizeInput, sanitizeArray } from "../_shared/sanitize.ts";
 
 /**
  * suggest-carousel-topics — Auto-generates carousel topic suggestions
@@ -28,14 +29,16 @@ serve(async (req) => {
     const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
 
     const body = await req.json();
-    const { especialidade, subespecialidade, publico_alvo, tom_de_voz, pilares } = body;
+    const especialidade = sanitizeInput(body.especialidade, 200);
+    const subespecialidade = sanitizeInput(body.subespecialidade, 200);
+    const publico_alvo = sanitizeInput(body.publico_alvo, 300);
+    const tom_de_voz = sanitizeInput(body.tom_de_voz, 200);
+    const pilares = sanitizeArray(body.pilares);
 
     if (!especialidade) throw new Error("Campo 'especialidade' é obrigatório");
 
     const subEsp = subespecialidade ? ` (${subespecialidade})` : "";
-    const pilaresStr = Array.isArray(pilares) && pilares.length > 0
-      ? pilares.join(", ")
-      : "";
+    const pilaresStr = pilares.length > 0 ? pilares.join(", ") : "";
 
     // Step 1: Get real trending data from Perplexity
     let perplexityContext = "";
