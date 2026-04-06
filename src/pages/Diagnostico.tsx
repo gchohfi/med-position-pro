@@ -307,7 +307,7 @@ const Diagnostico = () => {
               </h3>
             </div>
             <ul className="space-y-2">
-              {diagnosis.forcas.map((f, i) => (
+              {(diagnosis.forcas ?? []).map((f, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 shrink-0" />
                   {f}
@@ -333,7 +333,7 @@ const Diagnostico = () => {
               </h3>
             </div>
             <ul className="space-y-2">
-              {diagnosis.lacunas.map((l, i) => (
+              {(diagnosis.lacunas ?? []).map((l, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                   {l}
@@ -359,7 +359,7 @@ const Diagnostico = () => {
               </h3>
             </div>
             <ul className="space-y-2">
-              {diagnosis.incoerencias.map((inc, i) => (
+              {(diagnosis.incoerencias ?? []).map((inc, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 shrink-0" />
                   {inc}
@@ -385,7 +385,7 @@ const Diagnostico = () => {
               </h3>
             </div>
             <ul className="space-y-2">
-              {diagnosis.oportunidades.map((o, i) => (
+              {(diagnosis.oportunidades ?? []).map((o, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
                   {o}
@@ -470,13 +470,13 @@ const Diagnostico = () => {
               <div className="bg-background rounded-xl border border-border p-4">
                 <span className="text-xs text-muted-foreground uppercase tracking-wide">Atual</span>
                 <p className="text-sm text-foreground mt-2 leading-relaxed">
-                  {diagnosis.direcao_recomendada.atual}
+                  {diagnosis.direcao_recomendada?.atual ?? "N/A"}
                 </p>
               </div>
               <div className="bg-accent/5 rounded-xl border border-accent/20 p-4">
                 <span className="text-xs text-accent uppercase tracking-wide font-medium">Ideal</span>
                 <p className="text-sm text-foreground mt-2 leading-relaxed">
-                  {diagnosis.direcao_recomendada.ideal}
+                  {diagnosis.direcao_recomendada?.ideal ?? "N/A"}
                 </p>
               </div>
             </div>
@@ -485,7 +485,7 @@ const Diagnostico = () => {
                 Gap estratégico
               </span>
               <p className="text-sm text-foreground mt-2 leading-relaxed">
-                {diagnosis.direcao_recomendada.gap}
+                {diagnosis.direcao_recomendada?.gap ?? "N/A"}
               </p>
             </div>
           </motion.div>
