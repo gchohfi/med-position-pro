@@ -371,7 +371,7 @@ const Producao = () => {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={() => setStep(1)}>
+                <Button onClick={() => { setStep(1); handleGenerate(); }}>
                   Gerar Campanha
                   <ChevronRight className="h-4 w-4 ml-2" />
                 </Button>
