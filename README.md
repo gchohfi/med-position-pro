@@ -20,7 +20,11 @@ Sistema SaaS premium de posicionamento estratégico e geração de conteúdo par
 | Frontend | React 18 + TypeScript + Vite + TailwindCSS + shadcn/ui |
 | Backend | Supabase (PostgreSQL + Auth + Edge Functions) |
 | IA | Google Gemini 2.5 Flash + Perplexity Sonar (opcional) |
-| Deploy | Netlify (frontend) + Supabase (backend) |
+| Deploy | Vercel (frontend) + Supabase (backend) |
+
+## Deploy
+
+🚀 **URL de produção:** [https://med-position-pro.vercel.app/](https://med-position-pro.vercel.app/)
 
 ## Configuração
 
