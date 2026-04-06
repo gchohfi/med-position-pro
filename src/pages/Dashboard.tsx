@@ -14,22 +14,12 @@ import {
   CheckCircle2,
   Circle,
   Loader2,
-  TrendingUp,
   Archive,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AppLayout from "@/components/AppLayout";
 import { ROUTES } from "@/lib/routes";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.08, duration: 0.5 },
-  }),
-};
 
 interface DashboardData {
   profile: { full_name: string | null; onboarding_complete: boolean } | null;
@@ -120,7 +110,6 @@ const Dashboard = () => {
       ]);
 
       const diagRow = diagRes.data?.[0];
-      // Bug #7 fix: check actual diagnosis content, not just row existence
       const hasDiagnosisReal = !!(diagRow?.diagnosis && typeof diagRow.diagnosis === "object" && Object.keys(diagRow.diagnosis as object).length > 1);
       const hasStrategy = !!(diagRow?.estrategia && typeof diagRow.estrategia === "object" && Object.keys(diagRow.estrategia as object).length > 1);
 
@@ -144,7 +133,6 @@ const Dashboard = () => {
 
   const stage = resolveStage(data);
 
-  // Redirect new users to onboarding
   useEffect(() => {
     if (!loading && stage === "pre_onboarding") {
       navigate(ROUTES.onboarding, { replace: true });
@@ -155,7 +143,7 @@ const Dashboard = () => {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-[60vh]">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       </AppLayout>
     );
@@ -163,11 +151,10 @@ const Dashboard = () => {
 
   const firstName = data.profile?.full_name?.split(" ")[0] ?? "";
 
-  // Header copy per stage
   const headerCopy: Record<UserStage, { title: string; subtitle: string }> = {
     pre_onboarding: {
-      title: firstName ? `Bem-vinda, ${firstName}.` : "Bem-vinda ao MEDSHIFT.",
-      subtitle: "Antes de qualquer direção editorial, o MEDSHIFT precisa entender a base do seu posicionamento.",
+      title: firstName ? `Bem-vinda, ${firstName}.` : "Bem-vinda.",
+      subtitle: "Antes de qualquer direção editorial, precisamos entender a base do seu posicionamento.",
     },
     post_onboarding: {
       title: "Sua base está registrada.",
@@ -175,19 +162,18 @@ const Dashboard = () => {
     },
     has_diagnosis: {
       title: "Diagnóstico concluído.",
-      subtitle: "Agora é hora de refinar a direção estratégica que vai guiar toda a sua comunicação.",
+      subtitle: "Agora é hora de refinar a direção estratégica da sua comunicação.",
     },
     has_strategy: {
       title: "Estratégia definida.",
-      subtitle: "Seu sistema editorial já pode começar a ganhar corpo com séries, calendário e conteúdo.",
+      subtitle: "Seu sistema editorial já pode começar a ganhar corpo.",
     },
     active: {
-      title: "Seu posicionamento já está ganhando forma.",
-      subtitle: "Com base nas decisões construídas até aqui, seu sistema editorial está em andamento.",
+      title: firstName ? `${firstName}, seu sistema está ativo.` : "Seu sistema está ativo.",
+      subtitle: "Com base nas decisões construídas, seu sistema editorial está em andamento.",
     },
   };
 
-  // Next move
   const nextMove: Record<UserStage, { label: string; path: string; cta: string }> = {
     pre_onboarding: { label: "Definir sua base estratégica", path: ROUTES.onboarding, cta: "Começar onboarding" },
     post_onboarding: { label: "Gerar diagnóstico de posicionamento", path: ROUTES.diagnostico, cta: "Gerar diagnóstico" },
@@ -196,10 +182,9 @@ const Dashboard = () => {
     active: { label: "Estruturar próxima peça de conteúdo", path: ROUTES.producao, cta: "Criar conteúdo" },
   };
 
-  // Strategic snapshot cards — only show cards with real data
-  const snapshotCards: { icon: any; label: string; value: string }[] = [];
+  const snapshotCards: { icon: typeof Target; label: string; value: string }[] = [];
   if (data.positioning?.archetype) {
-    snapshotCards.push({ icon: Target, label: "Arquétipo predominante", value: data.positioning.archetype });
+    snapshotCards.push({ icon: Target, label: "Arquétipo", value: data.positioning.archetype });
   }
   if (data.positioning?.tone) {
     snapshotCards.push({ icon: Mic, label: "Tom de voz", value: data.positioning.tone });
@@ -209,7 +194,6 @@ const Dashboard = () => {
   }
   if (data.positioning?.target_audience) {
     const raw = data.positioning.target_audience;
-    // Defensive: only show concise audience summaries, not analysis dumps
     const isCorrupted = raw.length > 200 || raw.includes("\n") || raw.split(" ").length > 40;
     const displayValue = isCorrupted
       ? raw.split(/[.\n]/)[0].trim().slice(0, 150) + (raw.length > 150 ? "…" : "")
@@ -219,70 +203,61 @@ const Dashboard = () => {
     }
   }
 
-  // Activity summary — only if active
-  const activityItems: { icon: any; label: string; value: string }[] = [];
-  if (data.seriesCount > 0) {
-    activityItems.push({ icon: BookOpen, label: "Séries ativas", value: String(data.seriesCount) });
-  }
-  if (data.calendarCount > 0) {
-    activityItems.push({ icon: Calendar, label: "Itens no calendário", value: String(data.calendarCount) });
-  }
-  if (data.contentCount > 0) {
-    activityItems.push({ icon: Archive, label: "Peças estruturadas", value: String(data.contentCount) });
-  }
-
-  // Quick actions based on stage
-  const quickActions: { label: string; icon: any; path: string; primary?: boolean }[] = [];
-  if (stage === "pre_onboarding") {
-    quickActions.push({ label: "Começar onboarding", icon: ArrowRight, path: ROUTES.onboarding, primary: true });
-  } else {
-    if (!data.hasDiagnosis) {
-      quickActions.push({ label: "Gerar diagnóstico", icon: Target, path: ROUTES.diagnostico, primary: !data.hasDiagnosis });
-    }
-    if (data.hasDiagnosis && !data.hasStrategy) {
-      quickActions.push({ label: "Definir estratégia", icon: Sparkles, path: ROUTES.estrategiaIa, primary: true });
-    }
-    if (data.hasStrategy) {
-      quickActions.push({ label: "Criar conteúdo", icon: PenTool, path: ROUTES.producao, primary: true });
-      if (data.seriesCount === 0) quickActions.push({ label: "Criar primeira série", icon: BookOpen, path: ROUTES.series });
-      if (data.calendarCount === 0) quickActions.push({ label: "Montar calendário", icon: Calendar, path: ROUTES.calendario });
-    }
-    if (data.contentCount > 0) {
-      quickActions.push({ label: "Revisar acervo", icon: Archive, path: ROUTES.biblioteca });
-    }
-  }
+  const activityItems: { icon: typeof BookOpen; label: string; value: string }[] = [];
+  if (data.seriesCount > 0) activityItems.push({ icon: BookOpen, label: "Séries", value: String(data.seriesCount) });
+  if (data.calendarCount > 0) activityItems.push({ icon: Calendar, label: "Calendário", value: String(data.calendarCount) });
+  if (data.contentCount > 0) activityItems.push({ icon: Archive, label: "Peças", value: String(data.contentCount) });
 
   const header = headerCopy[stage];
   const move = nextMove[stage];
 
   return (
     <AppLayout>
-      <div className="p-6 md:p-10 max-w-5xl space-y-10">
+      <div className="p-8 md:p-12 max-w-4xl space-y-12">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <h1 className="font-heading text-3xl font-semibold text-foreground mb-1">{header.title}</h1>
+          <h1 className="font-heading text-display-sm text-foreground mb-2">{header.title}</h1>
           <p className="text-muted-foreground">{header.subtitle}</p>
         </motion.div>
 
-        {/* Strategic Snapshot — only if data exists */}
+        {/* Next Move */}
+        <motion.div
+          className="border border-border rounded-lg p-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Sparkles className="h-3.5 w-3.5 text-foreground" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs tracking-widest uppercase text-muted-foreground mb-1">Próximo passo</p>
+              <p className="text-foreground mb-4">{move.label}</p>
+              <Button size="sm" onClick={() => navigate(move.path)}>
+                {move.cta}
+                <ArrowRight className="ml-2 h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Strategic Snapshot */}
         {snapshotCards.length > 0 && (
           <section>
-            <h2 className="font-heading text-lg font-medium text-foreground mb-4">Posicionamento atual</h2>
+            <p className="text-xs tracking-widest uppercase text-muted-foreground mb-4">Posicionamento</p>
             <div className="grid md:grid-cols-2 gap-4">
               {snapshotCards.map((card, i) => (
                 <motion.div
                   key={card.label}
-                  className="bg-card rounded-2xl border border-border p-5 shadow-sm"
-                  variants={fadeUp}
-                  initial="hidden"
-                  animate="visible"
-                  custom={i}
+                  className="border border-border rounded-lg p-5"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * i }}
                 >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                      <card.icon className="h-4 w-4 text-accent" />
-                    </div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{card.label}</span>
+                  <div className="flex items-center gap-2 mb-2">
+                    <card.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">{card.label}</span>
                   </div>
                   <p className="text-foreground text-sm leading-relaxed">{card.value}</p>
                 </motion.div>
@@ -291,11 +266,11 @@ const Dashboard = () => {
           </section>
         )}
 
-        {/* Journey Progress */}
+        {/* Journey */}
         <section>
-          <h2 className="font-heading text-lg font-medium text-foreground mb-4">Arquitetura do sistema</h2>
-          <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <p className="text-xs tracking-widest uppercase text-muted-foreground mb-4">Progresso</p>
+          <div className="border border-border rounded-lg p-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {journeySteps.map((step) => {
                 const status = getStepStatus(step.key, data);
                 return (
@@ -303,18 +278,18 @@ const Dashboard = () => {
                     key={step.key}
                     onClick={() => status !== "pending" && navigate(step.path)}
                     disabled={status === "pending"}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-left transition-colors text-sm ${
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-md text-left text-sm transition-colors ${
                       status === "done"
-                        ? "text-foreground bg-accent/5"
+                        ? "text-foreground"
                         : status === "current"
-                        ? "text-accent font-medium bg-accent/10"
-                        : "text-muted-foreground/50 cursor-not-allowed"
+                        ? "text-foreground font-medium bg-secondary"
+                        : "text-muted-foreground/40 cursor-not-allowed"
                     }`}
                   >
                     {status === "done" ? (
-                      <CheckCircle2 className="h-4 w-4 text-accent flex-shrink-0" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-foreground flex-shrink-0" />
                     ) : (
-                      <Circle className={`h-4 w-4 flex-shrink-0 ${status === "current" ? "text-accent" : "text-muted-foreground/30"}`} />
+                      <Circle className={`h-3.5 w-3.5 flex-shrink-0 ${status === "current" ? "text-foreground" : "text-muted-foreground/30"}`} />
                     )}
                     <span>{step.label}</span>
                   </button>
@@ -324,74 +299,19 @@ const Dashboard = () => {
           </div>
         </section>
 
-        {/* Next Strategic Move */}
-        <motion.section
-          className="bg-accent/5 border border-accent/15 rounded-2xl p-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Sparkles className="h-5 w-5 text-accent" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-heading text-base font-medium text-foreground mb-1">Próximo movimento</h3>
-              <p className="text-sm text-muted-foreground mb-4">{move.label}</p>
-              <Button
-                className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
-                onClick={() => navigate(move.path)}
-              >
-                {move.cta}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </motion.section>
-
-        {/* Activity Summary — only if there's real activity */}
+        {/* Activity */}
         {activityItems.length > 0 && (
           <section>
-            <h2 className="font-heading text-lg font-medium text-foreground mb-4">Sistema em andamento</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {activityItems.map((item, i) => (
-                <motion.div
-                  key={item.label}
-                  className="bg-card rounded-2xl border border-border p-5 shadow-sm text-center"
-                  variants={fadeUp}
-                  initial="hidden"
-                  animate="visible"
-                  custom={i}
-                >
-                  <item.icon className="h-5 w-5 text-accent mx-auto mb-2" />
-                  <p className="text-2xl font-heading font-semibold text-foreground">{item.value}</p>
+            <p className="text-xs tracking-widest uppercase text-muted-foreground mb-4">Atividade</p>
+            <div className="grid grid-cols-3 gap-4">
+              {activityItems.map((item) => (
+                <div key={item.label} className="border border-border rounded-lg p-5 text-center">
+                  <p className="text-2xl font-heading text-foreground">{item.value}</p>
                   <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
-                </motion.div>
+                </div>
               ))}
             </div>
           </section>
-        )}
-
-        {/* Quick Actions */}
-        {quickActions.length > 0 && (
-          <motion.div
-            className="flex flex-wrap gap-3"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            {quickActions.map((action) => (
-              <Button
-                key={action.label}
-                variant={action.primary ? "default" : "outline"}
-                className={`rounded-xl ${action.primary ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
-                onClick={() => navigate(action.path)}
-              >
-                <action.icon className="mr-2 h-4 w-4" />
-                {action.label}
-              </Button>
-            ))}
-          </motion.div>
         )}
       </div>
     </AppLayout>

@@ -94,11 +94,13 @@ const Producao = () => {
         if (error) throw error;
         if (!data) return;
 
-        // Support both new slide_plan_json and legacy strategic_input/generated_content
-        if (data.slide_plan_json) {
-          const parsed = typeof data.slide_plan_json === "string"
-            ? JSON.parse(data.slide_plan_json)
-            : data.slide_plan_json;
+        // Support both new slide_plan_json (via generated_content) and legacy strategic_input
+        const rawData = data as Record<string, unknown>;
+        const slidePlan = rawData.slide_plan_json ?? rawData.generated_content;
+        if (slidePlan && typeof slidePlan === "object" && (slidePlan as any).slides) {
+          const parsed = typeof slidePlan === "string"
+            ? JSON.parse(slidePlan)
+            : slidePlan;
           setCampaign(parsed);
           setStep(2); // Go to approval
         } else if (data.strategic_input || data.generated_content) {
@@ -185,25 +187,25 @@ const Producao = () => {
 
     setSaving(true);
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         user_id: user.id,
         title: campaign.titulo,
         content_type: brief.tipo || "educativo",
-        slide_plan_json: JSON.stringify({
+        generated_content: {
           ...campaign,
           slides: approvedSlides,
-        }),
-        campaign_status: "approved",
+        },
+        strategic_input: brief,
       };
 
       if (contentId) {
         const { error } = await supabase
           .from("content_outputs")
-          .update(payload)
+          .update(payload as any)
           .eq("id", contentId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("content_outputs").insert(payload);
+        const { error } = await supabase.from("content_outputs").insert(payload as any);
         if (error) throw error;
       }
 
