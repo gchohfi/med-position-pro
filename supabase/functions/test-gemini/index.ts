@@ -1,13 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { requireAuth, isAuthError } from "../_shared/auth.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
+    const auth = await requireAuth(req);
+    if (isAuthError(auth)) return auth;
+
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "GEMINI_API_KEY not found", keys: Object.keys(Deno.env.toObject()).filter(k => k.includes("GEMINI") || k.includes("API")) }), {
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY not found" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
@@ -28,16 +32,16 @@ serve(async (req) => {
     const status = response.status;
     const text = await response.text();
 
+    // Do NOT leak key_prefix or key_length
     return new Response(JSON.stringify({
       gemini_status: status,
       gemini_response: text.substring(0, 500),
-      key_length: GEMINI_API_KEY.length,
-      key_prefix: GEMINI_API_KEY.substring(0, 8)
+      configured: true,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message, stack: (err as Error).stack }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }

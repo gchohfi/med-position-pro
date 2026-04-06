@@ -58,6 +58,15 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   const [styleOverride, setStyleOverride] = useState<ArchetypeStyle | null>(null);
   const activeStyle: ArchetypeStyle = styleOverride ?? visualStyle ?? "editorial_black_gold";
 
+  // Guard against empty slides array
+  if (!slides || slides.length === 0) {
+    return (
+      <div className="bg-card rounded-2xl border border-accent/15 shadow-sm p-8 text-center">
+        <p className="text-muted-foreground text-sm">Nenhum slide para visualizar.</p>
+      </div>
+    );
+  }
+
   const handleSlideEdit = (index: number, updated: SlideData) => {
     const newSlides = [...slides];
     newSlides[index] = updated;

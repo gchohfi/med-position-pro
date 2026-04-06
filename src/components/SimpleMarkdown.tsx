@@ -49,18 +49,35 @@ const SimpleMarkdown: React.FC<SimpleMarkdownProps> = ({ content, className = ""
   const renderBlocks = (): React.ReactNode[] => {
     const lines = content.split("\n");
     const nodes: React.ReactNode[] = [];
-    let listItems: React.ReactNode[] = [];
+    let unorderedItems: React.ReactNode[] = [];
+    let orderedItems: React.ReactNode[] = [];
     let key = 0;
 
-    const flushList = () => {
-      if (listItems.length > 0) {
+    const flushUnordered = () => {
+      if (unorderedItems.length > 0) {
         nodes.push(
           <ul key={key++} className="list-disc pl-5 space-y-1 my-2">
-            {listItems}
+            {unorderedItems}
           </ul>,
         );
-        listItems = [];
+        unorderedItems = [];
       }
+    };
+
+    const flushOrdered = () => {
+      if (orderedItems.length > 0) {
+        nodes.push(
+          <ol key={key++} className="list-decimal pl-5 space-y-1 my-2">
+            {orderedItems}
+          </ol>,
+        );
+        orderedItems = [];
+      }
+    };
+
+    const flushLists = () => {
+      flushUnordered();
+      flushOrdered();
     };
 
     for (let i = 0; i < lines.length; i++) {
@@ -68,7 +85,7 @@ const SimpleMarkdown: React.FC<SimpleMarkdownProps> = ({ content, className = ""
 
       // H2
       if (/^## /.test(line)) {
-        flushList();
+        flushLists();
         nodes.push(
           <h2 key={key++} className="text-xl font-bold mt-6 mb-2 text-foreground">
             {renderInline(line.slice(3))}
@@ -79,7 +96,7 @@ const SimpleMarkdown: React.FC<SimpleMarkdownProps> = ({ content, className = ""
 
       // H3
       if (/^### /.test(line)) {
-        flushList();
+        flushLists();
         nodes.push(
           <h3 key={key++} className="text-lg font-semibold mt-4 mb-1 text-foreground">
             {renderInline(line.slice(4))}
@@ -90,7 +107,7 @@ const SimpleMarkdown: React.FC<SimpleMarkdownProps> = ({ content, className = ""
 
       // H4
       if (/^#### /.test(line)) {
-        flushList();
+        flushLists();
         nodes.push(
           <h4 key={key++} className="text-base font-semibold mt-3 mb-1 text-foreground">
             {renderInline(line.slice(5))}
@@ -99,9 +116,10 @@ const SimpleMarkdown: React.FC<SimpleMarkdownProps> = ({ content, className = ""
         continue;
       }
 
-      // List item (- or *)
+      // Unordered list item (- or *)
       if (/^[-*] /.test(line)) {
-        listItems.push(
+        flushOrdered();
+        unorderedItems.push(
           <li key={key++} className="text-sm leading-relaxed">
             {renderInline(line.slice(2))}
           </li>,
@@ -111,10 +129,11 @@ const SimpleMarkdown: React.FC<SimpleMarkdownProps> = ({ content, className = ""
 
       // Numbered list item
       if (/^\d+\. /.test(line)) {
-        const content = line.replace(/^\d+\. /, "");
-        listItems.push(
+        flushUnordered();
+        const itemContent = line.replace(/^\d+\. /, "");
+        orderedItems.push(
           <li key={key++} className="text-sm leading-relaxed">
-            {renderInline(content)}
+            {renderInline(itemContent)}
           </li>,
         );
         continue;
@@ -122,12 +141,12 @@ const SimpleMarkdown: React.FC<SimpleMarkdownProps> = ({ content, className = ""
 
       // Blank line
       if (line.trim() === "") {
-        flushList();
+        flushLists();
         continue;
       }
 
       // Regular paragraph line
-      flushList();
+      flushLists();
       nodes.push(
         <p key={key++} className="text-sm leading-relaxed my-1">
           {renderInline(line)}
@@ -135,7 +154,7 @@ const SimpleMarkdown: React.FC<SimpleMarkdownProps> = ({ content, className = ""
       );
     }
 
-    flushList();
+    flushLists();
     return nodes;
   };
 

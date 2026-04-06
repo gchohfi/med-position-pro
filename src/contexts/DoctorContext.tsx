@@ -30,10 +30,15 @@ export const DoctorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   });
 
   useEffect(() => {
-    if (profile) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
+    try {
+      if (profile) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch {
+      // localStorage may fail (quota exceeded, e.g. base64 photos > 5MB)
+      console.warn("Failed to persist doctor profile to localStorage");
     }
   }, [profile]);
 

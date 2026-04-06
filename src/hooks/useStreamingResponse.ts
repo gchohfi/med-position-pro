@@ -49,13 +49,18 @@ export function useStreamingResponse({ functionName, onComplete, onError }: UseS
 
       const decoder = new TextDecoder();
       let accumulated = "";
+      let lineBuffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        // Buffer partial lines across chunks to avoid data loss
+        lineBuffer += chunk;
+        const lines = lineBuffer.split("\n");
+        // Keep the last (potentially incomplete) line in the buffer
+        lineBuffer = lines.pop() || "";
 
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
@@ -70,7 +75,24 @@ export function useStreamingResponse({ functionName, onComplete, onError }: UseS
               setText(accumulated);
             }
           } catch {
-            // skip malformed chunks
+            // skip malformed JSON
+          }
+        }
+      }
+
+      // Process any remaining buffered line
+      if (lineBuffer.startsWith("data: ")) {
+        const data = lineBuffer.slice(6).trim();
+        if (data && data !== "[DONE]") {
+          try {
+            const parsed = JSON.parse(data);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              accumulated += content;
+              setText(accumulated);
+            }
+          } catch {
+            // skip malformed JSON
           }
         }
       }

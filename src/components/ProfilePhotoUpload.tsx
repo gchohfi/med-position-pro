@@ -32,7 +32,7 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
 
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop();
+      const ext = file.name.split(".").pop() || "jpg";
       const path = `${user.id}/profile-photo.${ext}`;
 
       const { error: uploadError } = await supabase.storage

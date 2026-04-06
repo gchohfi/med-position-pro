@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callClaudeStream, buildAnthropicStream } from "../_shared/anthropic.ts";
 import { callPerplexityText } from "../_shared/perplexity.ts";
+import { requireAuth, isAuthError } from "../_shared/auth.ts";
 
 const SYSTEM_PROMPT = `Você é um especialista em tendências de conteúdo médico no Instagram. A data de hoje é abril de 2026.
 
@@ -37,6 +38,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
+    const auth = await requireAuth(req);
+    if (isAuthError(auth)) return auth;
+
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
 

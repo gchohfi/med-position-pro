@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callClaudeStream, buildAnthropicStream } from "../_shared/anthropic.ts";
+import { requireAuth, isAuthError } from "../_shared/auth.ts";
 
 const SYSTEM_PROMPT = `Você é um consultor estratégico de posicionamento médico digital especializado em Instagram. Analise o perfil médico fornecido e gere uma análise detalhada de posicionamento, identificando forças, lacunas, oportunidades e recomendações. Respeite a Resolução CFM 2.336/2023.
 
@@ -23,6 +24,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
+    const auth = await requireAuth(req);
+    if (isAuthError(auth)) return auth;
+
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
 

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callPerplexityText } from "../_shared/perplexity.ts";
+import { requireAuth, isAuthError } from "../_shared/auth.ts";
 
 /**
  * verify-inspiration-profile — Verification ONLY
@@ -99,6 +100,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
+    const auth = await requireAuth(req);
+    if (isAuthError(auth)) return auth;
+
     const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
     if (!perplexityKey) throw new Error("PERPLEXITY_API_KEY not configured");
 

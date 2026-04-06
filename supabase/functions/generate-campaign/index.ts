@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callGemini } from "../_shared/gemini.ts";
 import { safeJsonParse } from "../_shared/json-utils.ts";
+import { requireAuth, isAuthError } from "../_shared/auth.ts";
 
 const CAMPAIGN_MODES: Record<string, string> = {
   manifesto_editorial:
@@ -32,9 +33,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    const { brief, user_id } = await req.json();
-    if (!brief || !user_id) {
-      throw new Error("Missing required fields: brief, user_id");
+    // Validate JWT and get authenticated user — prevents IDOR
+    const auth = await requireAuth(req);
+    if (isAuthError(auth)) return auth;
+    const authenticatedUserId = auth.user.id;
+
+    const { brief } = await req.json();
+    if (!brief) {
+      throw new Error("Missing required field: brief");
     }
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
@@ -43,6 +49,9 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Use authenticated user ID from JWT — never trust client-supplied user_id
+    const user_id = authenticatedUserId;
 
     // Fetch user context in parallel
     const [positioningRes, diagnosisRes, memoryRes, contentRes] =

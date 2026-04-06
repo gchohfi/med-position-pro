@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callClaude } from "../_shared/anthropic.ts";
 import { safeJsonParse } from "../_shared/json-utils.ts";
+import { requireAuth, isAuthError } from "../_shared/auth.ts";
 
 /* ───────────────────────────────────────────
    TravessIA — 7 Layout System
@@ -165,13 +166,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    // ── Auth check ──
-    const authHeader = req.headers.get("authorization") || req.headers.get("apikey");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // ── Auth check — validate JWT via getUser() ──
+    const auth = await requireAuth(req);
+    if (isAuthError(auth)) return auth;
 
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
