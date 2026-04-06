@@ -72,33 +72,47 @@ const squadLinks: NavLinkItem[] = [
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+
   const renderGroup = (title: string, links: NavLinkItem[]) => (
     <SidebarGroup>
-      <SidebarGroupLabel>{title}</SidebarGroupLabel>
+      <SidebarGroupLabel className="text-[10px] tracking-widest uppercase text-muted-foreground/60 font-medium px-3 mb-1">
+        {title}
+      </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {links.map((link) => (
-            <SidebarMenuItem key={link.path}>
-              <SidebarMenuButton
-                onClick={() => navigate(link.path)}
-                isActive={location.pathname === link.path}
-              >
-                <link.icon className="h-4 w-4" />
-                <span>{link.label}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {links.map((link) => {
+            const isActive = location.pathname === link.path;
+            return (
+              <SidebarMenuItem key={link.path}>
+                <SidebarMenuButton
+                  onClick={() => navigate(link.path)}
+                  isActive={isActive}
+                  className={`h-8 text-[13px] rounded-md transition-colors ${
+                    isActive
+                      ? "bg-secondary text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                  }`}
+                >
+                  <link.icon className="h-3.5 w-3.5" />
+                  <span>{link.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
   );
 
   return (
-    <Sidebar>
-      <SidebarContent>
+    <Sidebar className="border-r border-border/40">
+      <div className="h-14 flex items-center px-5 border-b border-border/40">
+        <span className="font-heading text-xl text-foreground tracking-tight">Medshift</span>
+      </div>
+      <SidebarContent className="pt-2">
         {renderGroup("Plataforma", platformLinks)}
         {renderGroup("Inteligência", intelligenceLinks)}
-        {renderGroup("IA Squad Médico", squadLinks)}
+        {renderGroup("IA Squad", squadLinks)}
       </SidebarContent>
     </Sidebar>
   );
