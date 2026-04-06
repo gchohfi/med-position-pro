@@ -121,6 +121,13 @@ export type Database = {
           strategic_input: Json
           title: string | null
           user_id: string
+          campaign_brief_json: Json | null
+          campaign_status: string
+          approval_status: string | null
+          visual_system_id: string | null
+          prompt_version: string
+          slide_plan_json: Json | null
+          slide_plan_version: number
         }
         Insert: {
           content_type: string
@@ -133,6 +140,13 @@ export type Database = {
           strategic_input?: Json
           title?: string | null
           user_id: string
+          campaign_brief_json?: Json | null
+          campaign_status?: string
+          approval_status?: string | null
+          visual_system_id?: string | null
+          prompt_version?: string
+          slide_plan_json?: Json | null
+          slide_plan_version?: number
         }
         Update: {
           content_type?: string
@@ -145,6 +159,13 @@ export type Database = {
           strategic_input?: Json
           title?: string | null
           user_id?: string
+          campaign_brief_json?: Json | null
+          campaign_status?: string
+          approval_status?: string | null
+          visual_system_id?: string | null
+          prompt_version?: string
+          slide_plan_json?: Json | null
+          slide_plan_version?: number
         }
         Relationships: [
           {

@@ -92,7 +92,10 @@ const Producao = () => {
           .single();
 
         if (error) throw error;
-        if (!data) return;
+        if (!data) {
+          toast.error("Conteúdo não encontrado.");
+          return;
+        }
 
         // Support both new slide_plan_json and legacy strategic_input/generated_content
         if (data.slide_plan_json) {
@@ -143,7 +146,7 @@ const Producao = () => {
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-campaign", {
-        body: { brief, user_id: user?.id },
+        body: { brief },
       });
 
       if (error) throw error;
