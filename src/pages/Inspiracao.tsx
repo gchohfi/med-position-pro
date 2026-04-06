@@ -39,7 +39,7 @@ interface InspirationProfile {
   display_name: string | null;
   specialty: string | null;
   country: string;
-  source_type: "manual" | "ai_discovery" | "imported";
+  source_type: "manual" | "ai_discovery" | "imported" | "library";
   verification_status: "pending" | "verified" | "rejected" | "needs_review";
   verification_method: string | null;
   verification_confidence: number | null;
@@ -442,7 +442,14 @@ const Inspiracao = () => {
       });
       if (error) throw error;
 
-      setAnalysisResults(data as AnalysisResult);
+      const parsed = data as Record<string, unknown>;
+      // Validate that the response has the expected shape
+      if (!parsed || !Array.isArray(parsed.analises)) {
+        console.warn("analyze-inspiration-content returned unexpected shape:", parsed);
+        toast.warning("Analise retornou formato inesperado. Tente novamente.");
+        return;
+      }
+      setAnalysisResults(parsed as unknown as AnalysisResult);
       toast.success("Analise concluida!");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao analisar conteudo.";
@@ -507,8 +514,9 @@ const Inspiracao = () => {
   const rejectedProfiles = profiles.filter((p) => p.verification_status === "rejected");
 
   const allIdeas: (ContentIdea & { sourceHandle: string })[] = [];
-  if (analysisResults) {
+  if (analysisResults?.analises) {
     for (const analise of analysisResults.analises) {
+      if (!analise.ideias_inspiradas) continue;
       for (const idea of analise.ideias_inspiradas) {
         allIdeas.push({ ...idea, sourceHandle: analise.handle });
       }
@@ -962,7 +970,7 @@ const Inspiracao = () => {
 
                     {/* Per-profile analysis */}
                     <div className="space-y-3">
-                      {analysisResults.analises.map((analise) => {
+                      {(analysisResults.analises ?? []).map((analise) => {
                         const isExpanded = expandedHandles.has(analise.handle);
                         return (
                           <Card key={analise.handle}>

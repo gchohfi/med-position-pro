@@ -130,13 +130,9 @@ export function useCarrossel() {
     }
   }, [profile, suggestionsLoading]);
 
-  // Auto-load suggestions on mount
-  useEffect(() => {
-    if (isConfigured && profile && !suggestionsLoaded && !location.state?.tese) {
-      loadSuggestions();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConfigured, profile]);
+  // Suggestions are loaded on demand via loadSuggestions() — no auto-load
+  // This avoids triggering edge function calls on page mount which fail
+  // if ANTHROPIC_API_KEY is not configured.
 
   const handleSelectSuggestion = useCallback((s: TopicSuggestion) => {
     setTese(s.tese);

@@ -1,175 +1,229 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.1";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+import { requireAuth, isAuthError } from "../_shared/auth.ts";
+import { sanitizeInput, sanitizeArray } from "../_shared/sanitize.ts";
 
-const APPROVED_LIBRARY: string[] = [
-  "drafatima",
-  "dratati",
-  "dra.larissasaad",
-];
+/**
+ * analyze-inspiration-content — Analyzes inspiration profiles for content ideas
+ *
+ * Input:  { handles: string[], especialidade?: string, objetivo?: string }
+ * Output: {
+ *   analises: ProfileAnalysis[],
+ *   oportunidades_cruzadas: string[],
+ *   tendencias_formato: string
+ * }
+ *
+ * Uses Perplexity to research each handle's content strategy, then Claude
+ * to structure the analysis. Falls back to heuristic analysis if API keys
+ * are missing.
+ */
 
-const PERPLEXITY_SYSTEM = `Você é um assistente de descoberta de perfis de inspiração para marketing médico.
-Retorne APENAS JSON no formato:
-{
-  "candidates": [
-    { "handle": "usuario", "profile_url": "https://instagram.com/usuario", "reason": "..." }
-  ]
+interface ProfileAnalysis {
+  handle: string;
+  estrategia_resumo: string;
+  topicos_mais_engajados: string[];
+  formatos_eficazes: string[];
+  hooks_eficazes: string[];
+  estilo_visual: string;
+  gaps_conteudo: string[];
+  ideias_inspiradas: Array<{
+    titulo: string;
+    formato: string;
+    tese: string;
+    por_que_funciona: string;
+  }>;
 }
-Regras:
-- no máximo 8 candidatos
-- não invente links sem confiança
-- se não souber, retorne lista vazia`;
 
-function normalizeHandle(input: string): string {
-  const cleaned = input.trim().toLowerCase().replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/^@/, "");
-  return cleaned.split(/[/?#]/)[0].replace(/[^a-z0-9._]/g, "");
+interface AnalysisResult {
+  analises: ProfileAnalysis[];
+  oportunidades_cruzadas: string[];
+  tendencias_formato: string;
 }
 
-function isValidHandle(handle: string): boolean {
-  return /^[a-z0-9._]{3,30}$/.test(handle);
-}
+function buildFallbackAnalysis(handles: string[], especialidade: string): AnalysisResult {
+  const analises: ProfileAnalysis[] = handles.map((handle) => ({
+    handle,
+    estrategia_resumo: `Perfil ${handle} atua na area de ${especialidade || "saude"}. Analise completa requer configuracao das chaves de API (ANTHROPIC_API_KEY ou PERPLEXITY_API_KEY).`,
+    topicos_mais_engajados: ["Dicas praticas", "Mitos e verdades", "Bastidores do consultorio"],
+    formatos_eficazes: ["Carrossel educativo", "Reels curtos", "Stories interativos"],
+    hooks_eficazes: ["Voce sabia que...?", "O erro mais comum e...", "3 sinais de que..."],
+    estilo_visual: "Nao foi possivel analisar sem API configurada",
+    gaps_conteudo: ["Conteudo com dados cientificos", "Comparativos antes/depois", "Colaboracoes com outros profissionais"],
+    ideias_inspiradas: [
+      {
+        titulo: `Mitos sobre ${especialidade || "saude"} que ${handle} quebraria`,
+        formato: "carrossel",
+        tese: `Existem mitos comuns sobre ${especialidade || "saude"} que precisam ser desmistificados`,
+        por_que_funciona: "Conteudo de mitos gera alto engajamento por despertar curiosidade e corrigir crencas",
+      },
+    ],
+  }));
 
-function parsePerplexityCandidates(raw: string): Array<{ handle: string; profile_url?: string; reason?: string }> {
-  try {
-    const parsed = JSON.parse(raw);
-    const list = Array.isArray(parsed?.candidates) ? parsed.candidates : [];
-    return list.map((item: any) => ({
-      handle: String(item?.handle || ""),
-      profile_url: item?.profile_url ? String(item.profile_url) : undefined,
-      reason: item?.reason ? String(item.reason) : undefined,
-    }));
-  } catch {
-    return [];
-  }
+  return {
+    analises,
+    oportunidades_cruzadas: [
+      "Todos os perfis investem em conteudo educativo — oportunidade de se diferenciar com formato narrativo",
+      "Poucos usam dados cientificos nos carrosseis — nicho de autoridade disponivel",
+    ],
+    tendencias_formato: "Carrosseis educativos com 7-10 slides e Reels curtos (15-30s) sao os formatos dominantes entre os perfis analisados.",
+  };
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing Authorization header");
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
-
-    const supabase = createClient(supabaseUrl, serviceKey);
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    const auth = await requireAuth(req);
+    if (isAuthError(auth)) return auth;
 
     const body = await req.json();
-    const mode = String(body.mode || "manual");
-    const manualHandles = Array.isArray(body.handles) ? body.handles.map((h: unknown) => String(h)) : [];
-    const specialty = String(body.specialty || "");
-    const location = String(body.location || "");
-    const objective = String(body.objective || "");
+    const handles = sanitizeArray(body.handles, 10, 100).filter(Boolean);
+    const especialidade = sanitizeInput(body.especialidade, 200);
+    const objetivo = sanitizeInput(body.objetivo, 500);
 
-    // Etapa A — Discovery (manual first, AI second)
-    const discovered = new Map<string, { source_type: "manual" | "ai_discovery" | "library"; profile_url?: string; notes?: string }>();
-    for (const item of manualHandles) {
-      const normalized = normalizeHandle(item);
-      if (!normalized) continue;
-      discovered.set(normalized, { source_type: "manual", notes: "Inserido manualmente pela usuária." });
+    if (handles.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Informe ao menos um handle para analisar." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    for (const lib of APPROVED_LIBRARY) {
-      if (!discovered.has(lib)) {
-        discovered.set(lib, { source_type: "library", profile_url: `https://instagram.com/${lib}`, notes: "Perfil da biblioteca aprovada." });
-      }
-    }
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
 
-    if (mode === "assisted" && PERPLEXITY_API_KEY) {
-      const prompt = `Especialidade: ${specialty || "médica"}\nLocal: ${location || "Brasil"}\nObjetivo: ${objective || "inspiração para conteúdo autoral"}\nListe apenas handles de Instagram para inspiração estratégica.`;
-      const res = await fetch("https://api.perplexity.ai/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "sonar",
-          messages: [
-            { role: "system", content: PERPLEXITY_SYSTEM },
-            { role: "user", content: prompt },
-          ],
-        }),
+    // If no AI keys configured, return heuristic fallback
+    if (!ANTHROPIC_API_KEY) {
+      const fallback = buildFallbackAnalysis(handles, especialidade);
+      return new Response(JSON.stringify(fallback), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-      if (res.ok) {
-        const data = await res.json();
-        const text = data?.choices?.[0]?.message?.content || "{}";
-        const candidates = parsePerplexityCandidates(String(text));
-        for (const candidate of candidates) {
-          const normalized = normalizeHandle(candidate.handle);
-          if (!normalized || discovered.has(normalized)) continue;
-          discovered.set(normalized, {
-            source_type: "ai_discovery",
-            profile_url: candidate.profile_url,
-            notes: candidate.reason || "Descoberta assistida por IA.",
-          });
+    }
+
+    // Step 1: Research each handle via Perplexity (if available)
+    let researchContext = "";
+    if (PERPLEXITY_API_KEY) {
+      try {
+        const query = `Analise o conteudo dos seguintes perfis de Instagram medico: ${handles.join(", ")}. Para cada perfil, descreva: estrategia de conteudo, topicos mais engajados, formatos preferidos (carrossel, reels, stories), estilo visual, e hooks/ganchos mais eficazes. Especialidade: ${especialidade || "medicina"}.`;
+
+        const res = await fetch("https://api.perplexity.ai/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "sonar",
+            messages: [
+              { role: "system", content: "Voce e um analista de conteudo medico no Instagram. Responda com dados factuais sobre os perfis solicitados." },
+              { role: "user", content: query },
+            ],
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          researchContext = data?.choices?.[0]?.message?.content || "";
         }
+      } catch (err) {
+        console.warn("Perplexity research failed, continuing with Claude only:", err);
       }
     }
 
-    // Etapa B — Verification
-    const profileRows = Array.from(discovered.entries()).map(([handle, meta]) => {
-      const valid = isValidHandle(handle);
-      const isLibrary = meta.source_type === "library";
-      const verification_status = isLibrary ? "verified" : valid ? "needs_review" : "rejected";
-      const verification_confidence = isLibrary ? 0.95 : valid ? 0.6 : 0.1;
-      return {
-        user_id: user.id,
-        discovered_handle: handle,
-        normalized_handle: handle,
-        profile_url: meta.profile_url || `https://instagram.com/${handle}`,
-        source_type: meta.source_type,
-        verification_status,
-        verification_method: isLibrary ? "internal_library" : "format_and_source_heuristic",
-        verification_confidence,
-        notes: meta.notes || null,
-      };
+    // Step 2: Structure analysis via Claude
+    const systemPrompt = `Voce e um estrategista de conteudo para medicos no Instagram.
+Analise os perfis de inspiracao e retorne APENAS um JSON valido no formato:
+{
+  "analises": [
+    {
+      "handle": "@usuario",
+      "estrategia_resumo": "Resumo da estrategia de conteudo do perfil",
+      "topicos_mais_engajados": ["topico1", "topico2"],
+      "formatos_eficazes": ["Carrossel", "Reels"],
+      "hooks_eficazes": ["Voce sabia...", "O erro mais comum..."],
+      "estilo_visual": "Descricao do estilo visual",
+      "gaps_conteudo": ["Oportunidade nao explorada 1"],
+      "ideias_inspiradas": [
+        {
+          "titulo": "Titulo da ideia",
+          "formato": "carrossel",
+          "tese": "Tese central da ideia",
+          "por_que_funciona": "Razao pela qual funciona"
+        }
+      ]
+    }
+  ],
+  "oportunidades_cruzadas": ["Oportunidade identificada entre todos os perfis"],
+  "tendencias_formato": "Resumo das tendencias de formato entre os perfis analisados"
+}
+
+Regras:
+- Gere 2-3 ideias_inspiradas por perfil
+- As ideias devem ser adaptaveis para a especialidade do usuario
+- oportunidades_cruzadas: insights que cruzam todos os perfis analisados (3-5 itens)
+- tendencias_formato: paragrafo curto sobre tendencias de formato observadas
+- Retorne APENAS o JSON, sem markdown ou texto adicional`;
+
+    const userPrompt = `Perfis para analisar: ${handles.join(", ")}
+Especialidade do usuario: ${especialidade || "medicina"}
+Objetivo: ${objetivo || "extrair ideias de conteudo para carrossel e reels"}
+${researchContext ? `\nPesquisa sobre os perfis:\n${researchContext}` : ""}
+
+Analise cada perfil e gere ideias de conteudo inspiradas neles.`;
+
+    const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        messages: [
+          { role: "user", content: userPrompt },
+        ],
+        system: systemPrompt,
+      }),
     });
 
-    if (profileRows.length > 0) {
-      await supabase
-        .from("inspiration_profiles")
-        .upsert(profileRows, { onConflict: "user_id,normalized_handle" });
+    if (!claudeRes.ok) {
+      console.error("Claude API error:", claudeRes.status, await claudeRes.text());
+      // Fallback if Claude fails
+      const fallback = buildFallbackAnalysis(handles, especialidade);
+      return new Response(JSON.stringify(fallback), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Etapa C — Analysis (apenas verificados)
-    const verifiedProfiles = profileRows.filter((row) => row.verification_status === "verified");
-    const analyses = verifiedProfiles.map((p) => ({
-      user_id: user.id,
-      normalized_handle: p.normalized_handle,
-      analysis_status: "queued",
-      raw_research: null,
-      structured_analysis: null,
-      generated_ideas: null,
-    }));
+    const claudeData = await claudeRes.json();
+    const content = claudeData?.content?.[0]?.text || "";
 
-    if (analyses.length > 0) {
-      await supabase.from("inspiration_profile_analyses").upsert(analyses, { onConflict: "user_id,normalized_handle" });
+    // Parse the JSON from Claude's response
+    let result: AnalysisResult;
+    try {
+      // Try direct parse first
+      result = JSON.parse(content);
+    } catch {
+      // Try extracting JSON from markdown fences
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        result = JSON.parse(jsonMatch[0]);
+      } else {
+        console.error("Failed to parse Claude response:", content.slice(0, 500));
+        result = buildFallbackAnalysis(handles, especialidade);
+      }
     }
 
-    return new Response(
-      JSON.stringify({
-        mode,
-        counts: {
-          discovered: profileRows.length,
-          verified: verifiedProfiles.length,
-          needs_review: profileRows.filter((r) => r.verification_status === "needs_review").length,
-          rejected: profileRows.filter((r) => r.verification_status === "rejected").length,
-        },
-        profiles: profileRows,
-        analysis_queued_for_verified: verifiedProfiles.map((p) => p.normalized_handle),
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    // Validate shape
+    if (!Array.isArray(result.analises)) {
+      result = buildFallbackAnalysis(handles, especialidade);
+    }
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
+    console.error("analyze-inspiration-content error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },

@@ -67,6 +67,21 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
         )}
       </div>
 
+      {!suggestionsLoaded && !suggestionsLoading && (
+        <Card>
+          <CardContent className="py-6 flex flex-col items-center gap-3">
+            <Sparkles className="h-6 w-6 text-primary/60" />
+            <p className="text-sm text-muted-foreground">
+              Descubra temas em alta para {especialidade || "sua especialidade"}
+            </p>
+            <Button onClick={onRefresh} size="sm">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Carregar sugestoes
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {suggestionsLoading && suggestions.length === 0 && (
         <Card>
           <CardContent className="py-8 flex flex-col items-center gap-3">
