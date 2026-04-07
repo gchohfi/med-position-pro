@@ -60,9 +60,6 @@ serve(async (req) => {
 
     const user_id = user.id; // user_id vem SEMPRE do JWT, nunca do body
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
-
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -155,7 +152,7 @@ ${JSON.stringify(recentContent, null, 2)}
 
 Gere o plano de slides completo para esta campanha, respeitando o tipo "${campaignType}" e o posicionamento do médico. Garanta que o carrossel tenha entre 7 e 10 slides com progressão narrativa clara.`;
 
-    const res = await callGemini(apiKey, {
+    const res = await callGemini("unused", {
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },

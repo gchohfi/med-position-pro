@@ -26,9 +26,6 @@ serve(async (req) => {
       return errorResponse("Todos os campos estratégicos são obrigatórios.", 400);
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured");
-
     const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
 
     const systemPrompt = `Você é um estrategista de conteúdo para médicas que desejam se posicionar com autoridade no Instagram.
@@ -96,7 +93,7 @@ Gere o conteúdo estratégico seguindo a estrutura de 6 blocos.`;
 
     // Primary: Gemini with streaming + retry
     console.log("generate-content: using Gemini");
-    const geminiRes = await callGemini(GEMINI_API_KEY, {
+    const geminiRes = await callGemini("unused", {
       stream: true,
       messages: [
         { role: "system", content: systemPrompt },

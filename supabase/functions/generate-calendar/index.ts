@@ -44,8 +44,6 @@ serve(async (req) => {
 
   try {
     const { positioning, specialty, series } = await req.json();
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return errorResponse("Missing Authorization header", 401);
@@ -87,7 +85,7 @@ Objetivos: ${positioning?.goals || "Não definidos"}
 
 Gere um calendário editorial estratégico de 30 dias.`;
 
-    const response = await callGemini(GEMINI_API_KEY, {
+    const response = await callGemini("unused", {
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
