@@ -24,9 +24,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
-
     const { profile } = await req.json();
 
     const userPrompt = `Crie um plano estratégico de conteúdo para o seguinte perfil médico:
@@ -41,7 +38,7 @@ Seguidores no Instagram: ${profile.seguidores_instagram ?? "Não informado"}
 
 Desenvolva um plano estratégico completo, prático e acionável para o Instagram deste médico.`;
 
-    const res = await callClaudeStream(apiKey, SYSTEM_PROMPT, userPrompt);
+    const res = await callClaudeStream("", SYSTEM_PROMPT, userPrompt);
     const stream = buildAnthropicStream(res);
 
     return new Response(stream, {

@@ -37,15 +37,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
-
     const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
     const { profile } = await req.json();
 
     const especialidade = profile.especialidade ?? "Medicina geral";
 
-    // Step 1: Call Perplexity for real current trends data
     let perplexityContext = "";
     if (perplexityKey) {
       try {
@@ -71,7 +67,6 @@ serve(async (req) => {
       }
     }
 
-    // Step 2: Build user prompt with Perplexity context
     const userPrompt = `Especialidade médica para análise de tendências: ${especialidade}
 
 Contexto adicional do perfil:
@@ -82,8 +77,7 @@ Seguidores: ${profile.seguidores_instagram ?? "Não informado"}
 
 ${perplexityContext ? `--- DADOS DE PESQUISA ATUAL (Perplexity, abril 2026) ---\n${perplexityContext}\n--- FIM DOS DADOS DE PESQUISA ---\n\n` : ""}Usando os dados de pesquisa acima como base factual, identifique as principais tendências de conteúdo para esta especialidade no Instagram. Foque em oportunidades práticas e acionáveis para abril de 2026.`;
 
-    // Step 3: Stream Claude response with the enriched context
-    const res = await callClaudeStream(anthropicKey, SYSTEM_PROMPT, userPrompt);
+    const res = await callClaudeStream("", SYSTEM_PROMPT, userPrompt);
     const stream = buildAnthropicStream(res);
 
     return new Response(stream, {

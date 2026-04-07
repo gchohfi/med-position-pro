@@ -8,10 +8,6 @@ import { callPerplexityText } from "../_shared/perplexity.ts";
  *
  * Input:  { especialidade, subespecialidade?, pilares? }
  * Output: { candidates: [{ handle, confidence, source, display_name?, reason? }] }
- *
- * This function does NOT verify profiles. It does NOT analyze content.
- * It returns candidate handles with a confidence level so the frontend
- * can present them for user review before verification.
  */
 
 interface Candidate {
@@ -29,9 +25,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
-
     const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
     if (!perplexityKey) throw new Error("PERPLEXITY_API_KEY not configured");
 
@@ -45,7 +38,6 @@ serve(async (req) => {
       ? pilares.join(", ")
       : "";
 
-    // Targeted Perplexity searches — specific queries, not generic
     const queries = [
       `Quais são os @handles reais de médicos brasileiros de ${especialidade}${subEsp} no Instagram que produzem conteúdo educativo? Preciso dos handles EXATOS com @ que existem no Instagram. Foque em perfis com mais de 10k seguidores que postam regularmente.${pilaresStr ? ` Temas relevantes: ${pilaresStr}` : ""}`,
       `Best international ${especialidade} doctors on Instagram 2024 2025. List their real Instagram @handles. Focus on physicians who create educational content, carousels, reels about ${especialidade}${subEsp}. Only list handles you are confident actually exist.`,
@@ -62,7 +54,6 @@ serve(async (req) => {
       .map((r, i) => `### Busca ${i + 1}\n${r}`)
       .join("\n\n---\n\n");
 
-    // Ask Claude to extract ONLY candidate handles — no analysis, no verification claims
     const systemPrompt = `Você é um especialista em marketing médico no Instagram. Sua tarefa é extrair CANDIDATOS a perfis reais do Instagram mencionados na pesquisa. NUNCA invente handles. Se não encontrar handles explícitos, retorne lista vazia. Responda APENAS com JSON válido.`;
 
     const userPrompt = `Analise os resultados de pesquisa abaixo e extraia CANDIDATOS a perfis de Instagram.
@@ -93,7 +84,7 @@ Formato de resposta:
 Pesquisa:
 ${combinedResearch}`;
 
-    const structured = await callClaude(anthropicKey, systemPrompt, userPrompt) as {
+    const structured = await callClaude("", systemPrompt, userPrompt) as {
       candidates?: Candidate[];
     };
 

@@ -82,7 +82,7 @@ async function searchPerplexity(
 }
 
 /* ───────────────────────────────────────────
-   Claude ranking helper
+   AI ranking helper
    ─────────────────────────────────────────── */
 
 interface RankingResult {
@@ -90,8 +90,7 @@ interface RankingResult {
   carrosseis: Array<{ indice: number; titulo: string; motivo: string }>;
 }
 
-async function rankWithClaude(
-  apiKey: string,
+async function rankWithAI(
   artigos: PerplexityResult[],
   profile: { especialidade?: string; pilares?: string[]; publico_alvo?: string },
 ): Promise<RankingResult> {
@@ -120,7 +119,7 @@ Público-alvo: ${profile.publico_alvo ?? "Não informado"}
 ARTIGOS ENCONTRADOS:
 ${artigosText}`;
 
-  return await callClaude(apiKey, systemPrompt, userPrompt, { maxTokens: 1500 }) as unknown as RankingResult;
+  return await callClaude("", systemPrompt, userPrompt, { maxTokens: 1500 }) as unknown as RankingResult;
 }
 
 /* ───────────────────────────────────────────
@@ -133,9 +132,6 @@ serve(async (req) => {
   try {
     const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
     if (!perplexityKey) throw new Error("PERPLEXITY_API_KEY not configured");
-
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const { profile } = await req.json();
     if (!profile) throw new Error("Campo 'profile' é obrigatório");
@@ -169,7 +165,7 @@ serve(async (req) => {
       }
     }
 
-    const ranking = await rankWithClaude(anthropicKey, allArticles, profile);
+    const ranking = await rankWithAI(allArticles, profile);
 
     return new Response(
       JSON.stringify({ artigos: allArticles, ranking }),

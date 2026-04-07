@@ -24,9 +24,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
-
     const { profile, analyses } = await req.json();
 
     const analysisSections: string[] = [];
@@ -47,7 +44,7 @@ ${analysisSections.length > 0 ? analysisSections.join("\n\n---\n\n") : "Nenhuma 
 
 Sintetize todas as análises acima em um panorama estratégico integrado. Priorize as ações mais importantes e crie um plano de ação consolidado.`;
 
-    const res = await callClaudeStream(apiKey, SYSTEM_PROMPT, userPrompt);
+    const res = await callClaudeStream("", SYSTEM_PROMPT, userPrompt);
     const stream = buildAnthropicStream(res);
 
     return new Response(stream, {

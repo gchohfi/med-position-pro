@@ -8,19 +8,12 @@ import { callPerplexityText } from "../_shared/perplexity.ts";
  *
  * Input:  { especialidade, subespecialidade?, publico_alvo?, tom_de_voz?, pilares? }
  * Output: { sugestoes: [{ titulo, tese, objetivo, formato, por_que, urgencia }] }
- *
- * Flow:
- * 1. Perplexity searches for trending topics in the specialty
- * 2. Claude structures 8-10 actionable carousel ideas
  */
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
-
     const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
 
     const body = await req.json();
@@ -33,7 +26,6 @@ serve(async (req) => {
       ? pilares.join(", ")
       : "";
 
-    // Step 1: Get real trending data from Perplexity
     let perplexityContext = "";
     if (perplexityKey) {
       try {
@@ -55,7 +47,6 @@ serve(async (req) => {
       }
     }
 
-    // Step 2: Claude generates structured suggestions
     const systemPrompt = `Você é um estrategista de conteúdo médico para Instagram, especialista em carrosséis educativos de alto engajamento.
 
 Suas referências de sucesso são perfis como @clinicacintiamartins (1.2M seguidores), @dra.daniaidar (384k), @rithacapelato_dermato (361k), @marinacristofani (396k) — perfis que combinam autoridade médica com linguagem acessível e hooks provocativos.
@@ -98,7 +89,7 @@ Formato de resposta:
 
 Gere exatamente 8 sugestões variadas.`;
 
-    const result = await callClaude(anthropicKey, systemPrompt, userPrompt) as {
+    const result = await callClaude("", systemPrompt, userPrompt) as {
       sugestoes?: unknown[];
     };
 

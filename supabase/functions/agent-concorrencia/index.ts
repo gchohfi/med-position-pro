@@ -37,9 +37,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
-
     const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
     const { profile, concorrentes, autoDiscover } = await req.json();
 
@@ -72,11 +69,8 @@ serve(async (req) => {
         { search_recency_filter: "month" },
       );
 
-      // Extract @handles from the Perplexity response
       const handleRegex = /@[\w.]+/g;
       const rawHandles = discoveryResult.match(handleRegex) ?? [];
-
-      // Deduplicate and take up to 8 handles
       const handles = [...new Set(rawHandles)].slice(0, 8);
 
       return new Response(
@@ -90,7 +84,6 @@ serve(async (req) => {
       ? concorrentes
       : (concorrentes ?? "").split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean);
 
-    // Step 1: Research each competitor with Perplexity
     let perplexityContext = "";
     if (perplexityKey && concorrentesList.length > 0) {
       try {
@@ -116,7 +109,6 @@ serve(async (req) => {
       }
     }
 
-    // Step 2: Build enriched prompt for Claude
     const userPrompt = `Perfil do médico:
 Nome: ${profile.nome ?? "Não informado"}
 Especialidade: ${especialidade}
@@ -129,8 +121,7 @@ ${concorrentesList.join("\n")}
 
 ${perplexityContext ? `--- DADOS DE PESQUISA ATUAL (Perplexity, abril 2026) ---\n${perplexityContext}\n--- FIM DOS DADOS DE PESQUISA ---\n\n` : ""}Realize uma análise competitiva completa usando os dados de pesquisa acima como base factual, identificando como o médico pode se diferenciar neste cenário.`;
 
-    // Step 3: Stream Claude analysis
-    const res = await callClaudeStream(anthropicKey, SYSTEM_PROMPT, userPrompt);
+    const res = await callClaudeStream("", SYSTEM_PROMPT, userPrompt);
     const stream = buildAnthropicStream(res);
 
     return new Response(stream, {

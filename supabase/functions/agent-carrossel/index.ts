@@ -147,7 +147,6 @@ function validateRoteiro(parsed: Record<string, unknown>): void {
       throw new Error(`Layout inválido: ${slide.layout}`);
     }
   }
-  // Ensure preferredVisualStyle is valid
   const validStyles = ["travessia", "editorial_black_gold"];
   if (parsed.preferredVisualStyle && !validStyles.includes(parsed.preferredVisualStyle as string)) {
     parsed.preferredVisualStyle = "editorial_black_gold";
@@ -165,7 +164,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    // ── Auth check ──
     const authHeader = req.headers.get("authorization") || req.headers.get("apikey");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -173,14 +171,10 @@ serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
-
     const body = await req.json();
     const action = body.action ?? "generate";
     const skill = body.skill;
 
-    // Build system prompt with optional skill injection
     let systemPrompt = "";
     if (skill) {
       systemPrompt += `## CARROSSEL_SKILL (estilo do cliente)\n${JSON.stringify(skill, null, 2)}\n\n`;
@@ -190,7 +184,6 @@ serve(async (req) => {
     let userPrompt: string;
 
     if (action === "rewrite") {
-      /* ── Rewrite mode ── */
       const { roteiro, feedback } = body;
       if (!roteiro) throw new Error("Campo 'roteiro' é obrigatório para rewrite");
       if (!feedback) throw new Error("Campo 'feedback' é obrigatório para rewrite");
@@ -205,7 +198,6 @@ ${feedback}
 
 Mantenha os layouts válidos do sistema TravessIA. Retorne APENAS o JSON completo do novo roteiro.`;
     } else {
-      /* ── Generate mode ── */
       const { profile, tese, objetivo } = body;
       if (!profile) throw new Error("Campo 'profile' é obrigatório");
       const especialidade = String(profile.especialidade ?? "");
@@ -235,8 +227,7 @@ Gere entre 7 e 10 slides usando os layouts do sistema TravessIA.
 Retorne APENAS o JSON válido.`;
     }
 
-    const raw = await callClaude(apiKey, systemPrompt, userPrompt);
-    // Normalize: callClaude may return string or object depending on response format
+    const raw = await callClaude("", systemPrompt, userPrompt);
     const parsed = typeof raw === "string" ? safeJsonParse(raw) : safeJsonParse(raw);
     validateRoteiro(parsed);
 
