@@ -32,6 +32,7 @@ export interface DoctorProfile {
   concorrentes?: string[];
   referencia_visual?: string;
   bio_instagram?: string;
+  instagram_handle?: string;
   foto_url?: string;
   referencias_conteudo?: string[];
   referencias_design?: string[];

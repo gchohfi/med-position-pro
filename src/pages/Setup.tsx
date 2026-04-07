@@ -183,12 +183,26 @@ const Setup = () => {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nome || !form.crm || !form.especialidade) {
       toast.error("Preencha pelo menos nome, CRM e especialidade.");
       return;
     }
     setProfile({ ...form, skill });
+
+    // Persist instagram_handle to profiles table if user is authenticated
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && form.instagram_handle) {
+        await supabase
+          .from("profiles")
+          .update({ instagram_handle: form.instagram_handle } as any)
+          .eq("id", user.id);
+      }
+    } catch (err) {
+      console.error("Failed to save instagram_handle to DB:", err);
+    }
+
     toast.success("Perfil médico salvo com sucesso!");
   };
 
@@ -233,7 +247,22 @@ const Setup = () => {
               </p>
             </div>
 
-            {/* Photo upload */}
+            {/* Instagram handle/link field */}
+            <div className="space-y-2">
+              <Label htmlFor="instagram_handle" className="flex items-center gap-2">
+                <Instagram className="h-4 w-4" />
+                Link do Instagram
+              </Label>
+              <Input
+                id="instagram_handle"
+                value={form.instagram_handle || ""}
+                onChange={(e) => updateField("instagram_handle", e.target.value)}
+                placeholder="https://instagram.com/dra.exemplo ou @dra.exemplo"
+              />
+              <p className="text-xs text-muted-foreground">
+                Seu perfil do Instagram. Usado no Radar e nos carrosséis.
+              </p>
+            </div>
             <div className="rounded-lg border border-dashed border-blue-300 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-3">
               <Label className="text-sm font-medium flex items-center gap-2">
                 <Camera className="h-4 w-4" />

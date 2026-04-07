@@ -471,15 +471,15 @@ const RadarInstagram = () => {
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1">
                   <label className="text-xs text-muted-foreground mb-1 block">
-                    Username do Instagram
+                    Username ou link do Instagram
                   </label>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">@</span>
+                    <Instagram className="h-4 w-4 text-muted-foreground" />
                     <input
                       type="text"
                       value={newUsername}
                       onChange={(e) => setNewUsername(e.target.value)}
-                      placeholder="usuario"
+                      placeholder="@usuario ou https://instagram.com/usuario"
                       className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
                       onKeyDown={(e) => e.key === "Enter" && addProfile()}
                     />

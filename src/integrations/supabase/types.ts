@@ -457,6 +457,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          instagram_handle: string | null
           onboarding_complete: boolean
           photo_url: string | null
           specialty: string | null
@@ -466,6 +467,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          instagram_handle?: string | null
           onboarding_complete?: boolean
           photo_url?: string | null
           specialty?: string | null
@@ -475,6 +477,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          instagram_handle?: string | null
           onboarding_complete?: boolean
           photo_url?: string | null
           specialty?: string | null
