@@ -2,7 +2,7 @@ import React from "react";
 
 export interface SlideData {
   type: "cover" | "statement" | "editorial" | "structured" | "manifesto" | "signature" | "breathing";
-  travessiaLayout?: "capa" | "timg" | "tonly" | "stat" | "turning" | "light" | "final";
+  travessiaLayout?: "capa" | "timg" | "tonly" | "stat" | "turning" | "light" | "timeline" | "final";
   label: string;
   headline: string;
   body?: string;
@@ -21,11 +21,15 @@ export interface SlideData {
   opinion?: string;
   conclusion?: string;
   perguntaComentario?: string;
+  // timeline
+  timelineSteps?: Array<{ numero: string; titulo: string; descricao?: string; destaque?: boolean }>;
+  timelineTitulo?: string;
+  timelineSubtitulo?: string;
 }
 
 // ─── VISUAL SYSTEMS ─────────────────────────────────────────────────────────
 
-export type ArchetypeStyle = "travessia" | "editorial_black_gold";
+export type ArchetypeStyle = "travessia" | "editorial_black_gold" | "ivory_sage";
 
 export interface VisualSystem {
   label: string;
@@ -69,6 +73,21 @@ export const VISUAL_SYSTEMS: Record<ArchetypeStyle, VisualSystem> = {
     bodySize: 40,
     lineHeights: { headline: 0.88, body: 1.6 },
     margins: { page: 64, inner: 32 },
+  },
+  ivory_sage: {
+    label: "Ivory & Sage",
+    description: "Fundo off-white elegante com acentos verde-salvia — ideal para conteúdo educativo acessível",
+    premium: false,
+    colors: {
+      bg: "#FAF9F6", bgAlt: "#F0EDE8", text: "#1C1C1A", textMuted: "rgba(28,28,26,0.45)",
+      accent: "#4A7C59", coverBg: "#F0EDE8", coverText: "#1C1C1A",
+    },
+    headlineFont: "'Inter', sans-serif",
+    bodyFont: "'Inter', sans-serif",
+    headlineSizes: { xl: 120, lg: 96, md: 80, sm: 64 },
+    bodySize: 40,
+    lineHeights: { headline: 0.94, body: 1.6 },
+    margins: { page: 56, inner: 28 },
   },
 };
 
