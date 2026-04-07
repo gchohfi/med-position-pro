@@ -276,6 +276,7 @@ const Carrossel = () => {
     if (!profile) return;
     setLoading(true);
     setRoteiro(null);
+    setSavedContentOutputId(null);
     setSlideDataList([]);
     setWarnings([]);
     try {
