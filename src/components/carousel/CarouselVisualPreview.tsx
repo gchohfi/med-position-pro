@@ -419,22 +419,9 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             {exporting ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <Download className="h-4 w-4 mr-2" />
+              <Cloud className="h-4 w-4 mr-2" />
             )}
-            {exporting ? "Exportando…" : "Baixar carrossel (PNG)"}
-          </Button>
-          <Button
-            onClick={uploadAllToStorage}
-            disabled={uploading}
-            variant="outline"
-            className="rounded-xl text-sm"
-          >
-            {uploading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4 mr-2" />
-            )}
-            {uploading ? "Salvando…" : "Salvar no acervo"}
+            {exporting ? "Exportando e salvando na nuvem…" : "Baixar e salvar na nuvem (PNG)"}
           </Button>
         </div>
       </div>
