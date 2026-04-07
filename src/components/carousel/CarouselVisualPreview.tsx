@@ -108,26 +108,41 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   const exportAll = useCallback(async () => {
     setExporting(true);
     const uploadedUrls: { slide: number; url: string; path: string }[] = [];
+    const failedUploads: number[] = [];
+    let localDownloadCount = 0;
 
     try {
       for (let i = 0; i < slides.length; i++) {
         const el = slideRefs.current[i];
         if (!el) continue;
-        const dataUrl = await toPng(el, {
-          width: 1080,
-          height: 1350,
-          pixelRatio: 1,
-          cacheBust: true,
-        });
 
-        // Download local
-        const link = document.createElement("a");
-        link.download = `carrossel-slide-${i + 1}.png`;
-        link.href = dataUrl;
-        link.click();
-        await new Promise((r) => setTimeout(r, 300));
+        // 1. Gerar PNG
+        let dataUrl: string;
+        try {
+          dataUrl = await toPng(el, {
+            width: 1080,
+            height: 1350,
+            pixelRatio: 1,
+            cacheBust: true,
+          });
+        } catch (pngErr) {
+          console.error(`Erro ao gerar PNG do slide ${i + 1}:`, pngErr);
+          continue;
+        }
 
-        // Upload to Storage
+        // 2. Download local (sempre executa)
+        try {
+          const link = document.createElement("a");
+          link.download = `carrossel-slide-${i + 1}.png`;
+          link.href = dataUrl;
+          link.click();
+          localDownloadCount++;
+          await new Promise((r) => setTimeout(r, 300));
+        } catch (dlErr) {
+          console.warn(`Download local do slide ${i + 1} falhou:`, dlErr);
+        }
+
+        // 3. Upload para Storage (isolado)
         if (user) {
           try {
             const blob = dataUrlToBlob(dataUrl);
@@ -156,27 +171,40 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             });
           } catch (uploadErr) {
             console.warn(`Upload do slide ${i + 1} falhou:`, uploadErr);
+            failedUploads.push(i + 1);
           }
         }
       }
 
-      // Persist URLs to content_outputs
+      // 4. Persistir URLs em content_outputs
       if (contentOutputId && uploadedUrls.length > 0) {
-        await supabase
+        const { error: updateError } = await supabase
           .from("content_outputs")
           .update({ carousel_slide_urls: uploadedUrls } as any)
           .eq("id", contentOutputId);
+        if (updateError) {
+          console.warn("Erro ao salvar URLs no content_outputs:", updateError);
+        }
       }
 
-      toast.success(
-        uploadedUrls.length === slides.length
-          ? `${slides.length} slides baixados e salvos na nuvem!`
-          : uploadedUrls.length > 0
-            ? `Slides baixados! (${uploadedUrls.length}/${slides.length} salvos na nuvem)`
-            : "Todos os slides foram baixados!"
-      );
-    } catch {
-      toast.error("Erro ao exportar carrossel.");
+      // 5. Toast com 3 variantes
+      const total = slides.length;
+      const saved = uploadedUrls.length;
+
+      if (saved === total) {
+        toast.success(`Todos os ${total} slides foram baixados e salvos na nuvem!`);
+      } else if (saved > 0) {
+        toast.warning(
+          `Slides baixados! ${saved} de ${total} foram salvos na nuvem. Falhas nos slides: ${failedUploads.join(", ")}.`
+        );
+      } else {
+        toast.info(
+          `${localDownloadCount} slide${localDownloadCount !== 1 ? "s" : ""} baixado${localDownloadCount !== 1 ? "s" : ""} localmente. Não foi possível salvar na nuvem agora.`
+        );
+      }
+    } catch (fatalErr) {
+      console.error("Erro fatal no exportAll:", fatalErr);
+      toast.error("Erro ao exportar carrossel. Tente novamente.");
     } finally {
       setExporting(false);
     }
