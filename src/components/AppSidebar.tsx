@@ -3,6 +3,7 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -12,6 +13,9 @@ import {
   Settings,
   Layers,
   Archive,
+  Lightbulb,
+  Radar,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
@@ -28,6 +32,12 @@ const mainLinks: NavLinkItem[] = [
   { label: "Biblioteca", icon: Archive, path: ROUTES.biblioteca },
 ];
 
+const ideaLinks: NavLinkItem[] = [
+  { label: "Inspiração", icon: Lightbulb, path: ROUTES.ideias },
+  { label: "Radar", icon: Radar, path: ROUTES.radar },
+  { label: "Benchmark", icon: Globe, path: ROUTES.benchmark },
+];
+
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,6 +52,35 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {mainLinks.map((link) => {
+                const isActive = location.pathname === link.path;
+                return (
+                  <SidebarMenuItem key={link.path}>
+                    <SidebarMenuButton
+                      onClick={() => navigate(link.path)}
+                      isActive={isActive}
+                      className={`h-9 text-sm rounded-md transition-colors ${
+                        isActive
+                          ? "bg-accent/10 text-accent font-medium"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                      }`}
+                    >
+                      <link.icon className="h-4 w-4" />
+                      <span>{link.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 px-3">
+            Captação de Ideias
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {ideaLinks.map((link) => {
                 const isActive = location.pathname === link.path;
                 return (
                   <SidebarMenuItem key={link.path}>
