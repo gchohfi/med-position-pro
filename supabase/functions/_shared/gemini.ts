@@ -1,7 +1,7 @@
 /**
  * Shared helpers for Edge Functions:
  * - CORS headers (re-exported from cors.ts)
- * - Gemini API with retry + exponential backoff (429 handling)
+ * - AI Gateway via Lovable AI (replaces direct Gemini calls)
  * - Perplexity API helper (re-exported from perplexity.ts)
  * - Rate limiting (in-memory, per-user)
  * - Response helpers
@@ -40,45 +40,60 @@ setInterval(() => {
   }
 }, 300_000);
 
-// ── Gemini ──
-const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+// ── AI Gateway (Lovable AI) ──
+const LOVABLE_AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const DEFAULT_MODEL = "google/gemini-3-flash-preview";
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 5000;
 
+/**
+ * callGemini now routes through the Lovable AI Gateway.
+ * The first parameter (apiKey) is kept for backward compatibility but IGNORED.
+ * It uses LOVABLE_API_KEY from env instead.
+ */
 export async function callGemini(
-  apiKey: string,
+  _apiKey: string,
   body: Record<string, unknown>,
 ): Promise<Response> {
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!lovableKey) {
+    throw new Error("LOVABLE_API_KEY is not configured. Lovable Cloud must be enabled.");
+  }
+
   let lastError: string | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     if (attempt > 0) {
       const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
-      console.log(`[Gemini] retry ${attempt}/${MAX_RETRIES} after ${delay}ms...`);
+      console.log(`[LovableAI] retry ${attempt}/${MAX_RETRIES} after ${delay}ms...`);
       await new Promise((r) => setTimeout(r, delay));
     }
 
-    const res = await fetch(GEMINI_BASE, {
+    const res = await fetch(LOVABLE_AI_GATEWAY, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${lovableKey}`,
       },
-      body: JSON.stringify({ model: "gemini-2.5-flash", ...body }),
+      body: JSON.stringify({ model: DEFAULT_MODEL, ...body }),
     });
 
     if (res.ok) return res;
 
     if (res.status === 429 && attempt < MAX_RETRIES) {
       lastError = await res.text();
-      console.log(`[Gemini] 429 (attempt ${attempt + 1}): ${lastError.slice(0, 120)}`);
+      console.log(`[LovableAI] 429 (attempt ${attempt + 1}): ${lastError.slice(0, 120)}`);
       continue;
+    }
+
+    if (res.status === 402) {
+      throw new Error("Créditos insuficientes no Lovable AI. Adicione créditos em Settings → Workspace → Usage.");
     }
 
     return res;
   }
 
-  throw new Error(`Gemini failed after ${MAX_RETRIES} retries: ${lastError}`);
+  throw new Error(`Lovable AI failed after ${MAX_RETRIES} retries: ${lastError}`);
 }
 
 export async function callGeminiStream(
