@@ -831,10 +831,10 @@ function inferLayout(slide: SlideData): "capa" | "timg" | "tonly" | "stat" | "tu
   if (slide.type === "cover") return "capa";
   if (slide.type === "signature") return "final";
   if (slide.type === "statement") return "turning";
+  if (slide.type === "structured" && slide.items && slide.items.length >= 3) return "timeline";
   if (slide.type === "structured") return "stat";
   if (slide.type === "breathing") return "light";
   if (slide.type === "manifesto") return "tonly";
-  if (slide.type === "structured" && slide.items && slide.items.length >= 3) return "timeline";
   // editorial and everything else
   return "tonly";
 }
