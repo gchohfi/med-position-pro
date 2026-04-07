@@ -131,6 +131,88 @@ const Carrossel = () => {
   const [feedback, setFeedback] = useState("");
   const [rewriteLoading, setRewriteLoading] = useState(false);
 
+  // Saved carousels
+  const [savedCarousels, setSavedCarousels] = useState<any[]>([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [savingCarousel, setSavingCarousel] = useState(false);
+
+  // Load saved carousels
+  const loadSavedCarousels = useCallback(async () => {
+    if (!user) return;
+    setSavedLoading(true);
+    try {
+      const { data } = await supabase
+        .from("content_outputs")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("content_type", "carrossel")
+        .order("created_at", { ascending: false });
+      setSavedCarousels(data || []);
+    } catch (err) {
+      console.error("Error loading saved carousels:", err);
+    } finally {
+      setSavedLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) loadSavedCarousels();
+  }, [user, loadSavedCarousels]);
+
+  // Save current carousel
+  const handleSaveCarousel = async () => {
+    if (!roteiro || !user) return;
+    setSavingCarousel(true);
+    try {
+      const { error } = await supabase.from("content_outputs").insert({
+        user_id: user.id,
+        content_type: "carrossel",
+        title: roteiro.titulo_carrossel || "Carrossel sem título",
+        strategic_input: { tese, objetivo } as any,
+        generated_content: {
+          roteiro,
+          slideDataList,
+          visualStyle,
+          legenda: roteiro.legenda,
+          hashtags: roteiro.hashtags,
+          cta_final: roteiro.cta_final,
+        } as any,
+      });
+      if (error) throw error;
+      toast.success("Carrossel salvo na biblioteca!");
+      await loadSavedCarousels();
+    } catch (err) {
+      toast.error("Erro ao salvar carrossel.");
+      console.error(err);
+    } finally {
+      setSavingCarousel(false);
+    }
+  };
+
+  // Delete saved carousel
+  const handleDeleteCarousel = async (id: string) => {
+    try {
+      const { error } = await supabase.from("content_outputs").delete().eq("id", id);
+      if (error) throw error;
+      setSavedCarousels((prev) => prev.filter((c) => c.id !== id));
+      toast.success("Carrossel removido.");
+    } catch (err) {
+      toast.error("Erro ao remover carrossel.");
+    }
+  };
+
+  // Load a saved carousel into the editor
+  const handleLoadCarousel = (item: any) => {
+    const content = item.generated_content;
+    if (content?.roteiro) {
+      applyRoteiro(content.roteiro);
+      if (item.strategic_input?.tese) setTese(item.strategic_input.tese);
+      if (item.strategic_input?.objetivo) setObjetivo(item.strategic_input.objetivo);
+      if (content.visualStyle) setVisualStyle(content.visualStyle);
+      toast.success("Carrossel carregado!");
+    }
+  };
+
   // Pre-fill from navigation state (e.g. from Inspiração page)
   useEffect(() => {
     if (location.state?.tese) {
