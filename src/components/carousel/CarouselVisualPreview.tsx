@@ -3,11 +3,14 @@ import { toPng } from "html-to-image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   ChevronLeft,
   Pencil,
   ChevronRight,
   Download,
+  Upload,
   Maximize2,
   Minimize2,
   Loader2,
@@ -17,6 +20,16 @@ import {
 } from "lucide-react";
 import SlideRenderer, { type SlideData, type ArchetypeStyle, VISUAL_SYSTEMS } from "./SlideRenderer";
 import SlideEditor from "./SlideEditor";
+
+/** Convert a data-URL to a Blob */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [meta, base64] = dataUrl.split(",");
+  const mime = meta.match(/:(.*?);/)?.[1] || "image/png";
+  const bytes = atob(base64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
 
 interface CarouselVisualPreviewProps {
   slides: SlideData[];
@@ -51,9 +64,11 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   onClose,
   onSlidesChange,
 }) => {
+  const { user } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [styleOverride, setStyleOverride] = useState<ArchetypeStyle | null>(null);
   const activeStyle: ArchetypeStyle = styleOverride ?? visualStyle ?? "editorial_black_gold";
@@ -115,6 +130,47 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
       setExporting(false);
     }
   }, [slides.length]);
+
+  /** Upload all slides to Storage and return public URLs */
+  const uploadAllToStorage = useCallback(async () => {
+    if (!user) {
+      toast.error("Faça login para salvar no acervo.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const batchId = Date.now();
+      const urls: string[] = [];
+      for (let i = 0; i < slides.length; i++) {
+        const el = slideRefs.current[i];
+        if (!el) continue;
+        const dataUrl = await toPng(el, {
+          width: 1080,
+          height: 1350,
+          pixelRatio: 1,
+          cacheBust: true,
+        });
+        const blob = dataUrlToBlob(dataUrl);
+        const filePath = `${user.id}/carrosséis/${batchId}/slide-${i + 1}.png`;
+        const { error: upErr } = await supabase.storage
+          .from("user-assets")
+          .upload(filePath, blob, { contentType: "image/png" });
+        if (upErr) throw upErr;
+
+        const { data: urlData } = supabase.storage
+          .from("user-assets")
+          .getPublicUrl(filePath);
+        urls.push(urlData.publicUrl);
+      }
+      toast.success(`${urls.length} slides salvos no acervo visual!`);
+      return urls;
+    } catch (err) {
+      toast.error("Erro ao salvar slides no acervo.");
+      console.error("Storage upload error:", err);
+    } finally {
+      setUploading(false);
+    }
+  }, [slides.length, user]);
 
   return (
     <motion.div
@@ -356,6 +412,19 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
               <Download className="h-4 w-4 mr-2" />
             )}
             {exporting ? "Exportando…" : "Baixar carrossel (PNG)"}
+          </Button>
+          <Button
+            onClick={uploadAllToStorage}
+            disabled={uploading}
+            variant="outline"
+            className="rounded-xl text-sm"
+          >
+            {uploading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 mr-2" />
+            )}
+            {uploading ? "Salvando…" : "Salvar no acervo"}
           </Button>
         </div>
       </div>
