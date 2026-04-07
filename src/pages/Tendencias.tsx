@@ -1,4 +1,5 @@
 import AppLayout from "@/components/AppLayout";
+import { ROUTES } from "@/lib/routes";
 import SimpleMarkdown from "@/components/SimpleMarkdown";
 import { useDoctor } from "@/contexts/DoctorContext";
 import { useStreamingResponse } from "@/hooks/useStreamingResponse";
@@ -130,7 +131,7 @@ const Tendencias = () => {
                         <LayoutTemplate className="h-3.5 w-3.5 mr-1.5" />
                         Criar Carrossel com este tema
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => navigate("/estrategia")}>
+                      <Button size="sm" variant="outline" onClick={() => navigate(ROUTES.estrategiaIa)}>
                         Ver Estratégia de Conteúdo
                       </Button>
                     </div>

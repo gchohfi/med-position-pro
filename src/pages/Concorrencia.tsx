@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ROUTES } from "@/lib/routes";
 import AppLayout from "@/components/AppLayout";
 import SimpleMarkdown from "@/components/SimpleMarkdown";
 import { useDoctor } from "@/contexts/DoctorContext";
@@ -300,7 +301,7 @@ const Concorrencia = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => navigate("/estrategia")}
+                        onClick={() => navigate(ROUTES.estrategiaIa)}
                       >
                         Definir Estratégia de Diferenciação
                       </Button>
