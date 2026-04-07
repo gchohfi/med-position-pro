@@ -46,9 +46,6 @@ serve(async (req) => {
     const diagnosis = diagRes.data;
     const trackedProfiles = trackedRes.data || [];
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
-
     const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
 
     const specialty = profile?.specialty || "medicina";
@@ -195,7 +192,7 @@ Retorne um JSON com EXATAMENTE esta estrutura:
 }`;
 
     // ── STEP 3: Call Gemini for strategic analysis (with retry) ──
-    const aiRes = await callGemini(GEMINI_API_KEY, {
+    const aiRes = await callGemini("unused", {
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },

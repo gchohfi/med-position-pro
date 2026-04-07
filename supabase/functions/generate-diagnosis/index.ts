@@ -138,8 +138,6 @@ serve(async (req) => {
 
   try {
     const { positioning, specialty, action } = await req.json();
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return errorResponse("Missing Authorization header", 401);
@@ -178,7 +176,7 @@ ${action === "diagnostico"
     const tool = action === "diagnostico" ? DIAGNOSIS_TOOL : STRATEGY_TOOL;
     const toolName = action === "diagnostico" ? "save_diagnosis" : "save_strategy";
 
-    const response = await callGemini(GEMINI_API_KEY, {
+    const response = await callGemini("unused", {
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },

@@ -157,9 +157,6 @@ serve(async (req) => {
     const series = seriesRes.data || [];
     const recentContent = contentRes.data || [];
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
-
     const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
 
     const specialty = profile?.specialty || "medicina";
@@ -236,7 +233,7 @@ Estratégia existente: ${estrategia ? "Sim" : "Não"}
 
 Gere uma leitura estratégica completa do mercado editorial médico para esta profissional, incluindo sinais reais de mercado, padrões de saturação, oportunidades de diferenciação, alertas estratégicos e recomendações acionáveis.`;
 
-    const aiRes = await callGemini(GEMINI_API_KEY, {
+    const aiRes = await callGemini("unused", {
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },

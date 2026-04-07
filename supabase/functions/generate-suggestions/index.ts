@@ -30,9 +30,6 @@ serve(async (req) => {
       return errorResponse("Tipo e objetivo são obrigatórios.", 400);
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured");
-
     const avoidTheses = (recentTheses || []).slice(0, 5);
     const avoidPerceptions = (recentPerceptions || []).slice(0, 5);
 
@@ -71,7 +68,7 @@ Cada item de "percepcoes" deve ter: angle, label, text
 
 As opções devem ser genuinamente diferentes entre si. Sem clichês genéricos. Específicas ao nicho.`;
 
-    const response = await callGemini(GEMINI_API_KEY, {
+    const response = await callGemini("unused", {
       messages: [
         { role: "system", content: "You generate structured JSON with arrays. Always include the full teses and percepcoes arrays with exactly 3 items each as instructed. Respond in Portuguese (Brazil)." },
         { role: "user", content: prompt },

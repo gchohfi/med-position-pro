@@ -165,10 +165,7 @@ REGRAS:
 - PT-BR`,
     };
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
-
-    const aiRes = await callGemini(GEMINI_API_KEY, {
+    const aiRes = await callGemini("unused", {
       messages: [{ role: "user", content: prompts[format] }],
       temperature: 0.7,
       response_format: { type: "json_object" },
