@@ -422,6 +422,7 @@ export function travessiaToSlideData(slide: TravessIASlide, totalSlides: number)
     stat: "structured",
     turning: "statement",
     light: "editorial",
+    timeline: "structured",
     final: "signature",
   };
 
@@ -443,5 +444,9 @@ export function travessiaToSlideData(slide: TravessIASlide, totalSlides: number)
     opinion: slide.opinion,
     conclusion: slide.conclusion,
     perguntaComentario: slide.pergunta_comentario,
+    // timeline
+    timelineSteps: slide.timeline_steps,
+    timelineTitulo: slide.timeline_titulo,
+    timelineSubtitulo: slide.timeline_subtitulo,
   };
 }

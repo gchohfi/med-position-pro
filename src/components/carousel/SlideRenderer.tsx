@@ -717,6 +717,102 @@ function renderTravessia(
     );
   }
 
+  // ── TIMELINE — Jornada / Protocolo em etapas ──
+  if (layout === "timeline") {
+    const tlBg = bgColor;
+    const tlText = textColor;
+    const tlMuted = mutedColor;
+    const tlAccent = accentColor;
+    const steps = slide.timelineSteps || [];
+    const maxSteps = Math.min(steps.length, 5);
+
+    return (
+      <div ref={ref} style={{ ...base, backgroundColor: tlBg }}>
+        {/* Linha vertical da timeline */}
+        <div style={{
+          position: "absolute", left: PAD + 52, top: 130, bottom: 160,
+          width: 2, backgroundColor: `${tlAccent}30`, zIndex: 1,
+        }} />
+        {header}
+        {/* Título e subtítulo */}
+        <div style={{
+          position: "absolute", top: 112, left: PAD, right: PAD, zIndex: 2,
+        }}>
+          {slide.timelineTitulo && (
+            <h2 style={{
+              fontFamily: vs.headlineFont, fontSize: 72, fontWeight: 800,
+              lineHeight: 0.95, color: tlText, margin: 0, marginBottom: 12,
+              letterSpacing: "-0.02em",
+            }}>
+              {slide.timelineTitulo}
+            </h2>
+          )}
+          {slide.timelineSubtitulo && (
+            <p style={{
+              fontFamily: vs.bodyFont, fontSize: 28, fontWeight: 400,
+              lineHeight: 1.4, color: tlMuted, margin: 0, marginBottom: 32,
+            }}>
+              {slide.timelineSubtitulo}
+            </p>
+          )}
+          <div style={{
+            width: "100%", height: 1, backgroundColor: `${tlAccent}25`, marginBottom: 20,
+          }} />
+        </div>
+        {/* Steps */}
+        <div style={{
+          position: "absolute",
+          top: slide.timelineTitulo ? 310 : 140,
+          left: PAD, right: PAD, bottom: 160,
+          display: "flex", flexDirection: "column", justifyContent: "space-around",
+          zIndex: 2,
+        }}>
+          {steps.slice(0, maxSteps).map((step, idx) => (
+            <div key={idx} style={{
+              display: "flex", alignItems: "flex-start", gap: 28,
+              opacity: step.destaque ? 1 : 0.72,
+            }}>
+              <div style={{
+                flexShrink: 0, width: 56, height: 56, borderRadius: "50%",
+                backgroundColor: step.destaque ? tlAccent : `${tlAccent}18`,
+                border: step.destaque ? "none" : `2px solid ${tlAccent}40`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                marginTop: 4,
+              }}>
+                <span style={{
+                  fontFamily: vs.headlineFont, fontSize: 22, fontWeight: 800,
+                  color: step.destaque ? "#FFFFFF" : tlAccent, letterSpacing: "0.02em",
+                }}>
+                  {step.numero}
+                </span>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{
+                  fontFamily: vs.headlineFont,
+                  fontSize: step.destaque ? 56 : 48, fontWeight: step.destaque ? 800 : 700,
+                  lineHeight: 0.96, color: step.destaque ? tlAccent : tlText,
+                  margin: 0, marginBottom: step.descricao ? 10 : 0,
+                  letterSpacing: "-0.015em",
+                }}>
+                  {step.titulo}
+                </h3>
+                {step.descricao && (
+                  <p style={{
+                    fontFamily: vs.bodyFont, fontSize: 28, fontWeight: 400,
+                    lineHeight: 1.45, color: tlMuted, margin: 0,
+                  }}>
+                    {step.descricao}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        {footer}
+      </div>
+    );
+  }
+
   // Fallback for unknown TravessIA layout
   return (
     <div ref={ref} style={{ ...base, backgroundColor: bgColor, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -738,6 +834,7 @@ function inferLayout(slide: SlideData): "capa" | "timg" | "tonly" | "stat" | "tu
   if (slide.type === "structured") return "stat";
   if (slide.type === "breathing") return "light";
   if (slide.type === "manifesto") return "tonly";
+  if (slide.type === "structured" && slide.items && slide.items.length >= 3) return "timeline";
   // editorial and everything else
   return "tonly";
 }
