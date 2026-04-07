@@ -135,6 +135,7 @@ const Carrossel = () => {
   const [savedCarousels, setSavedCarousels] = useState<any[]>([]);
   const [savedLoading, setSavedLoading] = useState(false);
   const [savingCarousel, setSavingCarousel] = useState(false);
+  const [savedContentOutputId, setSavedContentOutputId] = useState<string | null>(null);
 
   // Load saved carousels
   const loadSavedCarousels = useCallback(async () => {
