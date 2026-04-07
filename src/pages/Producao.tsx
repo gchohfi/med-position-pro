@@ -180,7 +180,7 @@ const Producao = () => {
     });
   };
 
-  const approvedSlides = campaign?.slides.filter((s) => s.approved) || [];
+  const approvedSlides = (campaign?.slides ?? []).filter((s) => s.approved);
 
   const handleExport = async () => {
     if (!user || !campaign || saving) return;
