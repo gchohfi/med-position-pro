@@ -115,7 +115,7 @@ serve(async (req) => {
     const profileRows = Array.from(discovered.entries()).map(([handle, meta]) => {
       const valid = isValidHandle(handle);
       const isLibrary = meta.source_type === "library";
-      const verification_status = isLibrary ? "verified" : valid ? "pending" : "rejected";
+      const verification_status = isLibrary ? "verified" : valid ? "pending" : "failed";
       const confidence_score = isLibrary ? 0.95 : valid ? 0.6 : 0.1;
       return {
         user_id: user.id,
@@ -152,7 +152,7 @@ serve(async (req) => {
           user_id: user.id,
           profile_id: p.id,
           normalized_handle: p.normalized_handle,
-          analysis_status: "pending",
+          analysis_status: "queued",
           analysis_result: {},
         }));
 

@@ -196,7 +196,7 @@ const Setup = () => {
       if (user && form.instagram_handle) {
         await supabase
           .from("profiles")
-          .update({ instagram_handle: form.instagram_handle } as any)
+          .update({ instagram_handle: form.instagram_handle })
           .eq("id", user.id);
       }
     } catch (err) {
