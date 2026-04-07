@@ -42,6 +42,7 @@ const TYPE_META: Record<string, { label: string; color: string }> = {
   hibrido: { label: "Híbrido", color: "bg-accent/10 text-accent" },
   conexao: { label: "Conexão", color: "bg-pink-500/10 text-pink-600" },
   conversao: { label: "Conversão", color: "bg-green-500/10 text-green-600" },
+  carrossel: { label: "Carrossel", color: "bg-amber-500/10 text-amber-600" },
 };
 
 const FILTERS = [
@@ -52,6 +53,7 @@ const FILTERS = [
   { key: "hibrido", label: "Híbridos" },
   { key: "conexao", label: "Conexão" },
   { key: "conversao", label: "Conversão" },
+  { key: "carrossel", label: "Carrosséis" },
 ];
 
 const fadeUp = {
