@@ -183,12 +183,26 @@ const Setup = () => {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nome || !form.crm || !form.especialidade) {
       toast.error("Preencha pelo menos nome, CRM e especialidade.");
       return;
     }
     setProfile({ ...form, skill });
+
+    // Persist instagram_handle to profiles table if user is authenticated
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && form.instagram_handle) {
+        await supabase
+          .from("profiles")
+          .update({ instagram_handle: form.instagram_handle } as any)
+          .eq("id", user.id);
+      }
+    } catch (err) {
+      console.error("Failed to save instagram_handle to DB:", err);
+    }
+
     toast.success("Perfil médico salvo com sucesso!");
   };
 
