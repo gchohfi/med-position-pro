@@ -111,18 +111,25 @@ serve(async (req) => {
             },
             {
               role: "user",
-              content: `Pesquise o perfil do Instagram ${handle}. Este é um perfil de um médico ou médica brasileiro(a). Quero saber:
-1. Nome completo (como aparece no perfil)
-2. Bio/descrição do Instagram (copie literalmente)
-3. Especialidade médica
-4. Subespecialidade (se houver)
-5. Cidade e estado
-6. Público-alvo aparente (com base no conteúdo)
-7. Tom de comunicação (educativo, manifesto, híbrido, conversão)
-8. Pilares/temas principais do conteúdo
-9. Diferenciais do perfil
+              content: `Pesquise informações sobre o médico(a) brasileiro(a) com o perfil de Instagram ${handle} (sem o @: ${handle.replace('@', '')}). 
 
-Forneça o máximo de detalhes possível com base nas informações disponíveis online sobre este perfil.`,
+Busque em TODAS as fontes disponíveis: Google, sites de clínicas, Doctoralia, portais médicos, LinkedIn, YouTube, TikTok, blogs, notícias. NÃO se limite apenas ao Instagram.
+
+Procure por "${handle.replace('@', '')}" como nome de usuário em redes sociais e "${handle.replace('@', '').replace(/[._]/g, ' ')}" como possível nome.
+
+Quero saber:
+1. Nome completo do médico(a)
+2. Bio/descrição do Instagram (se encontrar)
+3. Especialidade médica (dermatologia, cirurgia plástica, etc.)
+4. Subespecialidade
+5. Cidade e estado onde atende
+6. CRM se disponível
+7. Público-alvo aparente
+8. Tom de comunicação
+9. Pilares/temas de conteúdo
+10. Diferenciais
+
+Forneça TODAS as informações que encontrar, mesmo que parciais.`,
             },
           ],
           "sonar-pro",
