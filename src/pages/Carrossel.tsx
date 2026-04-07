@@ -91,6 +91,7 @@ const urgenciaCor: Record<string, string> = {
 
 const Carrossel = () => {
   const { profile, isConfigured } = useDoctor();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
