@@ -955,7 +955,7 @@ const Inspiracao = () => {
 
                     {/* Per-profile analysis */}
                     <div className="space-y-3">
-                      {analysisResults.analises.map((analise) => {
+                      {(analysisResults.analises || []).map((analise) => {
                         const isExpanded = expandedHandles.has(analise.handle);
                         return (
                           <Card key={analise.handle}>
