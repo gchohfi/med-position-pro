@@ -1024,6 +1024,69 @@ const Carrossel = () => {
             )}
           </div>
         )}
+
+        {/* ═══════════ SAVED CAROUSELS ═══════════ */}
+        {savedCarousels.length > 0 && (
+          <section className="space-y-3 mt-8">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Carrosséis Salvos</h2>
+              <Badge variant="secondary" className="text-xs">
+                {savedCarousels.length}
+              </Badge>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {savedCarousels.map((item) => (
+                <Card
+                  key={item.id}
+                  className="hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group"
+                  onClick={() => handleLoadCarousel(item)}
+                >
+                  <CardContent className="pt-4 pb-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-sm font-semibold leading-tight">
+                        {item.title || "Carrossel sem título"}
+                      </h3>
+                      <Badge variant="outline" className="text-[10px] shrink-0">
+                        {new Date(item.created_at).toLocaleDateString("pt-BR")}
+                      </Badge>
+                    </div>
+                    {item.strategic_input?.tese && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {item.strategic_input.tese}
+                      </p>
+                    )}
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLoadCarousel(item);
+                        }}
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        Abrir
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCarousel(item.id);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </AppLayout>
   );
