@@ -384,6 +384,7 @@ const Carrossel = () => {
     }
     setLoading(true);
     setRoteiro(null);
+    setSavedContentOutputId(null);
     setSlideDataList([]);
     setWarnings([]);
     try {
