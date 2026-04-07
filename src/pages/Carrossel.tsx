@@ -954,6 +954,7 @@ const Carrossel = () => {
                     brandHandle={profile?.bio_instagram}
                     doctorImageUrl={profile?.foto_url}
                     visualStyle={visualStyle}
+                    contentOutputId={savedContentOutputId}
                   />
                 )}
 
