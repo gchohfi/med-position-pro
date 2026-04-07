@@ -40,6 +40,7 @@ interface CarouselVisualPreviewProps {
   contentType?: string;
   doctorImageUrl?: string;
   visualStyle?: ArchetypeStyle;
+  contentOutputId?: string | null;
   onRegenerate?: () => void;
   onClose?: () => void;
   onSlidesChange?: (slides: SlideData[]) => void;
