@@ -827,7 +827,7 @@ function renderTravessia(
  * Infer a TravessIA layout from the legacy slide type.
  * Used as fallback when travessiaLayout is not set.
  */
-function inferLayout(slide: SlideData): "capa" | "timg" | "tonly" | "stat" | "turning" | "light" | "final" {
+function inferLayout(slide: SlideData): "capa" | "timg" | "tonly" | "stat" | "turning" | "light" | "timeline" | "final" {
   if (slide.type === "cover") return "capa";
   if (slide.type === "signature") return "final";
   if (slide.type === "statement") return "turning";
