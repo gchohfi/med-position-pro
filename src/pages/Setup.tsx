@@ -97,16 +97,30 @@ const Setup = () => {
     updateField("foto_url", undefined);
   };
 
+  const parseInstagramInput = (input: string): string => {
+    const trimmed = input.trim().replace(/\/+$/, "");
+    // URL format: https://instagram.com/handle or https://www.instagram.com/handle
+    const urlMatch = trimmed.match(/(?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-zA-Z0-9._]+)/);
+    if (urlMatch) return urlMatch[1];
+    // Handle format: @handle or handle
+    return trimmed.replace(/^@/, "");
+  };
+
   const handleInstagramImport = async () => {
     if (!instagramHandle.trim()) {
-      toast.error("Digite um handle do Instagram para importar.");
+      toast.error("Cole a URL do perfil do Instagram para importar.");
+      return;
+    }
+    const handle = parseInstagramInput(instagramHandle);
+    if (!handle) {
+      toast.error("URL inválida. Use o formato: https://instagram.com/seuperfil");
       return;
     }
     setImportLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke(
         "import-instagram-profile",
-        { body: { handle: instagramHandle.trim() } }
+        { body: { handle } }
       );
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -126,9 +140,10 @@ const Setup = () => {
             ? data.diferenciais
             : prev.diferenciais,
         bio_instagram: prev.bio_instagram || data.bio_instagram || "",
-        instagram_handle: instagramHandle.trim(),
+        instagram_handle: handle,
       }));
 
+      setInstagramHandle(handle);
       const confidence = data.confidence ?? 0;
       toast.success(
         `Perfil importado com ${Math.round(confidence * 100)}% de confiança.`
@@ -219,7 +234,7 @@ const Setup = () => {
               <Input
                 value={instagramHandle}
                 onChange={(e) => setInstagramHandle(e.target.value)}
-                placeholder="@dramarcellaachy"
+                placeholder="https://instagram.com/dramarcellaachy"
                 className="flex-1"
               />
               <Button
@@ -237,7 +252,7 @@ const Setup = () => {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Preencha os campos automaticamente a partir do seu perfil.
+              Cole a URL do perfil (ex: https://instagram.com/seuperfil) ou o @handle.
             </p>
           </CardContent>
         </Card>
