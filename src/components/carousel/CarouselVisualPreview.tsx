@@ -3,11 +3,14 @@ import { toPng } from "html-to-image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   ChevronLeft,
   Pencil,
   ChevronRight,
   Download,
+  Upload,
   Maximize2,
   Minimize2,
   Loader2,
@@ -17,6 +20,16 @@ import {
 } from "lucide-react";
 import SlideRenderer, { type SlideData, type ArchetypeStyle, VISUAL_SYSTEMS } from "./SlideRenderer";
 import SlideEditor from "./SlideEditor";
+
+/** Convert a data-URL to a Blob */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [meta, base64] = dataUrl.split(",");
+  const mime = meta.match(/:(.*?);/)?.[1] || "image/png";
+  const bytes = atob(base64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
 
 interface CarouselVisualPreviewProps {
   slides: SlideData[];
