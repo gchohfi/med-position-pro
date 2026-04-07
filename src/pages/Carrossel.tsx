@@ -370,7 +370,8 @@ const Carrossel = () => {
                                 {s.titulo}
                               </h3>
                               <Badge
-                                className={`text-[10px] shrink-0 ${urgenciaCor[s.urgencia] ?? ""}`}
+                                variant="secondary"
+                                className="text-[10px] shrink-0"
                               >
                                 {s.urgencia}
                               </Badge>
