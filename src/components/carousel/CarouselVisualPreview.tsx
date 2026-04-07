@@ -64,9 +64,11 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   onClose,
   onSlidesChange,
 }) => {
+  const { user } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [styleOverride, setStyleOverride] = useState<ArchetypeStyle | null>(null);
   const activeStyle: ArchetypeStyle = styleOverride ?? visualStyle ?? "editorial_black_gold";
