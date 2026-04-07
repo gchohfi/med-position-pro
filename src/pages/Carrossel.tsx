@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import AppLayout from "@/components/AppLayout";
 import { useDoctor } from "@/contexts/DoctorContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
   TravessIARoteiro,
@@ -36,11 +37,14 @@ import {
   Loader2,
   RefreshCw,
   RotateCcw,
+  Save,
   Search,
   Sparkles,
+  Trash2,
   Zap,
   TrendingUp,
   ArrowRight,
+  Clock,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────── */
@@ -87,6 +91,7 @@ const urgenciaCor: Record<string, string> = {
 
 const Carrossel = () => {
   const { profile, isConfigured } = useDoctor();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -125,6 +130,88 @@ const Carrossel = () => {
   // Rewrite feedback
   const [feedback, setFeedback] = useState("");
   const [rewriteLoading, setRewriteLoading] = useState(false);
+
+  // Saved carousels
+  const [savedCarousels, setSavedCarousels] = useState<any[]>([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [savingCarousel, setSavingCarousel] = useState(false);
+
+  // Load saved carousels
+  const loadSavedCarousels = useCallback(async () => {
+    if (!user) return;
+    setSavedLoading(true);
+    try {
+      const { data } = await supabase
+        .from("content_outputs")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("content_type", "carrossel")
+        .order("created_at", { ascending: false });
+      setSavedCarousels(data || []);
+    } catch (err) {
+      console.error("Error loading saved carousels:", err);
+    } finally {
+      setSavedLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) loadSavedCarousels();
+  }, [user, loadSavedCarousels]);
+
+  // Save current carousel
+  const handleSaveCarousel = async () => {
+    if (!roteiro || !user) return;
+    setSavingCarousel(true);
+    try {
+      const { error } = await supabase.from("content_outputs").insert({
+        user_id: user.id,
+        content_type: "carrossel",
+        title: roteiro.titulo_carrossel || "Carrossel sem título",
+        strategic_input: { tese, objetivo } as any,
+        generated_content: {
+          roteiro,
+          slideDataList,
+          visualStyle,
+          legenda: roteiro.legenda,
+          hashtags: roteiro.hashtags,
+          cta_final: roteiro.cta_final,
+        } as any,
+      });
+      if (error) throw error;
+      toast.success("Carrossel salvo na biblioteca!");
+      await loadSavedCarousels();
+    } catch (err) {
+      toast.error("Erro ao salvar carrossel.");
+      console.error(err);
+    } finally {
+      setSavingCarousel(false);
+    }
+  };
+
+  // Delete saved carousel
+  const handleDeleteCarousel = async (id: string) => {
+    try {
+      const { error } = await supabase.from("content_outputs").delete().eq("id", id);
+      if (error) throw error;
+      setSavedCarousels((prev) => prev.filter((c) => c.id !== id));
+      toast.success("Carrossel removido.");
+    } catch (err) {
+      toast.error("Erro ao remover carrossel.");
+    }
+  };
+
+  // Load a saved carousel into the editor
+  const handleLoadCarousel = (item: any) => {
+    const content = item.generated_content;
+    if (content?.roteiro) {
+      applyRoteiro(content.roteiro);
+      if (item.strategic_input?.tese) setTese(item.strategic_input.tese);
+      if (item.strategic_input?.objetivo) setObjetivo(item.strategic_input.objetivo);
+      if (content.visualStyle) setVisualStyle(content.visualStyle);
+      toast.success("Carrossel carregado!");
+    }
+  };
 
   // Pre-fill from navigation state (e.g. from Inspiração page)
   useEffect(() => {
@@ -625,10 +712,24 @@ const Carrossel = () => {
                     )}
                   </Button>
                   {roteiro && (
-                    <Button variant="outline" onClick={handleReset}>
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Novo Roteiro
-                    </Button>
+                    <>
+                      <Button variant="outline" onClick={handleReset}>
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Novo Roteiro
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={handleSaveCarousel}
+                        disabled={savingCarousel}
+                      >
+                        {savingCarousel ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4 mr-2" />
+                        )}
+                        Salvar
+                      </Button>
+                    </>
                   )}
                 </div>
               </CardContent>
@@ -922,6 +1023,69 @@ const Carrossel = () => {
               </div>
             )}
           </div>
+        )}
+
+        {/* ═══════════ SAVED CAROUSELS ═══════════ */}
+        {savedCarousels.length > 0 && (
+          <section className="space-y-3 mt-8">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Carrosséis Salvos</h2>
+              <Badge variant="secondary" className="text-xs">
+                {savedCarousels.length}
+              </Badge>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {savedCarousels.map((item) => (
+                <Card
+                  key={item.id}
+                  className="hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group"
+                  onClick={() => handleLoadCarousel(item)}
+                >
+                  <CardContent className="pt-4 pb-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-sm font-semibold leading-tight">
+                        {item.title || "Carrossel sem título"}
+                      </h3>
+                      <Badge variant="outline" className="text-[10px] shrink-0">
+                        {new Date(item.created_at).toLocaleDateString("pt-BR")}
+                      </Badge>
+                    </div>
+                    {item.strategic_input?.tese && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {item.strategic_input.tese}
+                      </p>
+                    )}
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLoadCarousel(item);
+                        }}
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        Abrir
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCarousel(item.id);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
         )}
       </div>
     </AppLayout>
