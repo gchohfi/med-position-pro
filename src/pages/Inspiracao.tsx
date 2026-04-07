@@ -29,30 +29,11 @@ import {
   RefreshCw,
   Eye,
 } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
 
 /* ── Types ─────────────────────────────────────────────── */
 
-interface InspirationProfile {
-  id: string;
-  handle: string;
-  normalized_handle: string;
-  display_name: string | null;
-  specialty: string | null;
-  country: string;
-  source_type: "manual" | "ai_discovery" | "imported";
-  verification_status: "pending" | "verified" | "rejected" | "needs_review";
-  verification_method: string | null;
-  verification_confidence: number | null;
-  verified_at: string | null;
-  profile_url: string | null;
-  followers_estimate: string | null;
-  content_style: string | null;
-  why_inspiring: string | null;
-  content_pillars: string[];
-  standout_formats: string[];
-  reference_level: string;
-  notes: string | null;
-}
+type InspirationProfile = Tables<"inspiration_profiles">;
 
 interface DiscoveryCandidate {
   handle: string;
@@ -89,32 +70,11 @@ interface AnalysisResult {
   tendencias_formato: string;
 }
 
-/* ── Storage helpers (localStorage fallback) ─────────── */
-
-const STORAGE_KEY = "medshift_inspiration_profiles";
-
-function loadProfilesFromStorage(): InspirationProfile[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveProfilesToStorage(profiles: InspirationProfile[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
-}
-
-function generateId(): string {
-  return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
+/* ── Helpers ───────────────────────────────────────────── */
 
 function normalizeHandle(handle: string): string {
   return handle.replace(/^@/, "").toLowerCase().trim();
 }
-
-/* ── Helpers ───────────────────────────────────────────── */
 
 function confidenceBadgeVariant(
   confidence: "high" | "medium" | "low",
@@ -124,20 +84,20 @@ function confidenceBadgeVariant(
   return "outline";
 }
 
-function verificationIcon(status: InspirationProfile["verification_status"]) {
+function verificationIcon(status: string) {
   switch (status) {
     case "verified":
-      return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />;
+      return <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />;
     case "rejected":
-      return <XCircle className="h-3.5 w-3.5 text-red-400" />;
+      return <XCircle className="h-3.5 w-3.5 text-destructive" />;
     case "needs_review":
-      return <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />;
+      return <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />;
     default:
       return <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />;
   }
 }
 
-function verificationLabel(status: InspirationProfile["verification_status"]) {
+function verificationLabel(status: string) {
   switch (status) {
     case "verified":
       return "Verificado";
@@ -165,8 +125,8 @@ const Inspiracao = () => {
   const { profile: doctorProfile, isConfigured } = useDoctor();
   const navigate = useNavigate();
 
-  // All inspiration profiles (localStorage-backed)
-  const [profiles, setProfiles] = useState<InspirationProfile[]>(loadProfilesFromStorage);
+  const [profiles, setProfiles] = useState<InspirationProfile[]>([]);
+  const [loadingProfiles, setLoadingProfiles] = useState(true);
 
   // Stage 1: Manual input + Discovery
   const [manualInput, setManualInput] = useState("");
@@ -184,10 +144,22 @@ const Inspiracao = () => {
   const [selectedForAnalysis, setSelectedForAnalysis] = useState<Set<string>>(new Set());
   const [expandedHandles, setExpandedHandles] = useState<Set<string>>(new Set());
 
-  // Persist profiles to localStorage
+  /* ── Load profiles from Supabase ── */
+  const fetchProfiles = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("inspiration_profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (!error && data) setProfiles(data);
+    setLoadingProfiles(false);
+  }, []);
+
   useEffect(() => {
-    saveProfilesToStorage(profiles);
-  }, [profiles]);
+    fetchProfiles();
+  }, [fetchProfiles]);
 
   /* ── Parse manual handles ── */
   const parseManualHandles = useCallback((): string[] => {
@@ -199,14 +171,28 @@ const Inspiracao = () => {
   }, [manualInput]);
 
   /* ── Stage 1: Add manual handles ── */
-  const handleAddManual = () => {
+  const handleAddManual = async () => {
     const handles = parseManualHandles();
     if (handles.length === 0) {
       toast.error("Digite ao menos um handle.");
       return;
     }
 
-    const newProfiles: InspirationProfile[] = [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Você precisa estar logado.");
+      return;
+    }
+
+    const newRows: Array<{
+      user_id: string;
+      handle: string;
+      discovered_handle: string;
+      normalized_handle: string;
+      source_type: string;
+      verification_status: string;
+      confidence_score: number;
+    }> = [];
     let duplicates = 0;
 
     for (const h of handles) {
@@ -215,32 +201,26 @@ const Inspiracao = () => {
         duplicates++;
         continue;
       }
-      newProfiles.push({
-        id: generateId(),
+      newRows.push({
+        user_id: user.id,
         handle: `@${normalized}`,
+        discovered_handle: normalized,
         normalized_handle: normalized,
-        display_name: null,
-        specialty: doctorProfile?.especialidade ?? null,
-        country: "BR",
         source_type: "manual",
         verification_status: "pending",
-        verification_method: null,
-        verification_confidence: null,
-        verified_at: null,
-        profile_url: `https://instagram.com/${normalized}`,
-        followers_estimate: null,
-        content_style: null,
-        why_inspiring: null,
-        content_pillars: [],
-        standout_formats: [],
-        reference_level: "medio",
-        notes: null,
+        confidence_score: 0,
       });
     }
 
-    if (newProfiles.length > 0) {
-      setProfiles((prev) => [...prev, ...newProfiles]);
-      toast.success(`${newProfiles.length} perfil(is) adicionado(s).`);
+    if (newRows.length > 0) {
+      const { error } = await supabase.from("inspiration_profiles").insert(newRows);
+      if (error) {
+        toast.error("Erro ao salvar perfis.");
+        console.error(error);
+        return;
+      }
+      await fetchProfiles();
+      toast.success(`${newRows.length} perfil(is) adicionado(s).`);
     }
     if (duplicates > 0) {
       toast.info(`${duplicates} perfil(is) já existente(s), ignorados.`);
@@ -269,7 +249,6 @@ const Inspiracao = () => {
       if (!result.candidates || result.candidates.length === 0) {
         toast.info("Nenhum candidato encontrado. Tente adicionar handles manualmente.");
       } else {
-        // Filter out already-added profiles
         const filtered = result.candidates.filter(
           (c) => !profiles.some((p) => p.normalized_handle === normalizeHandle(c.handle)),
         );
@@ -286,39 +265,44 @@ const Inspiracao = () => {
   };
 
   /* ── Stage 1: Accept selected candidates ── */
-  const handleAcceptCandidates = () => {
+  const handleAcceptCandidates = async () => {
     if (selectedCandidates.size === 0) {
       toast.error("Selecione ao menos um candidato.");
       return;
     }
 
-    const accepted = candidates.filter((c) => selectedCandidates.has(c.handle));
-    const newProfiles: InspirationProfile[] = accepted.map((c) => ({
-      id: generateId(),
-      handle: c.handle,
-      normalized_handle: normalizeHandle(c.handle),
-      display_name: c.display_name ?? null,
-      specialty: c.specialty ?? doctorProfile?.especialidade ?? null,
-      country: c.country ?? "BR",
-      source_type: "ai_discovery" as const,
-      verification_status: "pending" as const,
-      verification_method: null,
-      verification_confidence: null,
-      verified_at: null,
-      profile_url: `https://instagram.com/${normalizeHandle(c.handle)}`,
-      followers_estimate: c.followers_estimate ?? null,
-      content_style: null,
-      why_inspiring: c.reason ?? null,
-      content_pillars: [],
-      standout_formats: [],
-      reference_level: "medio",
-      notes: `Confianca: ${c.confidence}. Fonte: ${c.source}`,
-    }));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-    setProfiles((prev) => [...prev, ...newProfiles]);
+    const accepted = candidates.filter((c) => selectedCandidates.has(c.handle));
+    const newRows = accepted.map((c) => {
+      const normalized = normalizeHandle(c.handle);
+      return {
+        user_id: user.id,
+        handle: c.handle,
+        discovered_handle: normalized,
+        normalized_handle: normalized,
+        display_name: c.display_name ?? null,
+        followers_estimate: c.followers_estimate ?? null,
+        source_type: "ai_discovery",
+        verification_status: "pending",
+        confidence_score: c.confidence === "high" ? 0.8 : c.confidence === "medium" ? 0.5 : 0.2,
+      };
+    });
+
+    if (newRows.length > 0) {
+      const { error } = await supabase.from("inspiration_profiles").insert(newRows);
+      if (error) {
+        toast.error("Erro ao salvar candidatos.");
+        console.error(error);
+        return;
+      }
+      await fetchProfiles();
+    }
+
     setCandidates((prev) => prev.filter((c) => !selectedCandidates.has(c.handle)));
     setSelectedCandidates(new Set());
-    toast.success(`${newProfiles.length} perfil(is) aceito(s).`);
+    toast.success(`${newRows.length} perfil(is) aceito(s).`);
   };
 
   /* ── Stage 2: Verify selected profiles ── */
@@ -349,35 +333,35 @@ const Inspiracao = () => {
         }>;
       };
 
-      setProfiles((prev) =>
-        prev.map((p) => {
-          const verification = result.results.find(
-            (r) => normalizeHandle(r.handle) === p.normalized_handle,
-          );
-          if (!verification) return p;
+      // Update each profile in DB
+      for (const verification of result.results) {
+        const profile = profiles.find(
+          (p) => p.normalized_handle === normalizeHandle(verification.handle),
+        );
+        if (!profile) continue;
 
-          let status: InspirationProfile["verification_status"];
-          if (verification.verified) {
-            status = "verified";
-          } else if (verification.confidence >= 0.2 && verification.confidence < 0.5) {
-            status = "needs_review";
-          } else {
-            status = "rejected";
-          }
+        let status: string;
+        if (verification.verified) {
+          status = "verified";
+        } else if (verification.confidence >= 0.2 && verification.confidence < 0.5) {
+          status = "needs_review";
+        } else {
+          status = "rejected";
+        }
 
-          return {
-            ...p,
+        await supabase
+          .from("inspiration_profiles")
+          .update({
             verification_status: status,
-            verification_method: verification.method,
-            verification_confidence: verification.confidence,
-            verified_at: verification.verified ? new Date().toISOString() : null,
-            display_name: verification.display_name ?? p.display_name,
-          };
-        }),
-      );
+            confidence_score: verification.confidence,
+            display_name: verification.display_name ?? profile.display_name,
+          })
+          .eq("id", profile.id);
+      }
 
+      await fetchProfiles();
       const verified = result.results.filter((r) => r.verified).length;
-      toast.success(`Verificacao concluida: ${verified}/${result.results.length} verificados.`);
+      toast.success(`Verificação concluída: ${verified}/${result.results.length} verificados.`);
       setSelectedForVerification(new Set());
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao verificar perfis.";
@@ -389,25 +373,30 @@ const Inspiracao = () => {
   };
 
   /* ── Stage 2: Manual override ── */
-  const handleOverrideStatus = (id: string, status: "verified" | "rejected") => {
-    setProfiles((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              verification_status: status,
-              verification_method: "manual_override",
-              verification_confidence: 1.0,
-              verified_at: status === "verified" ? new Date().toISOString() : null,
-            }
-          : p,
-      ),
-    );
+  const handleOverrideStatus = async (id: string, status: "verified" | "rejected") => {
+    const { error } = await supabase
+      .from("inspiration_profiles")
+      .update({
+        verification_status: status,
+        confidence_score: 1.0,
+      })
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Erro ao atualizar status.");
+      return;
+    }
+    await fetchProfiles();
     toast.success(`Perfil marcado como ${status === "verified" ? "verificado" : "rejeitado"}.`);
   };
 
   /* ── Stage 2: Remove profile ── */
-  const handleRemoveProfile = (id: string) => {
+  const handleRemoveProfile = async (id: string) => {
+    const { error } = await supabase.from("inspiration_profiles").delete().eq("id", id);
+    if (error) {
+      toast.error("Erro ao remover perfil.");
+      return;
+    }
     setProfiles((prev) => prev.filter((p) => p.id !== id));
     toast.success("Perfil removido.");
   };
@@ -443,10 +432,10 @@ const Inspiracao = () => {
       if (error) throw error;
 
       setAnalysisResults(data as AnalysisResult);
-      toast.success("Analise concluida!");
+      toast.success("Análise concluída!");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro ao analisar conteudo.";
-      console.error("Erro ao analisar conteudo:", err);
+      const message = err instanceof Error ? err.message : "Erro ao analisar conteúdo.";
+      console.error("Erro ao analisar conteúdo:", err);
       toast.error(message);
     } finally {
       setAnalysisLoading(false);
@@ -522,11 +511,11 @@ const Inspiracao = () => {
         {/* Header */}
         <div className="flex items-center gap-3">
           <Globe className="h-7 w-7 text-primary" />
-          <h1 className="text-3xl font-bold">Inspiracao Instagram</h1>
+          <h1 className="text-3xl font-bold">Inspiração Instagram</h1>
         </div>
         <p className="text-muted-foreground">
-          Adicione, verifique e analise perfis medicos de referencia no Instagram para extrair
-          ideias de conteudo.
+          Adicione, verifique e analise perfis médicos de referência no Instagram para extrair
+          ideias de conteúdo.
         </p>
 
         {!isConfigured ? (
@@ -534,9 +523,9 @@ const Inspiracao = () => {
             <CardContent className="flex items-center gap-4 py-4">
               <AlertTriangle className="h-6 w-6 text-amber-600 shrink-0" />
               <div className="flex-1">
-                <p className="font-medium">Perfil nao configurado</p>
+                <p className="font-medium">Perfil não configurado</p>
                 <p className="text-sm text-muted-foreground">
-                  Configure seu perfil no Setup antes de usar a inspiracao.
+                  Configure seu perfil no Setup antes de usar a inspiração.
                 </p>
               </div>
               <Button variant="outline" onClick={() => navigate(ROUTES.setup)}>
@@ -544,6 +533,10 @@ const Inspiracao = () => {
               </Button>
             </CardContent>
           </Card>
+        ) : loadingProfiles ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
         ) : (
           <>
             {/* ═══════════ STAGE 1: Adicionar Perfis ═══════════ */}
@@ -553,7 +546,7 @@ const Inspiracao = () => {
                 <h2 className="text-xl font-semibold">1. Adicionar Perfis</h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Adicione handles que voce ja conhece ou use a descoberta assistida da IA.
+                Adicione handles que você já conhece ou use a descoberta assistida da IA.
               </p>
 
               {/* Manual handles input */}
@@ -565,7 +558,7 @@ const Inspiracao = () => {
                   </div>
                   <Textarea
                     placeholder={
-                      "Cole aqui handles de perfis que voce ja segue ou admira.\nExemplos:\n@draanapaula\n@dr.felipebarros\n@derm.doctor\n\nUm por linha, ou separados por virgula."
+                      "Cole aqui handles de perfis que você já segue ou admira.\nExemplos:\n@draanapaula\n@dr.felipebarros\n@derm.doctor\n\nUm por linha, ou separados por vírgula."
                     }
                     value={manualInput}
                     onChange={(e) => setManualInput(e.target.value)}
@@ -595,7 +588,7 @@ const Inspiracao = () => {
                   <p className="text-xs text-muted-foreground">
                     A IA vai sugerir candidatos para {doctorProfile?.especialidade}
                     {doctorProfile?.subespecialidade && ` (${doctorProfile.subespecialidade})`}.
-                    Voce decide quais aceitar.
+                    Você decide quais aceitar.
                   </p>
                   <Button onClick={handleDiscover} disabled={discoveryLoading} size="sm" variant="outline">
                     {discoveryLoading ? (
@@ -641,10 +634,10 @@ const Inspiracao = () => {
                                   className="text-[10px]"
                                 >
                                   {c.confidence === "high"
-                                    ? "Alta confianca"
+                                    ? "Alta confiança"
                                     : c.confidence === "medium"
-                                      ? "Media confianca"
-                                      : "Baixa confianca"}
+                                      ? "Média confiança"
+                                      : "Baixa confiança"}
                                 </Badge>
                                 {c.display_name && (
                                   <span className="text-xs text-muted-foreground">
@@ -697,12 +690,12 @@ const Inspiracao = () => {
                     <span>{pendingProfiles.length} pendentes</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
                     <span>{verifiedProfiles.length} verificados</span>
                   </div>
                   {rejectedProfiles.length > 0 && (
                     <div className="flex items-center gap-1.5">
-                      <XCircle className="h-4 w-4 text-red-400" />
+                      <XCircle className="h-4 w-4 text-destructive" />
                       <span>{rejectedProfiles.length} rejeitados</span>
                     </div>
                   )}
@@ -718,7 +711,7 @@ const Inspiracao = () => {
                   <h2 className="text-xl font-semibold">2. Verificar Perfis</h2>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Verifique se os perfis existem antes de analisar. Voce tambem pode marcar
+                  Verifique se os perfis existem antes de analisar. Você também pode marcar
                   manualmente como verificado ou rejeitado.
                 </p>
 
@@ -806,9 +799,9 @@ const Inspiracao = () => {
                               {p.display_name}
                             </span>
                           )}
-                          {p.verification_confidence !== null && (
+                          {p.confidence_score !== null && p.confidence_score > 0 && (
                             <span className="text-[10px] text-muted-foreground">
-                              ({Math.round(p.verification_confidence * 100)}%)
+                              ({Math.round(p.confidence_score * 100)}%)
                             </span>
                           )}
                         </div>
@@ -829,7 +822,7 @@ const Inspiracao = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 text-[10px] px-2 text-red-500"
+                            className="h-7 text-[10px] px-2 text-destructive"
                             onClick={() => handleOverrideStatus(p.id, "rejected")}
                             title="Marcar como rejeitado"
                           >
@@ -860,7 +853,7 @@ const Inspiracao = () => {
                   <h2 className="text-xl font-semibold">3. Analisar Perfis</h2>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Selecione perfis verificados para a IA pesquisar e analisar seus conteudos.
+                  Selecione perfis verificados para a IA pesquisar e analisar seus conteúdos.
                 </p>
 
                 {/* Verified profiles for analysis */}
@@ -882,7 +875,7 @@ const Inspiracao = () => {
                         <div className="flex items-center gap-2">
                           <Instagram className="h-3 w-3" />
                           <span className="text-sm font-semibold">{p.handle}</span>
-                          <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
                           {p.display_name && (
                             <span className="text-xs text-muted-foreground">
                               {p.display_name}
@@ -903,12 +896,12 @@ const Inspiracao = () => {
                     {analysisLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Analisando conteudo...
+                        Analisando conteúdo...
                       </>
                     ) : (
                       <>
                         <Sparkles className="h-4 w-4 mr-2" />
-                        Analisar Conteudo ({selectedForAnalysis.size})
+                        Analisar Conteúdo ({selectedForAnalysis.size})
                       </>
                     )}
                   </Button>
@@ -953,7 +946,7 @@ const Inspiracao = () => {
                       <Card>
                         <CardContent className="py-3">
                           <p className="text-xs text-muted-foreground">
-                            <span className="font-semibold">Tendencias de formato:</span>{" "}
+                            <span className="font-semibold">Tendências de formato:</span>{" "}
                             {analysisResults.tendencias_formato}
                           </p>
                         </CardContent>
@@ -989,7 +982,7 @@ const Inspiracao = () => {
                               <CardContent className="space-y-4 pt-0">
                                 <div>
                                   <p className="text-xs font-semibold mb-1">
-                                    Topicos mais engajados
+                                    Tópicos mais engajados
                                   </p>
                                   <div className="flex flex-wrap gap-1">
                                     {analise.topicos_mais_engajados.map((t) => (
@@ -1038,14 +1031,14 @@ const Inspiracao = () => {
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-xs font-semibold mb-1">Gaps de conteudo</p>
+                                  <p className="text-xs font-semibold mb-1">Gaps de conteúdo</p>
                                   <ul className="space-y-1">
                                     {analise.gaps_conteudo.map((g, i) => (
                                       <li
                                         key={i}
                                         className="text-xs text-muted-foreground flex items-start gap-1"
                                       >
-                                        <span className="text-amber-500 mt-0.5">&bull;</span>
+                                        <span className="text-amber-600 mt-0.5">&bull;</span>
                                         <span>{g}</span>
                                       </li>
                                     ))}
@@ -1106,10 +1099,10 @@ const Inspiracao = () => {
               <section className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Lightbulb className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-semibold">Ideias para Voce</h2>
+                  <h2 className="text-xl font-semibold">Ideias para Você</h2>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {allIdeas.length} ideias de conteudo extraidas. Clique em &ldquo;Usar no
+                  {allIdeas.length} ideias de conteúdo extraídas. Clique em &ldquo;Usar no
                   Carrossel&rdquo; para gerar automaticamente.
                 </p>
 
