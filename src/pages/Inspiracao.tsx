@@ -89,8 +89,10 @@ function verificationIcon(status: string) {
     case "verified":
       return <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />;
     case "rejected":
+    case "failed":
       return <XCircle className="h-3.5 w-3.5 text-destructive" />;
     case "needs_review":
+    case "skipped":
       return <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />;
     default:
       return <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />;
@@ -102,8 +104,10 @@ function verificationLabel(status: string) {
     case "verified":
       return "Verificado";
     case "rejected":
+    case "failed":
       return "Rejeitado";
     case "needs_review":
+    case "skipped":
       return "Revisar";
     default:
       return "Pendente";
@@ -493,7 +497,9 @@ const Inspiracao = () => {
   const pendingProfiles = profiles.filter((p) => p.verification_status === "pending");
   const needsReviewProfiles = profiles.filter((p) => p.verification_status === "needs_review");
   const verifiedProfiles = profiles.filter((p) => p.verification_status === "verified");
-  const rejectedProfiles = profiles.filter((p) => p.verification_status === "rejected");
+  const rejectedProfiles = profiles.filter(
+    (p) => p.verification_status === "rejected" || p.verification_status === "failed"
+  );
 
   const allIdeas: (ContentIdea & { sourceHandle: string })[] = [];
   if (analysisResults) {
