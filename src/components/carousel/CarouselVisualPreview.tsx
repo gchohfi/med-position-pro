@@ -10,7 +10,7 @@ import {
   Pencil,
   ChevronRight,
   Download,
-  Upload,
+  Cloud,
   Maximize2,
   Minimize2,
   Loader2,
