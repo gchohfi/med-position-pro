@@ -497,7 +497,7 @@ const Inspiracao = () => {
 
   const allIdeas: (ContentIdea & { sourceHandle: string })[] = [];
   if (analysisResults) {
-    for (const analise of analysisResults.analises) {
+    for (const analise of (analysisResults.analises || [])) {
       for (const idea of analise.ideias_inspiradas) {
         allIdeas.push({ ...idea, sourceHandle: analise.handle });
       }
