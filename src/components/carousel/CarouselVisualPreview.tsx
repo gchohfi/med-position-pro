@@ -154,12 +154,11 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
               .upload(filePath, blob, { contentType: "image/png", upsert: true });
             if (upErr) throw upErr;
 
-            const { data: signedData, error: signErr } = await supabase.storage
+            const { data: publicData } = supabase.storage
               .from("user-assets")
-              .createSignedUrl(filePath, 60 * 60 * 24 * 365);
-            if (signErr) throw signErr;
+              .getPublicUrl(filePath);
 
-            uploadedUrls.push({ slide: i + 1, url: signedData.signedUrl, path: filePath });
+            uploadedUrls.push({ slide: i + 1, url: publicData.publicUrl, path: filePath });
 
             await supabase.from("uploaded_assets").insert({
               user_id: user.id,
