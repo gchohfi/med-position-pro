@@ -30,28 +30,22 @@ import {
   Eye,
 } from "lucide-react";
 
-/* ── Types ─────────────────────────────────────────────── */
+/* ── Types (aligned with DB schema) ─────────────────── */
 
 interface InspirationProfile {
   id: string;
   handle: string;
   normalized_handle: string;
+  discovered_handle: string;
   display_name: string | null;
-  specialty: string | null;
-  country: string;
-  source_type: "manual" | "ai_discovery" | "imported";
-  verification_status: "pending" | "verified" | "rejected" | "needs_review";
-  verification_method: string | null;
-  verification_confidence: number | null;
-  verified_at: string | null;
-  profile_url: string | null;
+  bio: string | null;
   followers_estimate: string | null;
-  content_style: string | null;
-  why_inspiring: string | null;
-  content_pillars: string[];
-  standout_formats: string[];
-  reference_level: string;
-  notes: string | null;
+  source_type: string;
+  verification_status: string;
+  confidence_score: number | null;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface DiscoveryCandidate {
