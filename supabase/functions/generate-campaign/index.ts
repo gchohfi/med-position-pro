@@ -76,14 +76,14 @@ serve(async (req) => {
           .maybeSingle(),
         supabase
           .from("diagnosis_outputs")
-          .select("output_json")
+          .select("diagnosis, estrategia")
           .eq("user_id", user_id)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
         supabase
           .from("living_memory")
-          .select("memory_json")
+          .select("memory")
           .eq("user_id", user_id)
           .maybeSingle(),
         supabase
@@ -95,8 +95,8 @@ serve(async (req) => {
       ]);
 
     const positioning = positioningRes.data ?? {};
-    const diagnosis = diagnosisRes.data?.output_json ?? {};
-    const memory = memoryRes.data?.memory_json ?? {};
+    const diagnosis = diagnosisRes.data?.diagnosis ?? {};
+    const memory = memoryRes.data?.memory ?? {};
     const recentContent = contentRes.data ?? [];
 
     const campaignType = brief.tipo ?? "manifesto_editorial";
