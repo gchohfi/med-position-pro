@@ -40,7 +40,7 @@ export const DEFAULT_BRAND: BrandIdentity = {
 
 // ─── TRAVESSIA CAROUSEL SYSTEM ─────────────────────────────────────────────
 
-export type TravessIALayout = "capa" | "timg" | "tonly" | "stat" | "turning" | "light" | "final";
+export type TravessIALayout = "capa" | "timg" | "tonly" | "stat" | "turning" | "light" | "timeline" | "final";
 
 export interface TravessIASlide {
   numero: number;
@@ -65,9 +65,18 @@ export interface TravessIASlide {
   // final
   conclusion?: string;
   pergunta_comentario?: string;
+  // timeline
+  timeline_steps?: Array<{
+    numero: string;
+    titulo: string;
+    descricao?: string;
+    destaque?: boolean;
+  }>;
+  timeline_titulo?: string;
+  timeline_subtitulo?: string;
 }
 
-export type PreferredVisualStyle = "travessia" | "editorial_black_gold";
+export type PreferredVisualStyle = "travessia" | "editorial_black_gold" | "ivory_sage";
 
 export interface TravessIARoteiro {
   titulo_carrossel: string;
@@ -413,6 +422,7 @@ export function travessiaToSlideData(slide: TravessIASlide, totalSlides: number)
     stat: "structured",
     turning: "statement",
     light: "editorial",
+    timeline: "structured",
     final: "signature",
   };
 
@@ -434,5 +444,9 @@ export function travessiaToSlideData(slide: TravessIASlide, totalSlides: number)
     opinion: slide.opinion,
     conclusion: slide.conclusion,
     perguntaComentario: slide.pergunta_comentario,
+    // timeline
+    timelineSteps: slide.timeline_steps,
+    timelineTitulo: slide.timeline_titulo,
+    timelineSubtitulo: slide.timeline_subtitulo,
   };
 }

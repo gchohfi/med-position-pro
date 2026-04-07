@@ -2,7 +2,7 @@ import React from "react";
 
 export interface SlideData {
   type: "cover" | "statement" | "editorial" | "structured" | "manifesto" | "signature" | "breathing";
-  travessiaLayout?: "capa" | "timg" | "tonly" | "stat" | "turning" | "light" | "final";
+  travessiaLayout?: "capa" | "timg" | "tonly" | "stat" | "turning" | "light" | "timeline" | "final";
   label: string;
   headline: string;
   body?: string;
@@ -21,11 +21,15 @@ export interface SlideData {
   opinion?: string;
   conclusion?: string;
   perguntaComentario?: string;
+  // timeline
+  timelineSteps?: Array<{ numero: string; titulo: string; descricao?: string; destaque?: boolean }>;
+  timelineTitulo?: string;
+  timelineSubtitulo?: string;
 }
 
 // ─── VISUAL SYSTEMS ─────────────────────────────────────────────────────────
 
-export type ArchetypeStyle = "travessia" | "editorial_black_gold";
+export type ArchetypeStyle = "travessia" | "editorial_black_gold" | "ivory_sage";
 
 export interface VisualSystem {
   label: string;
@@ -69,6 +73,21 @@ export const VISUAL_SYSTEMS: Record<ArchetypeStyle, VisualSystem> = {
     bodySize: 40,
     lineHeights: { headline: 0.88, body: 1.6 },
     margins: { page: 64, inner: 32 },
+  },
+  ivory_sage: {
+    label: "Ivory & Sage",
+    description: "Fundo off-white elegante com acentos verde-salvia — ideal para conteúdo educativo acessível",
+    premium: false,
+    colors: {
+      bg: "#FAF9F6", bgAlt: "#F0EDE8", text: "#1C1C1A", textMuted: "rgba(28,28,26,0.45)",
+      accent: "#4A7C59", coverBg: "#F0EDE8", coverText: "#1C1C1A",
+    },
+    headlineFont: "'Inter', sans-serif",
+    bodyFont: "'Inter', sans-serif",
+    headlineSizes: { xl: 120, lg: 96, md: 80, sm: 64 },
+    bodySize: 40,
+    lineHeights: { headline: 0.94, body: 1.6 },
+    margins: { page: 56, inner: 28 },
   },
 };
 
@@ -698,6 +717,102 @@ function renderTravessia(
     );
   }
 
+  // ── TIMELINE — Jornada / Protocolo em etapas ──
+  if (layout === "timeline") {
+    const tlBg = bgColor;
+    const tlText = textColor;
+    const tlMuted = mutedColor;
+    const tlAccent = accentColor;
+    const steps = slide.timelineSteps || [];
+    const maxSteps = Math.min(steps.length, 5);
+
+    return (
+      <div ref={ref} style={{ ...base, backgroundColor: tlBg }}>
+        {/* Linha vertical da timeline */}
+        <div style={{
+          position: "absolute", left: PAD + 52, top: 130, bottom: 160,
+          width: 2, backgroundColor: `${tlAccent}30`, zIndex: 1,
+        }} />
+        {header}
+        {/* Título e subtítulo */}
+        <div style={{
+          position: "absolute", top: 112, left: PAD, right: PAD, zIndex: 2,
+        }}>
+          {slide.timelineTitulo && (
+            <h2 style={{
+              fontFamily: vs.headlineFont, fontSize: 72, fontWeight: 800,
+              lineHeight: 0.95, color: tlText, margin: 0, marginBottom: 12,
+              letterSpacing: "-0.02em",
+            }}>
+              {slide.timelineTitulo}
+            </h2>
+          )}
+          {slide.timelineSubtitulo && (
+            <p style={{
+              fontFamily: vs.bodyFont, fontSize: 28, fontWeight: 400,
+              lineHeight: 1.4, color: tlMuted, margin: 0, marginBottom: 32,
+            }}>
+              {slide.timelineSubtitulo}
+            </p>
+          )}
+          <div style={{
+            width: "100%", height: 1, backgroundColor: `${tlAccent}25`, marginBottom: 20,
+          }} />
+        </div>
+        {/* Steps */}
+        <div style={{
+          position: "absolute",
+          top: slide.timelineTitulo ? 310 : 140,
+          left: PAD, right: PAD, bottom: 160,
+          display: "flex", flexDirection: "column", justifyContent: "space-around",
+          zIndex: 2,
+        }}>
+          {steps.slice(0, maxSteps).map((step, idx) => (
+            <div key={idx} style={{
+              display: "flex", alignItems: "flex-start", gap: 28,
+              opacity: step.destaque ? 1 : 0.72,
+            }}>
+              <div style={{
+                flexShrink: 0, width: 56, height: 56, borderRadius: "50%",
+                backgroundColor: step.destaque ? tlAccent : `${tlAccent}18`,
+                border: step.destaque ? "none" : `2px solid ${tlAccent}40`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                marginTop: 4,
+              }}>
+                <span style={{
+                  fontFamily: vs.headlineFont, fontSize: 22, fontWeight: 800,
+                  color: step.destaque ? "#FFFFFF" : tlAccent, letterSpacing: "0.02em",
+                }}>
+                  {step.numero}
+                </span>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{
+                  fontFamily: vs.headlineFont,
+                  fontSize: step.destaque ? 56 : 48, fontWeight: step.destaque ? 800 : 700,
+                  lineHeight: 0.96, color: step.destaque ? tlAccent : tlText,
+                  margin: 0, marginBottom: step.descricao ? 10 : 0,
+                  letterSpacing: "-0.015em",
+                }}>
+                  {step.titulo}
+                </h3>
+                {step.descricao && (
+                  <p style={{
+                    fontFamily: vs.bodyFont, fontSize: 28, fontWeight: 400,
+                    lineHeight: 1.45, color: tlMuted, margin: 0,
+                  }}>
+                    {step.descricao}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        {footer}
+      </div>
+    );
+  }
+
   // Fallback for unknown TravessIA layout
   return (
     <div ref={ref} style={{ ...base, backgroundColor: bgColor, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -712,10 +827,11 @@ function renderTravessia(
  * Infer a TravessIA layout from the legacy slide type.
  * Used as fallback when travessiaLayout is not set.
  */
-function inferLayout(slide: SlideData): "capa" | "timg" | "tonly" | "stat" | "turning" | "light" | "final" {
+function inferLayout(slide: SlideData): "capa" | "timg" | "tonly" | "stat" | "turning" | "light" | "timeline" | "final" {
   if (slide.type === "cover") return "capa";
   if (slide.type === "signature") return "final";
   if (slide.type === "statement") return "turning";
+  if (slide.type === "structured" && slide.items && slide.items.length >= 3) return "timeline";
   if (slide.type === "structured") return "stat";
   if (slide.type === "breathing") return "light";
   if (slide.type === "manifesto") return "tonly";
