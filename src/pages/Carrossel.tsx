@@ -428,6 +428,7 @@ const Carrossel = () => {
 
   const handleReset = () => {
     setRoteiro(null);
+    setSavedContentOutputId(null);
     setSlideDataList([]);
     setWarnings([]);
     setQuality(null);
