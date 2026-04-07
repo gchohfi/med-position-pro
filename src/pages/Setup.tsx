@@ -247,7 +247,22 @@ const Setup = () => {
               </p>
             </div>
 
-            {/* Photo upload */}
+            {/* Instagram handle/link field */}
+            <div className="space-y-2">
+              <Label htmlFor="instagram_handle" className="flex items-center gap-2">
+                <Instagram className="h-4 w-4" />
+                Link do Instagram
+              </Label>
+              <Input
+                id="instagram_handle"
+                value={form.instagram_handle || ""}
+                onChange={(e) => updateField("instagram_handle", e.target.value)}
+                placeholder="https://instagram.com/dra.exemplo ou @dra.exemplo"
+              />
+              <p className="text-xs text-muted-foreground">
+                Seu perfil do Instagram. Usado no Radar e nos carrosséis.
+              </p>
+            </div>
             <div className="rounded-lg border border-dashed border-blue-300 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-3">
               <Label className="text-sm font-medium flex items-center gap-2">
                 <Camera className="h-4 w-4" />
