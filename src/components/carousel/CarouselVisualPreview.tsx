@@ -131,6 +131,47 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
     }
   }, [slides.length]);
 
+  /** Upload all slides to Storage and return public URLs */
+  const uploadAllToStorage = useCallback(async () => {
+    if (!user) {
+      toast.error("Faça login para salvar no acervo.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const batchId = Date.now();
+      const urls: string[] = [];
+      for (let i = 0; i < slides.length; i++) {
+        const el = slideRefs.current[i];
+        if (!el) continue;
+        const dataUrl = await toPng(el, {
+          width: 1080,
+          height: 1350,
+          pixelRatio: 1,
+          cacheBust: true,
+        });
+        const blob = dataUrlToBlob(dataUrl);
+        const filePath = `${user.id}/carrosséis/${batchId}/slide-${i + 1}.png`;
+        const { error: upErr } = await supabase.storage
+          .from("user-assets")
+          .upload(filePath, blob, { contentType: "image/png" });
+        if (upErr) throw upErr;
+
+        const { data: urlData } = supabase.storage
+          .from("user-assets")
+          .getPublicUrl(filePath);
+        urls.push(urlData.publicUrl);
+      }
+      toast.success(`${urls.length} slides salvos no acervo visual!`);
+      return urls;
+    } catch (err) {
+      toast.error("Erro ao salvar slides no acervo.");
+      console.error("Storage upload error:", err);
+    } finally {
+      setUploading(false);
+    }
+  }, [slides.length, user]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
