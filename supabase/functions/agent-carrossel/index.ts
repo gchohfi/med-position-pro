@@ -40,6 +40,17 @@ const LAYOUTS_DOC = `
    - texto: conteúdo leve/dica prática, MAX 50 PALAVRAS
    - img_query: (opcional) busca para imagem
 
+6b. "timeline" — Jornada ou protocolo em etapas. Campos:
+   - timeline_titulo: título acima das etapas, MAX 6 PALAVRAS (ex: "O protocolo em 4 passos")
+   - timeline_subtitulo: contexto ou promessa, MAX 20 PALAVRAS (opcional)
+   - timeline_steps: array de 3 a 5 objetos, cada um com:
+     - numero: "01", "02", "03", "04", "05"
+     - titulo: nome da etapa, MAX 4 PALAVRAS
+     - descricao: detalhe da etapa, MAX 12 PALAVRAS (opcional)
+     - destaque: true apenas no step mais importante (máx 1 por slide)
+   USE este layout quando o conteúdo tiver uma sequência lógica de etapas:
+   diagnóstico → tratamento, antes → durante → depois, protocolo com passos.
+
 7. "final" — Último slide SEMPRE. Campos:
    - conclusion: frase de fechamento, MAX 10 PALAVRAS
    - pergunta_comentario: pergunta para gerar comentários
@@ -96,7 +107,7 @@ ${REGRAS_CFM}
 
 ## ESTRUTURA DO ROTEIRO
 - Slide 1: SEMPRE layout "capa"
-- Slides intermediários: combine livremente "timg", "tonly", "stat", "turning", "light"
+- Slides intermediários: combine livremente "timg", "tonly", "stat", "turning", "light", "timeline"
 - Último slide: SEMPRE layout "final"
 - Total: entre 7 e 10 slides
 - Jornada narrativa: gancho > contexto > dado > virada > aprofundamento > prática > CTA
@@ -119,7 +130,7 @@ Retorne APENAS JSON válido (sem markdown, sem texto fora do JSON):
   "legenda": "Legenda completa para o post do Instagram (2-3 parágrafos curtos)",
   "hashtags": ["hashtag1", "hashtag2", "...até 15 hashtags relevantes"],
   "cta_final": "Frase de call-to-action para a legenda (ex: Salve este post e compartilhe com quem precisa)",
-  "preferredVisualStyle": "editorial_black_gold"
+  "preferredVisualStyle": "editorial_black_gold ou ivory_sage ou travessia"
 }
 `;
 
@@ -141,13 +152,13 @@ function validateRoteiro(parsed: Record<string, unknown>): void {
   if (slides[slides.length - 1]?.layout !== "final") {
     throw new Error("Último slide deve ser layout 'final'");
   }
-  const validLayouts = ["capa", "timg", "tonly", "stat", "turning", "light", "final"];
+  const validLayouts = ["capa", "timg", "tonly", "stat", "turning", "light", "timeline", "final"];
   for (const slide of slides) {
     if (!validLayouts.includes(slide.layout as string)) {
       throw new Error(`Layout inválido: ${slide.layout}`);
     }
   }
-  const validStyles = ["travessia", "editorial_black_gold"];
+  const validStyles = ["travessia", "editorial_black_gold", "ivory_sage"];
   if (parsed.preferredVisualStyle && !validStyles.includes(parsed.preferredVisualStyle as string)) {
     parsed.preferredVisualStyle = "editorial_black_gold";
   }
