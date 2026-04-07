@@ -497,7 +497,7 @@ const Inspiracao = () => {
 
   const allIdeas: (ContentIdea & { sourceHandle: string })[] = [];
   if (analysisResults) {
-    for (const analise of analysisResults.analises) {
+    for (const analise of (analysisResults.analises || [])) {
       for (const idea of analise.ideias_inspiradas) {
         allIdeas.push({ ...idea, sourceHandle: analise.handle });
       }
@@ -955,7 +955,7 @@ const Inspiracao = () => {
 
                     {/* Per-profile analysis */}
                     <div className="space-y-3">
-                      {analysisResults.analises.map((analise) => {
+                      {(analysisResults.analises || []).map((analise) => {
                         const isExpanded = expandedHandles.has(analise.handle);
                         return (
                           <Card key={analise.handle}>
