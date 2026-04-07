@@ -61,6 +61,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   contentType,
   doctorImageUrl,
   visualStyle,
+  contentOutputId,
   onRegenerate,
   onClose,
   onSlidesChange,
