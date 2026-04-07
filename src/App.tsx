@@ -15,6 +15,9 @@ import NotFound from "./pages/NotFound";
 import Setup from "./pages/Setup";
 import Carrossel from "./pages/Carrossel";
 import Biblioteca from "./pages/Biblioteca";
+import Ideias from "./pages/Ideias";
+import RadarPage from "./pages/Radar";
+import BenchmarkPage from "./pages/Benchmark";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +39,9 @@ const App = () => (
               <Route path={ROUTES.setup} element={<ProtectedRoute><Setup /></ProtectedRoute>} />
               <Route path={ROUTES.carrossel} element={<ProtectedRoute><Carrossel /></ProtectedRoute>} />
               <Route path={ROUTES.biblioteca} element={<ProtectedRoute><Biblioteca /></ProtectedRoute>} />
+              <Route path={ROUTES.ideias} element={<ProtectedRoute><Ideias /></ProtectedRoute>} />
+              <Route path={ROUTES.radar} element={<ProtectedRoute><RadarPage /></ProtectedRoute>} />
+              <Route path={ROUTES.benchmark} element={<ProtectedRoute><BenchmarkPage /></ProtectedRoute>} />
 
               {/* Redirect old routes to carrossel */}
               <Route path="/dashboard" element={<Navigate to={ROUTES.carrossel} replace />} />
