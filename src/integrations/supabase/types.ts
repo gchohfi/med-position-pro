@@ -111,6 +111,7 @@ export type Database = {
       }
       content_outputs: {
         Row: {
+          carousel_slide_urls: Json | null
           content_type: string
           created_at: string
           generated_content: Json
@@ -123,6 +124,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          carousel_slide_urls?: Json | null
           content_type: string
           created_at?: string
           generated_content?: Json
@@ -135,6 +137,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          carousel_slide_urls?: Json | null
           content_type?: string
           created_at?: string
           generated_content?: Json

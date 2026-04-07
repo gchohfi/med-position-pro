@@ -135,6 +135,7 @@ const Carrossel = () => {
   const [savedCarousels, setSavedCarousels] = useState<any[]>([]);
   const [savedLoading, setSavedLoading] = useState(false);
   const [savingCarousel, setSavingCarousel] = useState(false);
+  const [savedContentOutputId, setSavedContentOutputId] = useState<string | null>(null);
 
   // Load saved carousels
   const loadSavedCarousels = useCallback(async () => {
@@ -164,7 +165,7 @@ const Carrossel = () => {
     if (!roteiro || !user) return;
     setSavingCarousel(true);
     try {
-      const { error } = await supabase.from("content_outputs").insert({
+      const { data, error } = await supabase.from("content_outputs").insert({
         user_id: user.id,
         content_type: "carrossel",
         title: roteiro.titulo_carrossel || "Carrossel sem título",
@@ -177,8 +178,9 @@ const Carrossel = () => {
           hashtags: roteiro.hashtags,
           cta_final: roteiro.cta_final,
         } as any,
-      });
+      }).select("id").single();
       if (error) throw error;
+      setSavedContentOutputId(data.id);
       toast.success("Carrossel salvo na biblioteca!");
       await loadSavedCarousels();
     } catch (err) {
@@ -274,6 +276,7 @@ const Carrossel = () => {
     if (!profile) return;
     setLoading(true);
     setRoteiro(null);
+    setSavedContentOutputId(null);
     setSlideDataList([]);
     setWarnings([]);
     try {
@@ -381,6 +384,7 @@ const Carrossel = () => {
     }
     setLoading(true);
     setRoteiro(null);
+    setSavedContentOutputId(null);
     setSlideDataList([]);
     setWarnings([]);
     try {
@@ -426,6 +430,7 @@ const Carrossel = () => {
 
   const handleReset = () => {
     setRoteiro(null);
+    setSavedContentOutputId(null);
     setSlideDataList([]);
     setWarnings([]);
     setQuality(null);
@@ -949,6 +954,7 @@ const Carrossel = () => {
                     brandHandle={profile?.bio_instagram}
                     doctorImageUrl={profile?.foto_url}
                     visualStyle={visualStyle}
+                    contentOutputId={savedContentOutputId}
                   />
                 )}
 

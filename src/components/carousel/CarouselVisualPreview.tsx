@@ -10,7 +10,7 @@ import {
   Pencil,
   ChevronRight,
   Download,
-  Upload,
+  Cloud,
   Maximize2,
   Minimize2,
   Loader2,
@@ -40,6 +40,7 @@ interface CarouselVisualPreviewProps {
   contentType?: string;
   doctorImageUrl?: string;
   visualStyle?: ArchetypeStyle;
+  contentOutputId?: string | null;
   onRegenerate?: () => void;
   onClose?: () => void;
   onSlidesChange?: (slides: SlideData[]) => void;
@@ -60,6 +61,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   contentType,
   doctorImageUrl,
   visualStyle,
+  contentOutputId,
   onRegenerate,
   onClose,
   onSlidesChange,
@@ -68,7 +70,6 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   const [currentSlide, setCurrentSlide] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [styleOverride, setStyleOverride] = useState<ArchetypeStyle | null>(null);
   const activeStyle: ArchetypeStyle = styleOverride ?? visualStyle ?? "editorial_black_gold";
@@ -106,6 +107,8 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
 
   const exportAll = useCallback(async () => {
     setExporting(true);
+    const uploadedUrls: { slide: number; url: string; path: string }[] = [];
+
     try {
       for (let i = 0; i < slides.length; i++) {
         const el = slideRefs.current[i];
@@ -116,61 +119,68 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
           pixelRatio: 1,
           cacheBust: true,
         });
+
+        // Download local
         const link = document.createElement("a");
         link.download = `carrossel-slide-${i + 1}.png`;
         link.href = dataUrl;
         link.click();
-        // Small delay between downloads
         await new Promise((r) => setTimeout(r, 300));
+
+        // Upload to Storage
+        if (user) {
+          try {
+            const blob = dataUrlToBlob(dataUrl);
+            const folderKey = contentOutputId ?? `temp-${Date.now()}`;
+            const filePath = `${user.id}/carrossel/${folderKey}/slide-${i + 1}.png`;
+
+            const { error: upErr } = await supabase.storage
+              .from("user-assets")
+              .upload(filePath, blob, { contentType: "image/png", upsert: true });
+            if (upErr) throw upErr;
+
+            const { data: signedData, error: signErr } = await supabase.storage
+              .from("user-assets")
+              .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+            if (signErr) throw signErr;
+
+            uploadedUrls.push({ slide: i + 1, url: signedData.signedUrl, path: filePath });
+
+            await supabase.from("uploaded_assets").insert({
+              user_id: user.id,
+              file_path: filePath,
+              file_name: `carrossel-slide-${i + 1}.png`,
+              category: "carousel_slide",
+              linked_module: "carrossel",
+              note: `Slide ${i + 1} do carrossel`,
+            });
+          } catch (uploadErr) {
+            console.warn(`Upload do slide ${i + 1} falhou:`, uploadErr);
+          }
+        }
       }
-      toast.success("Todos os slides foram baixados!");
+
+      // Persist URLs to content_outputs
+      if (contentOutputId && uploadedUrls.length > 0) {
+        await supabase
+          .from("content_outputs")
+          .update({ carousel_slide_urls: uploadedUrls } as any)
+          .eq("id", contentOutputId);
+      }
+
+      toast.success(
+        uploadedUrls.length === slides.length
+          ? `${slides.length} slides baixados e salvos na nuvem!`
+          : uploadedUrls.length > 0
+            ? `Slides baixados! (${uploadedUrls.length}/${slides.length} salvos na nuvem)`
+            : "Todos os slides foram baixados!"
+      );
     } catch {
       toast.error("Erro ao exportar carrossel.");
     } finally {
       setExporting(false);
     }
-  }, [slides.length]);
-
-  /** Upload all slides to Storage and return public URLs */
-  const uploadAllToStorage = useCallback(async () => {
-    if (!user) {
-      toast.error("Faça login para salvar no acervo.");
-      return;
-    }
-    setUploading(true);
-    try {
-      const batchId = Date.now();
-      const urls: string[] = [];
-      for (let i = 0; i < slides.length; i++) {
-        const el = slideRefs.current[i];
-        if (!el) continue;
-        const dataUrl = await toPng(el, {
-          width: 1080,
-          height: 1350,
-          pixelRatio: 1,
-          cacheBust: true,
-        });
-        const blob = dataUrlToBlob(dataUrl);
-        const filePath = `${user.id}/carrosséis/${batchId}/slide-${i + 1}.png`;
-        const { error: upErr } = await supabase.storage
-          .from("user-assets")
-          .upload(filePath, blob, { contentType: "image/png" });
-        if (upErr) throw upErr;
-
-        const { data: urlData } = supabase.storage
-          .from("user-assets")
-          .getPublicUrl(filePath);
-        urls.push(urlData.publicUrl);
-      }
-      toast.success(`${urls.length} slides salvos no acervo visual!`);
-      return urls;
-    } catch (err) {
-      toast.error("Erro ao salvar slides no acervo.");
-      console.error("Storage upload error:", err);
-    } finally {
-      setUploading(false);
-    }
-  }, [slides.length, user]);
+  }, [slides.length, user, contentOutputId]);
 
   return (
     <motion.div
@@ -409,22 +419,9 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             {exporting ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <Download className="h-4 w-4 mr-2" />
+              <Cloud className="h-4 w-4 mr-2" />
             )}
-            {exporting ? "Exportando…" : "Baixar carrossel (PNG)"}
-          </Button>
-          <Button
-            onClick={uploadAllToStorage}
-            disabled={uploading}
-            variant="outline"
-            className="rounded-xl text-sm"
-          >
-            {uploading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4 mr-2" />
-            )}
-            {uploading ? "Salvando…" : "Salvar no acervo"}
+            {exporting ? "Exportando e salvando na nuvem…" : "Baixar e salvar na nuvem (PNG)"}
           </Button>
         </div>
       </div>
