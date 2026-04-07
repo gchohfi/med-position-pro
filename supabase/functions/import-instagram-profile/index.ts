@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
-import { callClaude } from "../_shared/anthropic.ts";
 import { callPerplexityText } from "../_shared/perplexity.ts";
 
 const ESPECIALIDADES = [
@@ -18,7 +17,7 @@ const ESPECIALIDADES = [
   "Outra",
 ] as const;
 
-const CLAUDE_SYSTEM_PROMPT = `Você é um assistente que estrutura dados de perfis médicos do Instagram. A partir das informações fornecidas, extraia e organize os dados no formato JSON especificado. Se não encontrar informação para um campo, use string vazia. Para especialidade, use EXATAMENTE um destes valores: ${ESPECIALIDADES.join(", ")}. Inclua "instagram" na lista de plataformas.
+const SYSTEM_PROMPT = `Você é um assistente que estrutura dados de perfis médicos do Instagram. A partir das informações fornecidas, extraia e organize os dados no formato JSON especificado. Se não encontrar informação para um campo, use string vazia. Para especialidade, use EXATAMENTE um destes valores: ${ESPECIALIDADES.join(", ")}. Inclua "instagram" na lista de plataformas.
 
 Retorne APENAS JSON válido (sem markdown, sem texto fora do JSON) com esta estrutura:
 {
@@ -39,13 +38,51 @@ Retorne APENAS JSON válido (sem markdown, sem texto fora do JSON) com esta estr
 
 O campo "confidence" deve ser um número entre 0 e 1 indicando quanta informação foi encontrada. 1.0 = todos os campos preenchidos, 0.0 = nenhum campo encontrado.`;
 
+async function callLovableAI(systemPrompt: string, userMessage: string): Promise<Record<string, unknown>> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("AI gateway error:", res.status, text);
+    if (res.status === 429) throw new Error("Rate limit exceeded, tente novamente em instantes.");
+    if (res.status === 402) throw new Error("Créditos de IA insuficientes.");
+    throw new Error(`AI gateway error: ${res.status}`);
+  }
+
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content ?? "{}";
+
+  // Strip markdown fences if present
+  const cleaned = content.replace(/```json?\s*/g, "").replace(/```\s*/g, "").trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    console.error("Failed to parse AI response:", cleaned);
+    throw new Error("AI retornou resposta inválida");
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
-
     const body = await req.json();
     let handle = body.handle?.trim();
     if (!handle) throw new Error("Campo 'handle' é obrigatório");
@@ -55,12 +92,10 @@ serve(async (req) => {
     }
 
     const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
-
     let result: Record<string, unknown>;
 
     if (perplexityKey) {
       try {
-        // Step 1: Research with Perplexity
         const profileInfo = await callPerplexityText(
           perplexityKey,
           [
@@ -71,28 +106,21 @@ serve(async (req) => {
           ],
         );
 
-        // Step 2: Structure with Claude
-        result = await callClaude(
-          anthropicKey,
-          CLAUDE_SYSTEM_PROMPT,
+        result = await callLovableAI(
+          SYSTEM_PROMPT,
           `Aqui estão as informações coletadas sobre o perfil do Instagram ${handle}:\n\n${profileInfo}\n\nEstruture esses dados no formato JSON especificado.`,
         );
       } catch (perplexityErr) {
-        console.warn(
-          "Perplexity failed, falling back to Claude only:",
-          (perplexityErr as Error).message,
-        );
-        result = await callClaude(
-          anthropicKey,
-          CLAUDE_SYSTEM_PROMPT,
+        console.warn("Perplexity failed, falling back to AI only:", (perplexityErr as Error).message);
+        result = await callLovableAI(
+          SYSTEM_PROMPT,
           `Com base no seu conhecimento, tente identificar informações sobre o perfil médico do Instagram ${handle}. Este é um médico brasileiro que usa o Instagram para divulgar conteúdo. Estruture o que conseguir encontrar no formato JSON especificado. Se não tiver informações suficientes, preencha o que for possível e use confidence baixo.`,
         );
       }
     } else {
-      console.warn("PERPLEXITY_API_KEY not set, using Claude only");
-      result = await callClaude(
-        anthropicKey,
-        CLAUDE_SYSTEM_PROMPT,
+      console.warn("PERPLEXITY_API_KEY not set, using AI only");
+      result = await callLovableAI(
+        SYSTEM_PROMPT,
         `Com base no seu conhecimento, tente identificar informações sobre o perfil médico do Instagram ${handle}. Este é um médico brasileiro que usa o Instagram para divulgar conteúdo. Estruture o que conseguir encontrar no formato JSON especificado. Se não tiver informações suficientes, preencha o que for possível e use confidence baixo.`,
       );
     }
