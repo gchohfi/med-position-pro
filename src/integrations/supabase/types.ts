@@ -183,6 +183,95 @@ export type Database = {
         }
         Relationships: []
       }
+      inspiration_profile_analyses: {
+        Row: {
+          analysis_result: Json | null
+          analysis_status: string
+          created_at: string
+          id: string
+          normalized_handle: string | null
+          profile_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis_result?: Json | null
+          analysis_status?: string
+          created_at?: string
+          id?: string
+          normalized_handle?: string | null
+          profile_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis_result?: Json | null
+          analysis_status?: string
+          created_at?: string
+          id?: string
+          normalized_handle?: string | null
+          profile_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspiration_profile_analyses_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "inspiration_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspiration_profiles: {
+        Row: {
+          bio: string | null
+          confidence_score: number | null
+          created_at: string
+          discovered_handle: string
+          display_name: string | null
+          followers_estimate: string | null
+          handle: string
+          id: string
+          normalized_handle: string
+          source_type: string
+          updated_at: string
+          user_id: string
+          verification_status: string
+        }
+        Insert: {
+          bio?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          discovered_handle: string
+          display_name?: string | null
+          followers_estimate?: string | null
+          handle: string
+          id?: string
+          normalized_handle: string
+          source_type?: string
+          updated_at?: string
+          user_id: string
+          verification_status?: string
+        }
+        Update: {
+          bio?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          discovered_handle?: string
+          display_name?: string | null
+          followers_estimate?: string | null
+          handle?: string
+          id?: string
+          normalized_handle?: string
+          source_type?: string
+          updated_at?: string
+          user_id?: string
+          verification_status?: string
+        }
+        Relationships: []
+      }
       inspiration_references: {
         Row: {
           adherence_level: string
