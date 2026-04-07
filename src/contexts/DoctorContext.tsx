@@ -45,7 +45,7 @@ export const DoctorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const clearProfile = useCallback(() => setProfileState(null), []);
 
-  const isConfigured = !!(profile?.nome && profile?.especialidade && profile?.crm);
+  const isConfigured = !!(profile?.nome && profile?.especialidade);
 
   return (
     <DoctorContext.Provider value={{ profile, setProfile, updateProfile, clearProfile, isConfigured }}>
