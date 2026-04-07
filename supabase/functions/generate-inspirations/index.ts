@@ -143,16 +143,34 @@ Gere referências de inspiração curadas para esta profissional.`;
 
     const result = JSON.parse(toolCall.function.arguments);
 
+    // Sanitize AI output against CHECK constraints
+    const VALID_ADHERENCE = ["alta", "moderada", "experimental"] as const;
+    const VALID_CATEGORY = ["layout", "conteudo", "golden_case_starter"] as const;
+    const VALID_FEEDBACK = ["relevante", "nao_relevante", "quero_adaptar", "rejeitar"] as const;
+
+    const sanitize = (item: any, category: string) => ({
+      user_id: user.id,
+      title: String(item.title || "").slice(0, 500),
+      segment: item.segment ? String(item.segment).slice(0, 255) : null,
+      suggestion_reason: item.suggestion_reason ? String(item.suggestion_reason).slice(0, 1000) : null,
+      what_to_absorb: item.what_to_absorb ? String(item.what_to_absorb).slice(0, 1000) : null,
+      what_to_avoid: item.what_to_avoid ? String(item.what_to_avoid).slice(0, 1000) : null,
+      strategic_pattern: item.strategic_pattern ? String(item.strategic_pattern).slice(0, 500) : null,
+      adherence_level: VALID_ADHERENCE.includes(item.adherence_level) ? item.adherence_level : "moderada",
+      category: VALID_CATEGORY.includes(category as any) ? category : "conteudo",
+      feedback: item.feedback && VALID_FEEDBACK.includes(item.feedback) ? item.feedback : null,
+    });
+
     const toInsert: any[] = [];
     for (const ref of result.layout_references || []) {
-      toInsert.push({ user_id: user.id, category: "layout", ...ref });
+      toInsert.push(sanitize(ref, "layout"));
     }
     for (const ref of result.content_references || []) {
-      toInsert.push({ user_id: user.id, category: "conteudo", ...ref });
+      toInsert.push(sanitize(ref, "conteudo"));
     }
     if (!hasGoldenCases) {
       for (const ref of result.golden_case_starters || []) {
-        toInsert.push({ user_id: user.id, category: "golden_case_starter", ...ref });
+        toInsert.push(sanitize(ref, "golden_case_starter"));
       }
     }
 
