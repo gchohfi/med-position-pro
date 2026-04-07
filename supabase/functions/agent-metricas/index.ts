@@ -25,9 +25,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
-
     const { profile, metrics } = await req.json();
 
     const userPrompt = `Analise as métricas de Instagram do seguinte perfil médico:
@@ -42,7 +39,7 @@ ${JSON.stringify(metrics ?? [], null, 2)}
 
 Forneça uma análise completa de performance com recomendações práticas de otimização.`;
 
-    const res = await callClaudeStream(apiKey, SYSTEM_PROMPT, userPrompt);
+    const res = await callClaudeStream("", SYSTEM_PROMPT, userPrompt);
     const stream = buildAnthropicStream(res);
 
     return new Response(stream, {
