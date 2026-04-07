@@ -712,10 +712,24 @@ const Carrossel = () => {
                     )}
                   </Button>
                   {roteiro && (
-                    <Button variant="outline" onClick={handleReset}>
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Novo Roteiro
-                    </Button>
+                    <>
+                      <Button variant="outline" onClick={handleReset}>
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Novo Roteiro
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={handleSaveCarousel}
+                        disabled={savingCarousel}
+                      >
+                        {savingCarousel ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4 mr-2" />
+                        )}
+                        Salvar
+                      </Button>
+                    </>
                   )}
                 </div>
               </CardContent>
