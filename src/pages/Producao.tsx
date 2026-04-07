@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import type { CarouselSlide } from "@/types/carousel";
+import { normalizeCampaignResult } from "@/lib/producao-helpers";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,23 @@ const emptyBrief = (): Brief => ({
 
 const STEPS = ["Brief", "Campanha", "Aprovação", "Exportação"] as const;
 
+const parseStoredRecord = (value: unknown): Record<string, unknown> => {
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : {};
+    } catch {
+      return {};
+    }
+  }
+
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+};
+
 const Producao = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -94,32 +112,22 @@ const Producao = () => {
         if (error) throw error;
         if (!data) return;
 
-        // Support both new slide_plan_json (via generated_content) and legacy strategic_input
-        const rawData = data as Record<string, unknown>;
-        const slidePlan = rawData.slide_plan_json ?? rawData.generated_content;
-        if (slidePlan && typeof slidePlan === "object" && (slidePlan as any).slides) {
-          const parsed = typeof slidePlan === "string"
-            ? JSON.parse(slidePlan)
-            : slidePlan;
-          setCampaign(parsed);
-          setStep(2); // Go to approval
-        } else if (data.strategic_input || data.generated_content) {
-          const input = data.strategic_input
-            ? (typeof data.strategic_input === "string" ? JSON.parse(data.strategic_input) : data.strategic_input)
-            : {};
-          setBrief({
-            ...emptyBrief(),
-            ...input,
-          });
-          if (data.generated_content) {
-            const content = typeof data.generated_content === "string"
-              ? JSON.parse(data.generated_content)
-              : data.generated_content;
-            setCampaign(content);
-            setStep(2);
-          } else {
-            setStep(0);
-          }
+        const input = parseStoredRecord(data.strategic_input);
+        setBrief({
+          ...emptyBrief(),
+          ...input,
+        });
+
+        const normalizedCampaign = normalizeCampaignResult(
+          data.generated_content,
+          data.title ?? (typeof input.tese === "string" ? input.tese : undefined) ?? undefined
+        );
+
+        if (normalizedCampaign) {
+          setCampaign(normalizedCampaign);
+          setStep(2);
+        } else {
+          setStep(0);
         }
       } catch (err) {
         console.error("Erro ao carregar conteúdo:", err);
@@ -150,14 +158,10 @@ const Producao = () => {
 
       if (error) throw error;
 
-      const result: CampaignResult = {
-        titulo: data.titulo_campanha || data.titulo || "Campanha sem título",
-        legenda: data.legenda || "",
-        hashtags: data.hashtags || [],
-        slides: (data.slide_plan || data.slides || data.slide_plan_json?.slides || []).map(
-          (s: CarouselSlide) => ({ ...s, approved: true })
-        ),
-      };
+      const result = normalizeCampaignResult(data, brief.tese);
+      if (!result || result.slides.length === 0) {
+        throw new Error("A IA retornou uma campanha sem slides válidos.");
+      }
 
       setCampaign(result);
       setStep(2);
@@ -174,7 +178,7 @@ const Producao = () => {
     if (!campaign) return;
     setCampaign({
       ...campaign,
-      slides: campaign.slides.map((s, i) =>
+      slides: (campaign.slides ?? []).map((s, i) =>
         i === index ? { ...s, approved: !s.approved } : s
       ),
     });
@@ -424,7 +428,7 @@ const Producao = () => {
               </CardContent>
             </Card>
 
-            {campaign.slides.map((slide, i) => (
+            {(campaign.slides ?? []).map((slide, i) => (
               <Card
                 key={i}
                 className={slide.approved ? "border-green-500/30" : "opacity-60"}
@@ -511,9 +515,9 @@ const Producao = () => {
                   </div>
                 )}
 
-                {campaign.hashtags?.length > 0 && (
+                {(campaign.hashtags ?? []).length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    {campaign.hashtags.map((h) => (
+                    {(campaign.hashtags ?? []).map((h) => (
                       <Badge key={h} variant="secondary" className="text-xs">
                         {h.startsWith("#") ? h : `#${h}`}
                       </Badge>
