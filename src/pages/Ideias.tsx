@@ -42,9 +42,9 @@ const Ideias = () => {
         body: {
           mode: "inspiracao",
           especialidade: profile.especialidade,
-          publico_alvo: profile.publicoAlvo,
-          tom_de_voz: profile.tomDeVoz,
-          pilares: profile.pilares,
+          publico_alvo: profile.publico_alvo,
+          tom_de_voz: profile.tom_de_voz,
+          pilares: profile.diferenciais,
         },
       });
       if (error) throw error;

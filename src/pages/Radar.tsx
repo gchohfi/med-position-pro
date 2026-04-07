@@ -44,7 +44,7 @@ const RadarPage = () => {
     setLoading(true);
     try {
       const { data: result, error } = await supabase.functions.invoke("generate-ideas", {
-        body: { mode: "radar", especialidade: profile.especialidade, publico_alvo: profile.publicoAlvo },
+        body: { mode: "radar", especialidade: profile.especialidade, publico_alvo: profile.publico_alvo },
       });
       if (error) throw error;
       setData(result as RadarData);
@@ -100,8 +100,8 @@ const RadarPage = () => {
                   {data.concorrentes_referencia.map((c, i) => (
                     <div key={i} className="bg-card rounded-2xl border border-border p-5">
                       <h3 className="text-sm font-semibold text-foreground mb-2">{c.tipo_perfil}</h3>
-                      <p className="text-xs text-muted-foreground mb-1"><span className="font-medium text-emerald-600">✓ Estratégia:</span> {c.estrategia}</p>
-                      <p className="text-xs text-muted-foreground"><span className="font-medium text-red-500">✗ Ponto fraco:</span> {c.ponto_fraco}</p>
+                      <p className="text-xs text-muted-foreground mb-1"><span className="font-medium text-accent">✓ Estratégia:</span> {c.estrategia}</p>
+                      <p className="text-xs text-muted-foreground"><span className="font-medium text-destructive">✗ Ponto fraco:</span> {c.ponto_fraco}</p>
                     </div>
                   ))}
                 </div>
