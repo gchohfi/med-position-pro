@@ -28,9 +28,9 @@ Retorne APENAS JSON válido (sem markdown, sem texto fora do JSON) com esta estr
   "cidade": "string — cidade se identificada",
   "estado": "string — sigla do estado (2 letras) se identificado",
   "plataformas": ["instagram"],
-  "publico_alvo": "string — público-alvo aparente",
-  "tom_de_voz": "string — tom de comunicação identificado",
-  "diferenciais": ["string — diferenciais identificados"],
+  "publico_alvo": "string — público-alvo aparente. OBRIGATÓRIO: descreva faixa etária, gênero predominante e principal motivação/necessidade. Ex: 'Mulheres 30-55 anos que buscam rejuvenescimento facial natural e harmonização sem exagero'",
+  "tom_de_voz": "string — tom de comunicação identificado (educativo, manifesto, hibrido ou conversao)",
+  "diferenciais": ["string — diferenciais e pilares de conteúdo identificados"],
   "objetivos": [],
   "bio_instagram": "string — biografia do Instagram se encontrada",
   "confidence": 0.0
