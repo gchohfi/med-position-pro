@@ -106,6 +106,47 @@ const Setup = () => {
     return trimmed.replace(/^@/, "");
   };
 
+  const buildUpdatedSkill = (profileData: DoctorProfile, handle: string): CarouselSkill => ({
+    ...skill,
+    nome_canal: profileData.nome || skill.nome_canal,
+    handle: handle || skill.handle,
+    publico_principal: profileData.publico_alvo || skill.publico_principal,
+    tom: profileData.tom_de_voz || skill.tom,
+    pilares: profileData.diferenciais.length > 0 ? profileData.diferenciais : skill.pilares,
+  });
+
+  const persistProfile = async (profileData: DoctorProfile) => {
+    const normalizedHandle = profileData.instagram_handle?.trim() || undefined;
+    const persistedProfile: DoctorProfile = {
+      ...profileData,
+      instagram_handle: normalizedHandle,
+      skill: buildUpdatedSkill(profileData, normalizedHandle || ""),
+    };
+
+    setProfile(persistedProfile);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return persistedProfile;
+
+    const { error } = await supabase.from("profiles").upsert(
+      {
+        id: user.id,
+        full_name: persistedProfile.nome || null,
+        specialty: persistedProfile.especialidade || null,
+        instagram_handle: normalizedHandle || null,
+        photo_url: persistedProfile.foto_url || null,
+      },
+      { onConflict: "id" }
+    );
+
+    if (error) throw error;
+
+    return persistedProfile;
+  };
+
   const handleInstagramImport = async () => {
     if (!instagramHandle.trim()) {
       toast.error("Cole a URL do perfil do Instagram para importar.");
@@ -125,28 +166,30 @@ const Setup = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      setForm((prev) => ({
-        ...prev,
-        nome: prev.nome || data.nome || "",
+      const importedProfile: DoctorProfile = {
+        ...form,
+        nome: form.nome || data.nome || "",
         especialidade:
-          prev.especialidade === "Outra" && data.especialidade
+          form.especialidade === "Outra" && data.especialidade
             ? data.especialidade
-            : prev.especialidade,
-        subespecialidade: prev.subespecialidade || data.subespecialidade || "",
-        publico_alvo: prev.publico_alvo || data.publico_alvo || "",
-        tom_de_voz: prev.tom_de_voz || data.tom_de_voz || "",
+            : form.especialidade,
+        subespecialidade: form.subespecialidade || data.subespecialidade || "",
+        publico_alvo: form.publico_alvo || data.publico_alvo || "",
+        tom_de_voz: form.tom_de_voz || data.tom_de_voz || "",
         diferenciais:
-          prev.diferenciais.length === 0 && Array.isArray(data.diferenciais)
+          form.diferenciais.length === 0 && Array.isArray(data.diferenciais)
             ? data.diferenciais
-            : prev.diferenciais,
-        bio_instagram: prev.bio_instagram || data.bio_instagram || "",
+            : form.diferenciais,
+        bio_instagram: form.bio_instagram || data.bio_instagram || "",
         instagram_handle: handle,
-      }));
+      };
 
+      setForm(importedProfile);
       setInstagramHandle(handle);
+      await persistProfile(importedProfile);
       const confidence = data.confidence ?? 0;
       toast.success(
-        `Perfil importado com ${Math.round(confidence * 100)}% de confiança.`
+        `Perfil importado e salvo com ${Math.round(confidence * 100)}% de confiança.`
       );
     } catch (err: unknown) {
       toast.error(
@@ -177,38 +220,16 @@ const Setup = () => {
       return;
     }
 
-    const updatedSkill: CarouselSkill = {
-      ...skill,
-      nome_canal: form.nome,
-      handle: instagramHandle.trim() || skill.handle,
-      publico_principal: form.publico_alvo || skill.publico_principal,
-      tom: form.tom_de_voz || skill.tom,
-      pilares: form.diferenciais.length > 0 ? form.diferenciais : skill.pilares,
-    };
-
-    setProfile({
-      ...form,
-      instagram_handle: instagramHandle.trim(),
-      skill: updatedSkill,
-    });
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from("profiles")
-          .update({
-            full_name: form.nome,
-            specialty: form.especialidade,
-            instagram_handle: instagramHandle.trim() || null,
-          })
-          .eq("id", user.id);
-      }
+      await persistProfile({
+        ...form,
+        instagram_handle: instagramHandle.trim(),
+      });
+      toast.success("Perfil salvo com sucesso!");
     } catch (err) {
       console.error("Failed to persist profile:", err);
+      toast.error("Perfil salvo localmente, mas não sincronizou com sua conta.");
     }
-
-    toast.success("Perfil salvo com sucesso!");
   };
 
   return (
