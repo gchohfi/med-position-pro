@@ -124,8 +124,8 @@ Quero saber:
 4. Subespecialidade
 5. Cidade e estado onde atende
 6. CRM se disponível
-7. Público-alvo aparente
-8. Tom de comunicação
+7. Público-alvo aparente (MUITO IMPORTANTE: descreva gênero, faixa etária e principal motivação/necessidade do público. Ex: "Mulheres 30-55 anos buscando rejuvenescimento natural")
+8. Tom de comunicação (educativo, manifesto, híbrido, conversão)
 9. Pilares/temas de conteúdo
 10. Diferenciais
 
