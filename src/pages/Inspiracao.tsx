@@ -37,6 +37,19 @@ import {
 import type { Tables } from "@/integrations/supabase/types";
 import type { ContentIdea, AnalysisResult } from "@/types/inspiration";
 import { mapToObjetivoEnum } from "@/types/inspiration";
+import {
+  ALL_PRESETS,
+  DEFAULT_PRESET_ID,
+  type BenchmarkPresetId,
+} from "@/lib/benchmark-presets";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Compass } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────── */
 type InspirationProfile = Tables<"inspiration_profiles">;
@@ -161,6 +174,7 @@ const Inspiracao = () => {
   const [selectedForAnalysis, setSelectedForAnalysis] = useState<Set<string>>(new Set());
   const [expandedHandles, setExpandedHandles] = useState<Set<string>>(new Set());
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [ideaPreset, setIdeaPreset] = useState<BenchmarkPresetId>(DEFAULT_PRESET_ID);
 
   // Derived
   const pendingProfiles = profiles.filter((p) => p.verification_status === "pending" || p.verification_status === "needs_review");
@@ -297,7 +311,14 @@ const Inspiracao = () => {
 
   const handleUseIdea = (idea: ContentIdea) => {
     const objetivoEnum = mapToObjetivoEnum(idea.por_que_funciona);
-    navigate(ROUTES.carrossel, { state: { tese: idea.tese, objetivoEnum, objetivoDetalhado: `${idea.por_que_funciona} (Inspirado em: ${idea.titulo})` } });
+    navigate(ROUTES.carrossel, {
+      state: {
+        tese: idea.tese,
+        objetivoEnum,
+        objetivoDetalhado: `${idea.por_que_funciona} (Inspirado em: ${idea.titulo})`,
+        benchmarkPreset: ideaPreset,
+      },
+    });
   };
 
   const toggleSet = <T,>(setter: React.Dispatch<React.SetStateAction<Set<T>>>, value: T) => {
