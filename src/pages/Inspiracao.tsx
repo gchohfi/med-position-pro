@@ -37,6 +37,19 @@ import {
 import type { Tables } from "@/integrations/supabase/types";
 import type { ContentIdea, AnalysisResult } from "@/types/inspiration";
 import { mapToObjetivoEnum } from "@/types/inspiration";
+import {
+  ALL_PRESETS,
+  DEFAULT_PRESET_ID,
+  type BenchmarkPresetId,
+} from "@/lib/benchmark-presets";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Compass } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────── */
 type InspirationProfile = Tables<"inspiration_profiles">;
@@ -161,6 +174,7 @@ const Inspiracao = () => {
   const [selectedForAnalysis, setSelectedForAnalysis] = useState<Set<string>>(new Set());
   const [expandedHandles, setExpandedHandles] = useState<Set<string>>(new Set());
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [ideaPreset, setIdeaPreset] = useState<BenchmarkPresetId>(DEFAULT_PRESET_ID);
 
   // Derived
   const pendingProfiles = profiles.filter((p) => p.verification_status === "pending" || p.verification_status === "needs_review");
@@ -297,7 +311,14 @@ const Inspiracao = () => {
 
   const handleUseIdea = (idea: ContentIdea) => {
     const objetivoEnum = mapToObjetivoEnum(idea.por_que_funciona);
-    navigate(ROUTES.carrossel, { state: { tese: idea.tese, objetivoEnum, objetivoDetalhado: `${idea.por_que_funciona} (Inspirado em: ${idea.titulo})` } });
+    navigate(ROUTES.carrossel, {
+      state: {
+        tese: idea.tese,
+        objetivoEnum,
+        objetivoDetalhado: `${idea.por_que_funciona} (Inspirado em: ${idea.titulo})`,
+        benchmarkPreset: ideaPreset,
+      },
+    });
   };
 
   const toggleSet = <T,>(setter: React.Dispatch<React.SetStateAction<Set<T>>>, value: T) => {
@@ -607,7 +628,24 @@ const Inspiracao = () => {
               {allIdeas.length > 0 && (
                 <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-4 pb-8">
                   <Separator />
-                  <SectionHeader icon={<Lightbulb className="h-4 w-4" />} title={`${allIdeas.length} ideias para você`} />
+                  <div className="flex items-center justify-between">
+                    <SectionHeader icon={<Lightbulb className="h-4 w-4" />} title={`${allIdeas.length} ideias para você`} />
+                    <div className="flex items-center gap-2">
+                      <Compass className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Select value={ideaPreset} onValueChange={(v) => setIdeaPreset(v as BenchmarkPresetId)}>
+                        <SelectTrigger className="h-7 w-auto text-[11px] border-border/50 rounded-lg gap-1.5 px-2.5">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ALL_PRESETS.map((p) => (
+                            <SelectItem key={p.id} value={p.id} className="text-xs">
+                              {p.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <div className="grid gap-3 md:grid-cols-2">
                     {allIdeas.map((idea, i) => (
                       <motion.div key={i} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
