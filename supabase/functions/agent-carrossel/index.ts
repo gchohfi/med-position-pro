@@ -199,17 +199,22 @@ serve(async (req) => {
       if (!roteiro) throw new Error("Campo 'roteiro' é obrigatório para rewrite");
       if (!feedback) throw new Error("Campo 'feedback' é obrigatório para rewrite");
 
+      // Accept full roteiro object (with titulo_carrossel, tese, jornada, slides, legenda, hashtags, cta_final)
+      const roteiroContext = typeof roteiro === "object" && !Array.isArray(roteiro)
+        ? roteiro
+        : { slides: roteiro };
+
       userPrompt = `Reescreva o roteiro abaixo incorporando o feedback do cliente.
 
-## ROTEIRO ATUAL
-${JSON.stringify(roteiro, null, 2)}
+## ROTEIRO ATUAL (contexto completo)
+${JSON.stringify(roteiroContext, null, 2)}
 
 ## FEEDBACK DO CLIENTE
 ${feedback}
 
-Mantenha os layouts válidos do sistema TravessIA. Retorne APENAS o JSON completo do novo roteiro.`;
+Mantenha os layouts válidos do sistema TravessIA. Preserve titulo_carrossel, tese, jornada, legenda, hashtags e cta_final, ajustando conforme o feedback. Retorne APENAS o JSON completo do novo roteiro.`;
     } else {
-      const { profile, tese, objetivo } = body;
+      const { profile, tese, objetivo, objetivoDetalhado } = body;
       if (!profile) throw new Error("Campo 'profile' é obrigatório");
       const especialidade = String(profile.especialidade ?? "");
       const nutrologiaHint = /nutrol/i.test(especialidade)
@@ -221,17 +226,19 @@ Instruções extras para NUTROLOGIA:
 - Finalize com pergunta que convide o paciente a relatar sua dificuldade principal.`
         : "";
 
+      // Unified: use "pilares" consistently (frontend sends profile.pilares = profile.diferenciais)
+      const pilares = Array.isArray(profile.pilares) ? profile.pilares.join(", ") : (profile.pilares ?? "Não informados");
+
       userPrompt = `Crie um roteiro completo de carrossel para este médico:
 
 Nome: ${profile.nome ?? "Não informado"}
 Especialidade: ${profile.especialidade ?? "Não informada"}
-Pilares de conteúdo: ${Array.isArray(profile.pilares) ? profile.pilares.join(", ") : (profile.pilares ?? "Não informados")}
+Pilares de conteúdo: ${pilares}
 Público-alvo: ${profile.publico_alvo ?? "Não informado"}
 Tom de voz: ${profile.tom_de_voz ?? "Não informado"}
-Diferenciais: ${profile.diferenciais ?? "Não informados"}
 
 Tese central: ${tese ?? "Não informada"}
-Objetivo: ${objetivo ?? "Educar e engajar"}
+Objetivo: ${objetivo ?? "Educar e engajar"}${objetivoDetalhado ? `\nContexto do objetivo: ${objetivoDetalhado}` : ""}
 ${nutrologiaHint}
 
 Gere entre 7 e 10 slides usando os layouts do sistema TravessIA.

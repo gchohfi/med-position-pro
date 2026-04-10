@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useDoctor } from "@/contexts/DoctorContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ROUTES } from "@/lib/routes";
 import { toast } from "sonner";
@@ -30,6 +31,12 @@ import {
   Eye,
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import type {
+  ContentIdea,
+  ProfileAnalysis,
+  AnalysisResult,
+} from "@/types/inspiration";
+import { mapToObjetivoEnum } from "@/types/inspiration";
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -44,30 +51,6 @@ interface DiscoveryCandidate {
   country?: string;
   specialty?: string;
   followers_estimate?: string;
-}
-
-interface ContentIdea {
-  titulo: string;
-  formato: string;
-  tese: string;
-  por_que_funciona: string;
-}
-
-interface ProfileAnalysis {
-  handle: string;
-  estrategia_resumo: string;
-  topicos_mais_engajados: string[];
-  formatos_eficazes: string[];
-  hooks_eficazes: string[];
-  estilo_visual: string;
-  gaps_conteudo: string[];
-  ideias_inspiradas: ContentIdea[];
-}
-
-interface AnalysisResult {
-  analises: ProfileAnalysis[];
-  oportunidades_cruzadas: string[];
-  tendencias_formato: string;
 }
 
 /* ── Helpers ───────────────────────────────────────────── */
@@ -127,6 +110,7 @@ function formatBadgeVariant(
 
 const Inspiracao = () => {
   const { profile: doctorProfile, isConfigured } = useDoctor();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [profiles, setProfiles] = useState<InspirationProfile[]>([]);
@@ -147,19 +131,27 @@ const Inspiracao = () => {
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult | null>(null);
   const [selectedForAnalysis, setSelectedForAnalysis] = useState<Set<string>>(new Set());
   const [expandedHandles, setExpandedHandles] = useState<Set<string>>(new Set());
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   /* ── Load profiles from Supabase ── */
   const fetchProfiles = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data, error } = await supabase
-      .from("inspiration_profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-    if (!error && data) setProfiles(data);
-    setLoadingProfiles(false);
-  }, []);
+    if (!user) {
+      setLoadingProfiles(false);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from("inspiration_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (!error && data) setProfiles(data);
+    } catch {
+      // silently fail — profiles list stays empty
+    } finally {
+      setLoadingProfiles(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     fetchProfiles();
@@ -181,8 +173,6 @@ const Inspiracao = () => {
       toast.error("Digite ao menos um handle.");
       return;
     }
-
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error("Você precisa estar logado.");
       return;
@@ -244,7 +234,7 @@ const Inspiracao = () => {
         body: {
           especialidade: doctorProfile.especialidade,
           subespecialidade: doctorProfile.subespecialidade ?? "",
-          pilares: doctorProfile.objetivos ?? [],
+          pilares: doctorProfile.diferenciais ?? [],
         },
       });
       if (error) throw error;
@@ -261,7 +251,6 @@ const Inspiracao = () => {
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao descobrir perfis.";
-      console.error("Erro ao descobrir perfis:", err);
       toast.error(message);
     } finally {
       setDiscoveryLoading(false);
@@ -274,8 +263,6 @@ const Inspiracao = () => {
       toast.error("Selecione ao menos um candidato.");
       return;
     }
-
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const accepted = candidates.filter((c) => selectedCandidates.has(c.handle));
@@ -309,7 +296,7 @@ const Inspiracao = () => {
     toast.success(`${newRows.length} perfil(is) aceito(s).`);
   };
 
-  /* ── Stage 2: Verify selected profiles ── */
+  /* ── Stage 2: Verify selected profiles (batch update) ── */
   const handleVerify = async () => {
     if (selectedForVerification.size === 0) {
       toast.error("Selecione ao menos um perfil para verificar.");
@@ -337,12 +324,12 @@ const Inspiracao = () => {
         }>;
       };
 
-      // Update each profile in DB
-      for (const verification of result.results) {
+      // Batch updates in parallel
+      const updatePromises = result.results.map((verification) => {
         const profile = profiles.find(
           (p) => p.normalized_handle === normalizeHandle(verification.handle),
         );
-        if (!profile) continue;
+        if (!profile) return Promise.resolve();
 
         let status: string;
         if (verification.verified) {
@@ -353,7 +340,7 @@ const Inspiracao = () => {
           status = "rejected";
         }
 
-        await supabase
+        return supabase
           .from("inspiration_profiles")
           .update({
             verification_status: status,
@@ -361,15 +348,16 @@ const Inspiracao = () => {
             display_name: verification.display_name ?? profile.display_name,
           })
           .eq("id", profile.id);
-      }
+      });
 
+      await Promise.all(updatePromises);
       await fetchProfiles();
+
       const verified = result.results.filter((r) => r.verified).length;
       toast.success(`Verificação concluída: ${verified}/${result.results.length} verificados.`);
       setSelectedForVerification(new Set());
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao verificar perfis.";
-      console.error("Erro ao verificar perfis:", err);
       toast.error(message);
     } finally {
       setVerificationLoading(false);
@@ -413,7 +401,7 @@ const Inspiracao = () => {
     }
 
     setAnalysisLoading(true);
-    setAnalysisResults(null);
+    setAnalysisError(null);
 
     const handlesToAnalyze = profiles
       .filter((p) => selectedForAnalysis.has(p.id) && p.verification_status === "verified")
@@ -435,23 +423,29 @@ const Inspiracao = () => {
       });
       if (error) throw error;
 
-      setAnalysisResults(data as AnalysisResult);
+      const result = data as AnalysisResult;
+      if (!result?.analises || !Array.isArray(result.analises)) {
+        throw new Error("Resposta da análise em formato inesperado.");
+      }
+      setAnalysisResults(result);
       toast.success("Análise concluída!");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao analisar conteúdo.";
-      console.error("Erro ao analisar conteúdo:", err);
+      setAnalysisError(message);
       toast.error(message);
     } finally {
       setAnalysisLoading(false);
     }
   };
 
-  /* ── Navigate to carrossel with idea ── */
+  /* ── Navigate to carrossel with idea (mapped to enum) ── */
   const handleUseIdea = (idea: ContentIdea) => {
+    const objetivoEnum = mapToObjetivoEnum(idea.por_que_funciona);
     navigate(ROUTES.carrossel, {
       state: {
         tese: idea.tese,
-        objetivo: `${idea.por_que_funciona}${idea.titulo ? ` (Inspirado em: ${idea.titulo})` : ""}`,
+        objetivoEnum,
+        objetivoDetalhado: `${idea.por_que_funciona}${idea.titulo ? ` (Inspirado em: ${idea.titulo})` : ""}`,
       },
     });
   };
@@ -524,7 +518,14 @@ const Inspiracao = () => {
           ideias de conteúdo.
         </p>
 
-        {!isConfigured ? (
+        {!user ? (
+          <Card className="border-destructive/50">
+            <CardContent className="flex items-center gap-4 py-4">
+              <AlertTriangle className="h-6 w-6 text-destructive shrink-0" />
+              <p className="text-sm">Faça login para usar a Inspiração.</p>
+            </CardContent>
+          </Card>
+        ) : !isConfigured ? (
           <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
             <CardContent className="flex items-center gap-4 py-4">
               <AlertTriangle className="h-6 w-6 text-amber-600 shrink-0" />
@@ -921,6 +922,19 @@ const Inspiracao = () => {
                   </button>
                 </div>
 
+                {/* Analysis error */}
+                {analysisError && !analysisLoading && (
+                  <Card className="border-destructive/50">
+                    <CardContent className="flex items-center gap-3 py-3">
+                      <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+                      <p className="text-sm text-destructive">{analysisError}</p>
+                      <Button variant="ghost" size="sm" onClick={handleAnalyze} className="ml-auto shrink-0">
+                        Tentar novamente
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Analysis results */}
                 {analysisResults && (
                   <div className="space-y-4">
@@ -991,7 +1005,7 @@ const Inspiracao = () => {
                                     Tópicos mais engajados
                                   </p>
                                   <div className="flex flex-wrap gap-1">
-                                    {analise.topicos_mais_engajados.map((t) => (
+                                    {(analise.topicos_mais_engajados || []).map((t) => (
                                       <Badge
                                         key={t}
                                         variant="secondary"
@@ -1005,7 +1019,7 @@ const Inspiracao = () => {
                                 <div>
                                   <p className="text-xs font-semibold mb-1">Formatos eficazes</p>
                                   <div className="flex flex-wrap gap-1">
-                                    {analise.formatos_eficazes.map((f) => (
+                                    {(analise.formatos_eficazes || []).map((f) => (
                                       <Badge
                                         key={f}
                                         variant="outline"
@@ -1019,7 +1033,7 @@ const Inspiracao = () => {
                                 <div>
                                   <p className="text-xs font-semibold mb-1">Hooks eficazes</p>
                                   <ul className="space-y-1">
-                                    {analise.hooks_eficazes.map((h, i) => (
+                                    {(analise.hooks_eficazes || []).map((h, i) => (
                                       <li
                                         key={i}
                                         className="text-xs text-muted-foreground flex items-start gap-1"
@@ -1039,7 +1053,7 @@ const Inspiracao = () => {
                                 <div>
                                   <p className="text-xs font-semibold mb-1">Gaps de conteúdo</p>
                                   <ul className="space-y-1">
-                                    {analise.gaps_conteudo.map((g, i) => (
+                                    {(analise.gaps_conteudo || []).map((g, i) => (
                                       <li
                                         key={i}
                                         className="text-xs text-muted-foreground flex items-start gap-1"
@@ -1053,7 +1067,7 @@ const Inspiracao = () => {
                                 <div>
                                   <p className="text-xs font-semibold mb-2">Ideias inspiradas</p>
                                   <div className="space-y-2">
-                                    {analise.ideias_inspiradas.map((idea, i) => (
+                                    {(analise.ideias_inspiradas || []).map((idea, i) => (
                                       <div
                                         key={i}
                                         className="p-3 border rounded-lg bg-accent/30 space-y-1"

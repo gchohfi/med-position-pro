@@ -12,6 +12,7 @@ import {
   avaliarQualidadeRoteiro,
   type PreferredVisualStyle,
 } from "@/types/carousel";
+import { mapToObjetivoEnum, type ObjetivoEnum } from "@/types/inspiration";
 import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
 import type { SlideData } from "@/components/carousel/SlideRenderer";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ interface TopicSuggestion {
   urgencia: string;
 }
 
-const objetivoOptions = [
+const objetivoOptions: { value: ObjetivoEnum; label: string }[] = [
   { value: "educar", label: "Educar" },
   { value: "salvar", label: "Gerar salvamentos" },
   { value: "comentar", label: "Provocar comentários" },
@@ -83,11 +84,13 @@ const Carrossel = () => {
   const [suggestions, setSuggestions] = useState<TopicSuggestion[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsLoaded, setSuggestionsLoaded] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
 
   // Brief form
   const [tema, setTema] = useState("");
   const [tese, setTese] = useState("");
-  const [objetivo, setObjetivo] = useState("educar");
+  const [objetivo, setObjetivo] = useState<ObjetivoEnum>("educar");
+  const [objetivoDetalhado, setObjetivoDetalhado] = useState("");
   const [formato, setFormato] = useState("educativo");
 
   // Roteiro
@@ -96,6 +99,7 @@ const Carrossel = () => {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [visualStyle, setVisualStyle] = useState<PreferredVisualStyle>("editorial_black_gold");
   const [loading, setLoading] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   // Rewrite
   const [feedback, setFeedback] = useState("");
@@ -105,11 +109,23 @@ const Carrossel = () => {
   const [savingCarousel, setSavingCarousel] = useState(false);
   const [savedContentOutputId, setSavedContentOutputId] = useState<string | null>(null);
 
-  // Pre-fill from navigation state
+  // Pre-fill from navigation state — map free text to enum
   useEffect(() => {
-    if (location.state?.tese) {
-      setTese(location.state.tese);
-      if (location.state?.objetivo) setObjetivo(location.state.objetivo);
+    const state = location.state as Record<string, string> | null;
+    if (!state?.tese) return;
+
+    setTese(state.tese);
+
+    if (state.objetivoEnum && objetivoOptions.some((o) => o.value === state.objetivoEnum)) {
+      setObjetivo(state.objetivoEnum as ObjetivoEnum);
+    } else if (state.objetivo) {
+      setObjetivo(mapToObjetivoEnum(state.objetivo));
+    }
+
+    if (state.objetivoDetalhado) {
+      setObjetivoDetalhado(state.objetivoDetalhado);
+    } else if (state.objetivo) {
+      setObjetivoDetalhado(state.objetivo);
     }
   }, [location.state]);
 
@@ -124,6 +140,7 @@ const Carrossel = () => {
   const loadSuggestions = async () => {
     if (!profile || suggestionsLoading) return;
     setSuggestionsLoading(true);
+    setSuggestionsError(null);
     try {
       const { data, error } = await supabase.functions.invoke(
         "suggest-carousel-topics",
@@ -141,7 +158,8 @@ const Carrossel = () => {
       const result = data as { sugestoes?: TopicSuggestion[] };
       if (result.sugestoes?.length) setSuggestions(result.sugestoes);
     } catch (err) {
-      console.error("Erro ao carregar sugestões:", err);
+      const msg = err instanceof Error ? err.message : "Erro ao carregar sugestões.";
+      setSuggestionsError(msg);
     } finally {
       setSuggestionsLoading(false);
       setSuggestionsLoaded(true);
@@ -151,14 +169,15 @@ const Carrossel = () => {
   const handleSelectSuggestion = (s: TopicSuggestion) => {
     setTema(s.titulo);
     setTese(s.tese);
-    setObjetivo(s.objetivo || "educar");
+    setObjetivo(mapToObjetivoEnum(s.objetivo));
+    setObjetivoDetalhado(s.objetivo);
     setFormato(s.formato || "educativo");
     toast.success(`Tema selecionado: ${s.titulo}`);
   };
 
   const handleGenerateFromSuggestion = async (s: TopicSuggestion) => {
     handleSelectSuggestion(s);
-    await generateCarousel(s.tese, s.objetivo || "educar");
+    await generateCarousel(s.tese, mapToObjetivoEnum(s.objetivo));
   };
 
   const applyRoteiro = (parsed: TravessIARoteiro) => {
@@ -168,6 +187,7 @@ const Carrossel = () => {
     const avisos = validarRoteiro(parsed);
     setWarnings(avisos);
     setVisualStyle(parsed.preferredVisualStyle || profile?.skill?.estilo_visual?.preferredVisualStyle || "editorial_black_gold");
+    setGenerateError(null);
     if (avisos.length > 0) {
       toast.warning(`Roteiro gerado com ${avisos.length} aviso(s).`);
     } else {
@@ -175,7 +195,8 @@ const Carrossel = () => {
     }
   };
 
-  const generateCarousel = async (teseOverride?: string, objetivoOverride?: string) => {
+  // Preserve current roteiro until new one succeeds
+  const generateCarousel = async (teseOverride?: string, objetivoOverride?: ObjetivoEnum) => {
     if (!profile) return;
     const useTese = teseOverride || tese;
     if (!useTese.trim()) {
@@ -183,16 +204,18 @@ const Carrossel = () => {
       return;
     }
     setLoading(true);
-    setRoteiro(null);
+    setGenerateError(null);
     setSavedContentOutputId(null);
-    setSlideDataList([]);
-    setWarnings([]);
     try {
       const { data, error } = await supabase.functions.invoke("agent-carrossel", {
         body: {
-          profile,
+          profile: {
+            ...profile,
+            pilares: profile.diferenciais,
+          },
           tese: useTese,
           objetivo: objetivoOverride || objetivo,
+          objetivoDetalhado,
           formato,
           action: "generate",
           skill: profile?.skill,
@@ -215,7 +238,10 @@ const Carrossel = () => {
       if (error) throw error;
       applyRoteiro(data as TravessIARoteiro);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Erro ao gerar carrossel.");
+      const msg = err instanceof Error ? err.message : "Erro ao gerar carrossel.";
+      setGenerateError(msg);
+      toast.error(msg);
+      // Previous roteiro is preserved
     } finally {
       setLoading(false);
     }
@@ -223,6 +249,7 @@ const Carrossel = () => {
 
   const handleGenerate = () => generateCarousel();
 
+  // Send full roteiro context for rewrite
   const handleRewrite = async () => {
     if (!roteiro || !feedback.trim()) {
       toast.error("Escreva o que deseja mudar.");
@@ -233,9 +260,17 @@ const Carrossel = () => {
       const { data, error } = await supabase.functions.invoke("agent-carrossel", {
         body: {
           action: "rewrite",
-          roteiro: roteiro.slides,
+          roteiro: {
+            titulo_carrossel: roteiro.titulo_carrossel,
+            tese: roteiro.tese,
+            jornada: roteiro.jornada,
+            slides: roteiro.slides,
+            legenda: roteiro.legenda,
+            hashtags: roteiro.hashtags,
+            cta_final: roteiro.cta_final,
+          },
           feedback,
-          profile,
+          profile: profile ? { ...profile, pilares: profile.diferenciais } : undefined,
           skill: profile?.skill,
         },
       });
@@ -244,7 +279,9 @@ const Carrossel = () => {
       setFeedback("");
       toast.success("Roteiro reescrito!");
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Erro ao reescrever.");
+      const msg = err instanceof Error ? err.message : "Erro ao reescrever.";
+      toast.error(msg);
+      // Previous roteiro is preserved
     } finally {
       setRewriteLoading(false);
     }
@@ -258,7 +295,7 @@ const Carrossel = () => {
         user_id: user.id,
         content_type: "carrossel",
         title: roteiro.titulo_carrossel || tema || "Carrossel sem título",
-        strategic_input: { tese, objetivo, formato, tema } as any,
+        strategic_input: { tese, objetivo, objetivoDetalhado, formato, tema } as any,
         generated_content: {
           roteiro,
           slideDataList,
@@ -286,6 +323,8 @@ const Carrossel = () => {
     setTema("");
     setTese("");
     setFeedback("");
+    setObjetivoDetalhado("");
+    setGenerateError(null);
   };
 
   /* ── Render ──────────────────────────────────────────── */
@@ -301,7 +340,14 @@ const Carrossel = () => {
           </h1>
         </div>
 
-        {!isConfigured ? (
+        {!user ? (
+          <Card className="max-w-lg">
+            <CardContent className="flex items-center gap-4 py-6">
+              <AlertTriangle className="h-6 w-6 text-destructive shrink-0" />
+              <p className="text-sm">Faça login para criar carrosséis.</p>
+            </CardContent>
+          </Card>
+        ) : !isConfigured ? (
           <Card className="max-w-lg">
             <CardContent className="flex items-center gap-4 py-6">
               <AlertTriangle className="h-6 w-6 text-amber-600 shrink-0" />
@@ -353,6 +399,20 @@ const Carrossel = () => {
                         <p className="text-sm text-muted-foreground">
                           Buscando tendências para {profile?.especialidade}…
                         </p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {suggestionsError && !suggestionsLoading && suggestions.length === 0 && (
+                    <Card className="border-amber-500/50">
+                      <CardContent className="py-4 flex items-center gap-3">
+                        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                        <p className="text-sm text-muted-foreground flex-1">
+                          Não foi possível carregar sugestões. Você pode preencher manualmente abaixo.
+                        </p>
+                        <Button variant="ghost" size="sm" onClick={loadSuggestions} className="shrink-0">
+                          Tentar novamente
+                        </Button>
                       </CardContent>
                     </Card>
                   )}
@@ -444,7 +504,7 @@ const Carrossel = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label>Objetivo</Label>
-                      <Select value={objetivo} onValueChange={setObjetivo}>
+                      <Select value={objetivo} onValueChange={(v) => setObjetivo(v as ObjetivoEnum)}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -469,6 +529,19 @@ const Carrossel = () => {
                       </Select>
                     </div>
                   </div>
+
+                  {objetivoDetalhado && (
+                    <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
+                      <span className="font-medium">Contexto da inspiração:</span> {objetivoDetalhado}
+                    </div>
+                  )}
+
+                  {generateError && (
+                    <div className="text-sm text-destructive bg-destructive/10 rounded-md p-3 flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      <span>{generateError}</span>
+                    </div>
+                  )}
 
                   <div className="flex gap-2 pt-1">
                     <Button
