@@ -1,25 +1,27 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
 import { useDoctor } from "@/contexts/DoctorContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   TravessIARoteiro,
   travessiaToSlideData,
   validarRoteiro,
-  avaliarQualidadeRoteiro,
   type PreferredVisualStyle,
 } from "@/types/carousel";
 import { mapToObjetivoEnum, type ObjetivoEnum } from "@/types/inspiration";
 import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
 import type { SlideData } from "@/components/carousel/SlideRenderer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -36,8 +38,12 @@ import {
   Save,
   Sparkles,
   Zap,
-  TrendingUp,
   Settings,
+  CheckCircle2,
+  FileText,
+  Target,
+  Lightbulb,
+  Hash,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────── */
@@ -65,12 +71,6 @@ const formatoOptions = [
   { value: "protocolo", label: "Protocolo em etapas" },
   { value: "mitos_verdades", label: "Mito vs Verdade" },
 ];
-
-const urgenciaCor: Record<string, string> = {
-  alta: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  media: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  baixa: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-};
 
 /* ── Component ─────────────────────────────────────────── */
 
@@ -109,24 +109,18 @@ const Carrossel = () => {
   const [savingCarousel, setSavingCarousel] = useState(false);
   const [savedContentOutputId, setSavedContentOutputId] = useState<string | null>(null);
 
-  // Pre-fill from navigation state — map free text to enum
+  // Pre-fill from navigation state
   useEffect(() => {
     const state = location.state as Record<string, string> | null;
     if (!state?.tese) return;
-
     setTese(state.tese);
-
     if (state.objetivoEnum && objetivoOptions.some((o) => o.value === state.objetivoEnum)) {
       setObjetivo(state.objetivoEnum as ObjetivoEnum);
     } else if (state.objetivo) {
       setObjetivo(mapToObjetivoEnum(state.objetivo));
     }
-
-    if (state.objetivoDetalhado) {
-      setObjetivoDetalhado(state.objetivoDetalhado);
-    } else if (state.objetivo) {
-      setObjetivoDetalhado(state.objetivo);
-    }
+    if (state.objetivoDetalhado) setObjetivoDetalhado(state.objetivoDetalhado);
+    else if (state.objetivo) setObjetivoDetalhado(state.objetivo);
   }, [location.state]);
 
   // Auto-load suggestions
@@ -142,24 +136,20 @@ const Carrossel = () => {
     setSuggestionsLoading(true);
     setSuggestionsError(null);
     try {
-      const { data, error } = await supabase.functions.invoke(
-        "suggest-carousel-topics",
-        {
-          body: {
-            especialidade: profile.especialidade,
-            subespecialidade: profile.subespecialidade ?? "",
-            publico_alvo: profile.publico_alvo ?? "",
-            tom_de_voz: profile.tom_de_voz ?? "",
-            pilares: profile.diferenciais ?? [],
-          },
-        }
-      );
+      const { data, error } = await supabase.functions.invoke("suggest-carousel-topics", {
+        body: {
+          especialidade: profile.especialidade,
+          subespecialidade: profile.subespecialidade ?? "",
+          publico_alvo: profile.publico_alvo ?? "",
+          tom_de_voz: profile.tom_de_voz ?? "",
+          pilares: profile.diferenciais ?? [],
+        },
+      });
       if (error) throw error;
       const result = data as { sugestoes?: TopicSuggestion[] };
       if (result.sugestoes?.length) setSuggestions(result.sugestoes);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro ao carregar sugestões.";
-      setSuggestionsError(msg);
+      setSuggestionsError(err instanceof Error ? err.message : "Erro ao carregar sugestões.");
     } finally {
       setSuggestionsLoading(false);
       setSuggestionsLoaded(true);
@@ -188,43 +178,26 @@ const Carrossel = () => {
     setWarnings(avisos);
     setVisualStyle(parsed.preferredVisualStyle || profile?.skill?.estilo_visual?.preferredVisualStyle || "editorial_black_gold");
     setGenerateError(null);
-    if (avisos.length > 0) {
-      toast.warning(`Roteiro gerado com ${avisos.length} aviso(s).`);
-    } else {
-      toast.success("Roteiro gerado com sucesso!");
-    }
+    if (avisos.length > 0) toast.warning(`Roteiro gerado com ${avisos.length} aviso(s).`);
+    else toast.success("Roteiro gerado com sucesso!");
   };
 
-  // Preserve current roteiro until new one succeeds
   const generateCarousel = async (teseOverride?: string, objetivoOverride?: ObjetivoEnum) => {
     if (!profile) return;
     const useTese = teseOverride || tese;
-    if (!useTese.trim()) {
-      toast.error("Informe a tese central do carrossel.");
-      return;
-    }
+    if (!useTese.trim()) { toast.error("Informe a tese central."); return; }
     setLoading(true);
     setGenerateError(null);
     setSavedContentOutputId(null);
     try {
       const { data, error } = await supabase.functions.invoke("agent-carrossel", {
         body: {
-          profile: {
-            ...profile,
-            pilares: profile.diferenciais,
-          },
-          tese: useTese,
-          objetivo: objetivoOverride || objetivo,
-          objetivoDetalhado,
-          formato,
-          action: "generate",
-          skill: profile?.skill,
-          topic: tema || useTese,
-          especialidade: profile.especialidade,
-          subespecialidade: profile.subespecialidade,
-          publico_alvo: profile.publico_alvo,
-          tom_de_voz: profile.tom_de_voz,
-          pilares: profile.diferenciais,
+          profile: { ...profile, pilares: profile.diferenciais },
+          tese: useTese, objetivo: objetivoOverride || objetivo, objetivoDetalhado,
+          formato, action: "generate", skill: profile?.skill,
+          topic: tema || useTese, especialidade: profile.especialidade,
+          subespecialidade: profile.subespecialidade, publico_alvo: profile.publico_alvo,
+          tom_de_voz: profile.tom_de_voz, pilares: profile.diferenciais,
           medica_nome: profile.nome,
           medica_handle: profile.instagram_handle || profile.skill?.handle,
           brand_colors: profile.skill?.estilo_visual ? {
@@ -241,7 +214,6 @@ const Carrossel = () => {
       const msg = err instanceof Error ? err.message : "Erro ao gerar carrossel.";
       setGenerateError(msg);
       toast.error(msg);
-      // Previous roteiro is preserved
     } finally {
       setLoading(false);
     }
@@ -249,25 +221,17 @@ const Carrossel = () => {
 
   const handleGenerate = () => generateCarousel();
 
-  // Send full roteiro context for rewrite
   const handleRewrite = async () => {
-    if (!roteiro || !feedback.trim()) {
-      toast.error("Escreva o que deseja mudar.");
-      return;
-    }
+    if (!roteiro || !feedback.trim()) { toast.error("Escreva o que deseja mudar."); return; }
     setRewriteLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("agent-carrossel", {
         body: {
           action: "rewrite",
           roteiro: {
-            titulo_carrossel: roteiro.titulo_carrossel,
-            tese: roteiro.tese,
-            jornada: roteiro.jornada,
-            slides: roteiro.slides,
-            legenda: roteiro.legenda,
-            hashtags: roteiro.hashtags,
-            cta_final: roteiro.cta_final,
+            titulo_carrossel: roteiro.titulo_carrossel, tese: roteiro.tese,
+            jornada: roteiro.jornada, slides: roteiro.slides,
+            legenda: roteiro.legenda, hashtags: roteiro.hashtags, cta_final: roteiro.cta_final,
           },
           feedback,
           profile: profile ? { ...profile, pilares: profile.diferenciais } : undefined,
@@ -277,11 +241,8 @@ const Carrossel = () => {
       if (error) throw error;
       applyRoteiro(data as TravessIARoteiro);
       setFeedback("");
-      toast.success("Roteiro reescrito!");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao reescrever.";
-      toast.error(msg);
-      // Previous roteiro is preserved
+      toast.error(err instanceof Error ? err.message : "Erro ao reescrever.");
     } finally {
       setRewriteLoading(false);
     }
@@ -292,387 +253,431 @@ const Carrossel = () => {
     setSavingCarousel(true);
     try {
       const { data, error } = await supabase.from("content_outputs").insert({
-        user_id: user.id,
-        content_type: "carrossel",
+        user_id: user.id, content_type: "carrossel",
         title: roteiro.titulo_carrossel || tema || "Carrossel sem título",
         strategic_input: { tese, objetivo, objetivoDetalhado, formato, tema } as any,
         generated_content: {
-          roteiro,
-          slideDataList,
-          visualStyle,
-          legenda: roteiro.legenda,
-          hashtags: roteiro.hashtags,
-          cta_final: roteiro.cta_final,
+          roteiro, slideDataList, visualStyle,
+          legenda: roteiro.legenda, hashtags: roteiro.hashtags, cta_final: roteiro.cta_final,
         } as any,
       }).select("id").single();
       if (error) throw error;
       setSavedContentOutputId(data.id);
       toast.success("Carrossel salvo na biblioteca!");
-    } catch {
-      toast.error("Erro ao salvar carrossel.");
-    } finally {
-      setSavingCarousel(false);
-    }
+    } catch { toast.error("Erro ao salvar carrossel."); }
+    finally { setSavingCarousel(false); }
   };
 
   const handleReset = () => {
-    setRoteiro(null);
-    setSavedContentOutputId(null);
-    setSlideDataList([]);
-    setWarnings([]);
-    setTema("");
-    setTese("");
-    setFeedback("");
-    setObjetivoDetalhado("");
-    setGenerateError(null);
+    setRoteiro(null); setSavedContentOutputId(null); setSlideDataList([]);
+    setWarnings([]); setTema(""); setTese(""); setFeedback("");
+    setObjetivoDetalhado(""); setGenerateError(null);
   };
 
-  /* ── Render ──────────────────────────────────────────── */
+  const statusLabel = savedContentOutputId ? "Salvo" : roteiro ? "Rascunho" : "Novo";
+  const statusColor = savedContentOutputId
+    ? "bg-accent/15 text-accent"
+    : roteiro
+      ? "bg-primary/10 text-primary"
+      : "bg-muted text-muted-foreground";
 
+  /* ── Render ──────────────────────────────────────────── */
   return (
     <AppLayout>
-      <div className="p-6 md:p-8">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Layers className="h-6 w-6 text-accent" />
-          <h1 className="font-heading text-2xl font-semibold text-foreground">
-            Criar Carrossel
-          </h1>
+      <div className="flex flex-col h-full min-h-0">
+        {/* ═══ TOP BAR ═══ */}
+        <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+          <div className="flex items-center justify-between px-6 py-3">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Layers className="h-4 w-4 text-accent" />
+                </div>
+                <div>
+                  <h1 className="font-heading text-lg font-semibold text-foreground leading-tight">
+                    {roteiro?.titulo_carrossel || "Studio de Carrossel"}
+                  </h1>
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    Criação estratégica de conteúdo
+                  </p>
+                </div>
+              </div>
+              <Badge variant="secondary" className={`text-[10px] font-medium ${statusColor}`}>
+                {statusLabel}
+              </Badge>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {roteiro && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleReset}
+                    className="text-xs h-8 text-muted-foreground hover:text-foreground"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                    Novo
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSaveCarousel}
+                    disabled={savingCarousel || !!savedContentOutputId}
+                    className="text-xs h-8"
+                  >
+                    {savingCarousel ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    ) : savedContentOutputId ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 text-accent" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    {savedContentOutputId ? "Salvo" : "Salvar"}
+                  </Button>
+                </>
+              )}
+              <Button
+                onClick={handleGenerate}
+                disabled={loading || !tese.trim()}
+                size="sm"
+                className="h-8 bg-accent text-accent-foreground hover:bg-accent/90 text-xs"
+              >
+                {loading ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                {loading ? "Gerando…" : roteiro ? "Regerar" : "Gerar Carrossel"}
+              </Button>
+            </div>
+          </div>
         </div>
 
+        {/* ═══ CONTENT ═══ */}
         {!user ? (
-          <Card className="max-w-lg">
-            <CardContent className="flex items-center gap-4 py-6">
-              <AlertTriangle className="h-6 w-6 text-destructive shrink-0" />
-              <p className="text-sm">Faça login para criar carrosséis.</p>
-            </CardContent>
-          </Card>
+          <EmptyGate icon={<AlertTriangle className="h-5 w-5" />} title="Faça login" description="Você precisa estar logado para criar carrosséis." />
         ) : !isConfigured ? (
-          <Card className="max-w-lg">
-            <CardContent className="flex items-center gap-4 py-6">
-              <AlertTriangle className="h-6 w-6 text-amber-600 shrink-0" />
-              <div className="flex-1">
-                <p className="font-medium">Perfil não configurado</p>
-                <p className="text-sm text-muted-foreground">
-                  Configure seu perfil antes de gerar carrosséis.
-                </p>
-              </div>
-              <Button variant="outline" onClick={() => navigate("/setup")} className="gap-2">
-                <Settings className="h-4 w-4" />
-                Configurar
-              </Button>
-            </CardContent>
-          </Card>
+          <EmptyGate
+            icon={<Settings className="h-5 w-5" />}
+            title="Configure seu perfil"
+            description="O perfil estratégico é necessário para gerar carrosséis com qualidade."
+            action={<Button variant="outline" size="sm" onClick={() => navigate("/setup")}>Configurar agora</Button>}
+          />
         ) : (
-          <div className={`grid gap-6 ${roteiro ? "lg:grid-cols-5" : "lg:grid-cols-1 max-w-3xl"}`}>
-            {/* ═══ LEFT: Input area ═══ */}
-            <div className={`space-y-4 ${roteiro ? "lg:col-span-2" : ""}`}>
-              {/* Suggestions */}
-              {!roteiro && (
-                <section className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-accent" />
-                      <h2 className="text-base font-semibold">Sugestões para você</h2>
-                      {suggestionsLoading && (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+          <div className="flex-1 min-h-0 overflow-auto">
+            <div className={`grid gap-0 h-full ${roteiro ? "lg:grid-cols-[380px_1fr]" : "max-w-2xl mx-auto"}`}>
+
+              {/* ═══ LEFT PANEL: Strategy Briefing ═══ */}
+              <div className={`${roteiro ? "border-r border-border overflow-y-auto" : ""}`}>
+                <div className="p-6 space-y-6">
+
+                  {/* Suggestions */}
+                  {!roteiro && (
+                    <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Lightbulb className="h-4 w-4 text-accent" />
+                          <h2 className="text-sm font-semibold text-foreground tracking-tight">Sugestões inteligentes</h2>
+                        </div>
+                        {suggestionsLoaded && (
+                          <button
+                            onClick={loadSuggestions}
+                            disabled={suggestionsLoading}
+                            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                          >
+                            <RefreshCw className={`h-3 w-3 ${suggestionsLoading ? "animate-spin" : ""}`} />
+                            Atualizar
+                          </button>
+                        )}
+                      </div>
+
+                      {suggestionsLoading && suggestions.length === 0 && (
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="rounded-xl border border-border p-4 space-y-2">
+                              <Skeleton className="h-4 w-3/4" />
+                              <Skeleton className="h-3 w-full" />
+                              <Skeleton className="h-3 w-1/2" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {suggestionsError && !suggestionsLoading && suggestions.length === 0 && (
+                        <div className="rounded-xl border border-border bg-muted/30 p-4 flex items-center gap-3">
+                          <AlertTriangle className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <p className="text-xs text-muted-foreground flex-1">Sugestões indisponíveis. Preencha manualmente.</p>
+                          <button onClick={loadSuggestions} className="text-xs text-accent hover:underline shrink-0">Tentar novamente</button>
+                        </div>
+                      )}
+
+                      {suggestions.length > 0 && (
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {suggestions.map((s, i) => (
+                            <motion.div
+                              key={i}
+                              initial={{ opacity: 0, y: 4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.05 }}
+                              className="group rounded-xl border border-border hover:border-accent/30 transition-all cursor-pointer p-3.5 space-y-2"
+                              onClick={() => handleSelectSuggestion(s)}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <h3 className="text-[13px] font-medium leading-tight line-clamp-2 text-foreground group-hover:text-accent transition-colors">
+                                  {s.titulo}
+                                </h3>
+                                <span className={`text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0 ${
+                                  s.urgencia === "alta" ? "bg-destructive/10 text-destructive" :
+                                  s.urgencia === "media" ? "bg-accent/10 text-accent" :
+                                  "bg-muted text-muted-foreground"
+                                }`}>
+                                  {s.urgencia}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">{s.tese}</p>
+                              <div className="flex gap-1.5 pt-0.5">
+                                <Button
+                                  size="sm"
+                                  className="h-6 text-[10px] flex-1 bg-accent text-accent-foreground hover:bg-accent/90 rounded-lg"
+                                  onClick={(e) => { e.stopPropagation(); handleGenerateFromSuggestion(s); }}
+                                  disabled={loading}
+                                >
+                                  {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Zap className="h-2.5 w-2.5 mr-0.5" />Gerar</>}
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground" onClick={(e) => { e.stopPropagation(); handleSelectSuggestion(s); }}>
+                                  Editar
+                                </Button>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </motion.section>
+                  )}
+
+                  {/* ── Briefing estratégico ── */}
+                  <section className="space-y-5">
+                    {!roteiro && (
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <h2 className="text-sm font-semibold text-foreground tracking-tight">Briefing estratégico</h2>
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="tema" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tema</Label>
+                        <Textarea
+                          id="tema" value={tema} onChange={(e) => setTema(e.target.value)}
+                          placeholder="Ex: Bioestimuladores de colágeno para rejuvenescimento"
+                          rows={1} className="resize-none text-sm border-border/60 focus:border-accent/40 transition-colors rounded-lg"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="tese" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tese central</Label>
+                        <Textarea
+                          id="tese" value={tese} onChange={(e) => setTese(e.target.value)}
+                          placeholder="A maioria dos pacientes começa bioestimuladores tarde demais…"
+                          rows={2} className="resize-none text-sm border-border/60 focus:border-accent/40 transition-colors rounded-lg"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Objetivo</Label>
+                          <Select value={objetivo} onValueChange={(v) => setObjetivo(v as ObjetivoEnum)}>
+                            <SelectTrigger className="h-9 text-sm rounded-lg border-border/60"><SelectValue /></SelectTrigger>
+                            <SelectContent>{objetivoOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Formato</Label>
+                          <Select value={formato} onValueChange={setFormato}>
+                            <SelectTrigger className="h-9 text-sm rounded-lg border-border/60"><SelectValue /></SelectTrigger>
+                            <SelectContent>{formatoOptions.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {objetivoDetalhado && (
+                        <div className="text-[11px] text-muted-foreground bg-accent/5 border border-accent/10 rounded-lg p-2.5 leading-relaxed">
+                          <span className="font-medium text-accent">Inspiração:</span> {objetivoDetalhado}
+                        </div>
                       )}
                     </div>
-                    {suggestionsLoaded && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={loadSuggestions}
-                        disabled={suggestionsLoading}
-                        className="text-xs h-7"
+
+                    {generateError && (
+                      <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                        className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 flex items-start gap-2.5"
                       >
-                        <RefreshCw className="h-3 w-3 mr-1" />
-                        Novas
-                      </Button>
+                        <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-xs text-destructive font-medium">Erro na geração</p>
+                          <p className="text-[11px] text-destructive/70 mt-0.5">{generateError}</p>
+                        </div>
+                      </motion.div>
                     )}
-                  </div>
 
-                  {suggestionsLoading && suggestions.length === 0 && (
-                    <Card>
-                      <CardContent className="py-8 flex flex-col items-center gap-2">
-                        <Loader2 className="h-5 w-5 animate-spin text-accent" />
-                        <p className="text-sm text-muted-foreground">
-                          Buscando tendências para {profile?.especialidade}…
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {suggestionsError && !suggestionsLoading && suggestions.length === 0 && (
-                    <Card className="border-amber-500/50">
-                      <CardContent className="py-4 flex items-center gap-3">
-                        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-                        <p className="text-sm text-muted-foreground flex-1">
-                          Não foi possível carregar sugestões. Você pode preencher manualmente abaixo.
-                        </p>
-                        <Button variant="ghost" size="sm" onClick={loadSuggestions} className="shrink-0">
-                          Tentar novamente
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {suggestions.length > 0 && (
-                    <div className="grid gap-2 md:grid-cols-2">
-                      {suggestions.map((s, i) => (
-                        <Card
-                          key={i}
-                          className="hover:border-accent/30 transition-all cursor-pointer"
+                    {/* Mobile generate button (desktop uses top bar) */}
+                    {!roteiro && (
+                      <div className="lg:hidden">
+                        <Button
+                          onClick={handleGenerate}
+                          disabled={loading || !tese.trim()}
+                          className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                         >
-                          <CardContent className="pt-3 pb-2.5 space-y-1.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <h3 className="text-sm font-semibold leading-tight line-clamp-2">
-                                {s.titulo}
-                              </h3>
-                              <Badge
-                                variant="secondary"
-                                className="text-[10px] shrink-0"
-                              >
-                                {s.urgencia}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground line-clamp-2">
-                              {s.tese}
-                            </p>
-                            <div className="flex gap-2 pt-1">
-                              <Button
-                                size="sm"
-                                className="h-7 text-xs flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleGenerateFromSuggestion(s);
-                                }}
-                                disabled={loading}
-                              >
-                                {loading ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <>
-                                    <Zap className="h-3 w-3 mr-1" />
-                                    Gerar
-                                  </>
-                                )}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectSuggestion(s);
-                                }}
-                              >
-                                Editar
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
+                          {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                          {loading ? "Gerando…" : "Gerar Carrossel"}
+                        </Button>
+                      </div>
+                    )}
+                  </section>
+
+                  {/* ── Rewrite ── */}
+                  {roteiro && (
+                    <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                      <Separator />
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                          <RefreshCw className="h-3 w-3" />
+                          Reescrever
+                        </Label>
+                        <Textarea
+                          value={feedback} onChange={(e) => setFeedback(e.target.value)}
+                          placeholder="O que quer mudar? Ex: Tom mais direto, menos slides…"
+                          rows={2} className="resize-none text-sm border-border/60 focus:border-accent/40 transition-colors rounded-lg"
+                        />
+                        <Button
+                          onClick={handleRewrite} disabled={rewriteLoading || !feedback.trim()}
+                          variant="outline" size="sm" className="rounded-lg text-xs"
+                        >
+                          {rewriteLoading ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1.5" />}
+                          Reescrever
+                        </Button>
+                      </div>
+                    </motion.section>
+                  )}
+
+                  {/* ── Warnings ── */}
+                  {roteiro && warnings.length > 0 && (
+                    <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1">
+                      <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                        <AlertTriangle className="h-3 w-3" />
+                        {warnings.length} aviso(s) de qualidade
+                      </p>
+                      {warnings.map((w, i) => (
+                        <p key={i} className="text-[10px] text-muted-foreground/70 pl-4">{w}</p>
                       ))}
                     </div>
                   )}
-                </section>
-              )}
 
-              {/* Brief form */}
-              <Card>
-                <CardContent className="pt-5 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="tema">Qual é o tema?</Label>
-                    <Textarea
-                      id="tema"
-                      value={tema}
-                      onChange={(e) => setTema(e.target.value)}
-                      placeholder="Ex: Bioestimuladores de colágeno para rejuvenescimento"
-                      rows={2}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tese">Qual é a tese? (o que você defende)</Label>
-                    <Textarea
-                      id="tese"
-                      value={tese}
-                      onChange={(e) => setTese(e.target.value)}
-                      placeholder="Ex: A maioria dos pacientes começa bioestimuladores tarde demais — o melhor momento é antes dos sinais aparecerem."
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Objetivo</Label>
-                      <Select value={objetivo} onValueChange={(v) => setObjetivo(v as ObjetivoEnum)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {objetivoOptions.map((o) => (
-                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Formato</Label>
-                      <Select value={formato} onValueChange={setFormato}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {formatoOptions.map((f) => (
-                            <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {objetivoDetalhado && (
-                    <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
-                      <span className="font-medium">Contexto da inspiração:</span> {objetivoDetalhado}
-                    </div>
-                  )}
-
-                  {generateError && (
-                    <div className="text-sm text-destructive bg-destructive/10 rounded-md p-3 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 shrink-0" />
-                      <span>{generateError}</span>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      onClick={handleGenerate}
-                      disabled={loading || !tese.trim()}
-                      className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Gerando…
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Gerar Carrossel
-                        </>
-                      )}
-                    </Button>
-                    {roteiro && (
-                      <>
-                        <Button variant="outline" size="icon" onClick={handleReset} title="Novo">
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={handleSaveCarousel}
-                          disabled={savingCarousel}
-                          title="Salvar"
-                        >
-                          {savingCarousel ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Save className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Rewrite */}
-              {roteiro && (
-                <Card>
-                  <CardContent className="pt-5 space-y-3">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      Reescrever roteiro
-                    </Label>
-                    <Textarea
-                      value={feedback}
-                      onChange={(e) => setFeedback(e.target.value)}
-                      placeholder="O que quer mudar? Ex: Tom mais direto, menos slides…"
-                      rows={2}
-                    />
-                    <Button
-                      onClick={handleRewrite}
-                      disabled={rewriteLoading || !feedback.trim()}
-                      variant="outline"
-                      size="sm"
-                    >
-                      {rewriteLoading ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                      )}
-                      Reescrever
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Warnings */}
-              {roteiro && warnings.length > 0 && (
-                <Card className="border-amber-500/50">
-                  <CardContent className="py-3 space-y-1">
-                    <p className="text-sm font-medium text-amber-700 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      {warnings.length} aviso(s)
-                    </p>
-                    {warnings.map((w, i) => (
-                      <p key={i} className="text-xs text-amber-600 ml-6">{w}</p>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Legenda */}
-              {roteiro?.legenda && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Legenda e Hashtags</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm whitespace-pre-wrap">{roteiro.legenda}</p>
-                    {roteiro.hashtags && (
-                      <div className="flex flex-wrap gap-1">
-                        {roteiro.hashtags.map((h) => (
-                          <Badge key={h} variant="secondary" className="text-xs">
-                            {h.startsWith("#") ? h : `#${h}`}
-                          </Badge>
-                        ))}
+                  {/* ── Legenda & Hashtags ── */}
+                  {roteiro?.legenda && (
+                    <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                      <Separator />
+                      <div className="space-y-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                            <FileText className="h-3 w-3" />
+                            Legenda
+                          </Label>
+                          <div className="text-[13px] leading-relaxed text-foreground/80 whitespace-pre-wrap bg-muted/20 rounded-lg p-3 border border-border/40">
+                            {roteiro.legenda}
+                          </div>
+                        </div>
+                        {roteiro.hashtags && roteiro.hashtags.length > 0 && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                              <Hash className="h-3 w-3" />
+                              Hashtags
+                            </Label>
+                            <div className="flex flex-wrap gap-1">
+                              {roteiro.hashtags.map((h) => (
+                                <span key={h} className="text-[11px] text-accent bg-accent/8 px-2 py-0.5 rounded-full">
+                                  {h.startsWith("#") ? h : `#${h}`}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {roteiro.cta_final && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                              <Target className="h-3 w-3" />
+                              CTA
+                            </Label>
+                            <p className="text-[12px] text-foreground/70 italic">{roteiro.cta_final}</p>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </motion.section>
+                  )}
+                </div>
+              </div>
+
+              {/* ═══ RIGHT PANEL: Visual Preview ═══ */}
+              {roteiro && slideDataList.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-y-auto bg-muted/20"
+                >
+                  <div className="p-6">
+                    <CarouselVisualPreview
+                      slides={slideDataList}
+                      brandName={profile?.nome}
+                      brandHandle={profile?.instagram_handle || profile?.bio_instagram}
+                      doctorImageUrl={profile?.foto_url}
+                      visualStyle={visualStyle}
+                      contentOutputId={savedContentOutputId}
+                      onSlidesChange={setSlideDataList}
+                      onRegenerate={handleGenerate}
+                    />
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Loading state for generation */}
+              {loading && !roteiro && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="hidden lg:flex flex-col items-center justify-center py-20 gap-4"
+                >
+                  <div className="relative">
+                    <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center">
+                      <Loader2 className="h-7 w-7 text-accent animate-spin" />
+                    </div>
+                  </div>
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-medium text-foreground">Criando seu roteiro</p>
+                    <p className="text-xs text-muted-foreground">Aplicando direção estratégica e visual…</p>
+                  </div>
+                </motion.div>
               )}
             </div>
-
-            {/* ═══ RIGHT: Visual preview ═══ */}
-            {roteiro && slideDataList.length > 0 && (
-              <div className="lg:col-span-3">
-                <CarouselVisualPreview
-                  slides={slideDataList}
-                  brandName={profile?.nome}
-                  brandHandle={profile?.instagram_handle || profile?.bio_instagram}
-                  doctorImageUrl={profile?.foto_url}
-                  visualStyle={visualStyle}
-                  contentOutputId={savedContentOutputId}
-                  onSlidesChange={setSlideDataList}
-                  onRegenerate={handleGenerate}
-                />
-              </div>
-            )}
           </div>
         )}
       </div>
     </AppLayout>
   );
 };
+
+/* ── Empty/Gate State ── */
+function EmptyGate({ icon, title, description, action }: {
+  icon: React.ReactNode; title: string; description: string; action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex-1 flex items-center justify-center p-8">
+      <div className="text-center max-w-sm space-y-3">
+        <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">{icon}</div>
+        <h2 className="font-heading text-lg font-semibold text-foreground">{title}</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+        {action}
+      </div>
+    </div>
+  );
+}
 
 export default Carrossel;
