@@ -628,7 +628,24 @@ const Inspiracao = () => {
               {allIdeas.length > 0 && (
                 <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-4 pb-8">
                   <Separator />
-                  <SectionHeader icon={<Lightbulb className="h-4 w-4" />} title={`${allIdeas.length} ideias para você`} />
+                  <div className="flex items-center justify-between">
+                    <SectionHeader icon={<Lightbulb className="h-4 w-4" />} title={`${allIdeas.length} ideias para você`} />
+                    <div className="flex items-center gap-2">
+                      <Compass className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Select value={ideaPreset} onValueChange={(v) => setIdeaPreset(v as BenchmarkPresetId)}>
+                        <SelectTrigger className="h-7 w-auto text-[11px] border-border/50 rounded-lg gap-1.5 px-2.5">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ALL_PRESETS.map((p) => (
+                            <SelectItem key={p.id} value={p.id} className="text-xs">
+                              {p.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <div className="grid gap-3 md:grid-cols-2">
                     {allIdeas.map((idea, i) => (
                       <motion.div key={i} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
