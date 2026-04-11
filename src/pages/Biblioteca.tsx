@@ -31,6 +31,18 @@ import {
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import {
+  PerformanceBadge,
+  MetricsMiniRow,
+  ManualMetricsDialog,
+  InstagramConnectionStatus,
+} from "@/components/PerformanceMetrics";
+import {
+  normalizePerformanceRow,
+  toPerformanceInsert,
+  type ContentPerformanceRecord,
+  type ContentPerformanceMetrics,
+} from "@/lib/instagram-performance";
+import {
   TravessIARoteiro,
   travessiaToSlideData,
   type PreferredVisualStyle,
