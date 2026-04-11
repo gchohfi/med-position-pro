@@ -116,6 +116,9 @@ const Carrossel = () => {
   const [savingCarousel, setSavingCarousel] = useState(false);
   const [savedContentOutputId, setSavedContentOutputId] = useState<string | null>(null);
 
+  // Campaign link from URL
+  const campaignId = new URLSearchParams(location.search).get("campaign") || null;
+
   // Pre-fill from navigation state — map free text to enum
   useEffect(() => {
     const state = location.state as Record<string, string> | null;
@@ -317,11 +320,11 @@ const Carrossel = () => {
     if (!roteiro || !user) return;
     setSavingCarousel(true);
     try {
-      const { data, error } = await supabase.from("content_outputs").insert({
+      const insertPayload: any = {
         user_id: user.id,
         content_type: "carrossel",
         title: roteiro.titulo_carrossel || tema || "Carrossel sem título",
-        strategic_input: { tese, objetivo, objetivoDetalhado, formato, tema } as any,
+        strategic_input: { tese, objetivo, objetivoDetalhado, formato, tema, preset: activePreset },
         generated_content: {
           roteiro,
           slideDataList,
@@ -329,8 +332,10 @@ const Carrossel = () => {
           legenda: roteiro.legenda,
           hashtags: roteiro.hashtags,
           cta_final: roteiro.cta_final,
-        } as any,
-      }).select("id").single();
+        },
+      };
+      if (campaignId) insertPayload.campaign_id = campaignId;
+      const { data, error } = await supabase.from("content_outputs").insert(insertPayload).select("id").single();
       if (error) throw error;
       setSavedContentOutputId(data.id);
       toast.success("Carrossel salvo na biblioteca!");

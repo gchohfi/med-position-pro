@@ -74,6 +74,7 @@ interface EnrichedItem {
   slideCount: number;
   ctaFinal: string | null;
   tom: string | null;
+  campaign_id: string | null;
 }
 
 interface FeedbackMap {
@@ -107,6 +108,7 @@ function enrichItem(raw: any): EnrichedItem {
     slideCount: roteiro?.slides?.length || gc.slideDataList?.length || 0,
     ctaFinal: roteiro?.cta_final || null,
     tom: si.tom_de_voz || null,
+    campaign_id: raw.campaign_id || null,
   };
 }
 

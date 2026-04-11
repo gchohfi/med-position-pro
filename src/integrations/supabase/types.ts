@@ -59,6 +59,7 @@ export type Database = {
       calendar_items: {
         Row: {
           benchmark_preset: string | null
+          campaign_id: string | null
           content_type: string
           created_at: string
           date: string
@@ -75,6 +76,7 @@ export type Database = {
         }
         Insert: {
           benchmark_preset?: string | null
+          campaign_id?: string | null
           content_type: string
           created_at?: string
           date: string
@@ -91,6 +93,7 @@ export type Database = {
         }
         Update: {
           benchmark_preset?: string | null
+          campaign_id?: string | null
           content_type?: string
           created_at?: string
           date?: string
@@ -107,6 +110,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "calendar_items_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "calendar_items_series_id_fkey"
             columns: ["series_id"]
             isOneToOne: false
@@ -114,6 +124,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      campaigns: {
+        Row: {
+          benchmark_preset: string | null
+          cluster_ids: Json
+          created_at: string
+          end_date: string | null
+          id: string
+          name: string
+          notes: string | null
+          persona_ids: Json
+          start_date: string | null
+          status: string
+          strategic_objective: string | null
+          theme: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          benchmark_preset?: string | null
+          cluster_ids?: Json
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          persona_ids?: Json
+          start_date?: string | null
+          status?: string
+          strategic_objective?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          benchmark_preset?: string | null
+          cluster_ids?: Json
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          persona_ids?: Json
+          start_date?: string | null
+          status?: string
+          strategic_objective?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       content_activity_log: {
         Row: {
@@ -284,6 +345,7 @@ export type Database = {
       }
       content_outputs: {
         Row: {
+          campaign_id: string | null
           carousel_slide_urls: Json | null
           content_type: string
           created_at: string
@@ -298,6 +360,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          campaign_id?: string | null
           carousel_slide_urls?: Json | null
           content_type: string
           created_at?: string
@@ -312,6 +375,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          campaign_id?: string | null
           carousel_slide_urls?: Json | null
           content_type?: string
           created_at?: string
@@ -326,6 +390,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "content_outputs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "content_outputs_derived_from_fkey"
             columns: ["derived_from"]
