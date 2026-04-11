@@ -693,6 +693,10 @@ const Carrossel = () => {
                     setActivePreset(id);
                     const preset = getPreset(id);
                     setVisualStyle(preset.preferredVisualStyle);
+                    if (user) {
+                      processMemorySignals(user.id, [{ type: "preset_chosen", preset: id }])
+                        .then(() => getStrategicMemoryForUser(user.id).then(setMemory));
+                    }
                   }}
                   onSlidesChange={setSlideDataList}
                   onRegenerate={handleGenerate}
