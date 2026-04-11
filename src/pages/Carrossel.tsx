@@ -99,6 +99,7 @@ const Carrossel = () => {
   const [slideDataList, setSlideDataList] = useState<SlideData[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [visualStyle, setVisualStyle] = useState<PreferredVisualStyle>("editorial_black_gold");
+  const [activePreset, setActivePreset] = useState<BenchmarkPresetId>("autoridade_premium");
   const [loading, setLoading] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
