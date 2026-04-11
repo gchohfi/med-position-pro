@@ -990,6 +990,120 @@ export type Database = {
           },
         ]
       }
+      visual_reference_collection_items: {
+        Row: {
+          added_at: string
+          collection_id: string
+          id: string
+          reference_id: string
+        }
+        Insert: {
+          added_at?: string
+          collection_id: string
+          id?: string
+          reference_id: string
+        }
+        Update: {
+          added_at?: string
+          collection_id?: string
+          id?: string
+          reference_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visual_reference_collection_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "visual_reference_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visual_reference_collection_items_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: false
+            referencedRelation: "visual_references"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visual_reference_collections: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      visual_references: {
+        Row: {
+          benchmark_preset: string | null
+          created_at: string
+          description: string | null
+          favorite: boolean
+          id: string
+          image_url: string | null
+          link: string | null
+          ref_type: string
+          suggested_use: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          user_id: string
+          visual_style: string | null
+        }
+        Insert: {
+          benchmark_preset?: string | null
+          created_at?: string
+          description?: string | null
+          favorite?: boolean
+          id?: string
+          image_url?: string | null
+          link?: string | null
+          ref_type?: string
+          suggested_use?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          user_id: string
+          visual_style?: string | null
+        }
+        Update: {
+          benchmark_preset?: string | null
+          created_at?: string
+          description?: string | null
+          favorite?: boolean
+          id?: string
+          image_url?: string | null
+          link?: string | null
+          ref_type?: string
+          suggested_use?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          user_id?: string
+          visual_style?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
