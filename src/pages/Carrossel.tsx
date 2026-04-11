@@ -421,314 +421,266 @@ const Carrossel = () => {
 
   return (
     <AppLayout>
-      <div className="p-6 md:p-8">
+      <div className="max-w-[1440px] mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Layers className="h-6 w-6 text-accent" />
-          <h1 className="font-heading text-2xl font-semibold text-foreground">
-            Criar Carrossel
-          </h1>
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <div className="space-y-1">
+            <h1 className="font-heading text-title tracking-tight text-foreground flex items-center gap-2.5">
+              <Layers className="h-5 w-5 text-accent" />
+              Estúdio de Carrossel
+            </h1>
+            <p className="text-[13px] text-muted-foreground">
+              Crie carrosséis estratégicos com direção editorial e visual integradas
+            </p>
+          </div>
+          {roteiro && (
+            <div className="flex gap-2 shrink-0">
+              <Button variant="outline" size="sm" onClick={handleReset} className="h-8 text-xs gap-1.5">
+                <RotateCcw className="h-3.5 w-3.5" /> Novo
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveCarousel}
+                disabled={savingCarousel}
+                className="h-8 text-xs gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90"
+              >
+                {savingCarousel ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                Salvar
+              </Button>
+            </div>
+          )}
         </div>
 
         {!user ? (
-          <Card className="max-w-lg">
-            <CardContent className="flex items-center gap-4 py-6">
-              <AlertTriangle className="h-6 w-6 text-destructive shrink-0" />
-              <p className="text-sm">Faça login para criar carrosséis.</p>
-            </CardContent>
-          </Card>
+          <div className="surface-card p-6 max-w-lg flex items-center gap-4">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+            <p className="text-sm">Faça login para criar carrosséis.</p>
+          </div>
         ) : !isConfigured ? (
-          <Card className="max-w-lg">
-            <CardContent className="flex items-center gap-4 py-6">
-              <AlertTriangle className="h-6 w-6 text-amber-600 shrink-0" />
-              <div className="flex-1">
-                <p className="font-medium">Perfil não configurado</p>
-                <p className="text-sm text-muted-foreground">
-                  Configure seu perfil antes de gerar carrosséis.
-                </p>
-              </div>
-              <Button variant="outline" onClick={() => navigate("/setup")} className="gap-2">
-                <Settings className="h-4 w-4" />
-                Configurar
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="surface-card p-6 max-w-lg flex items-center gap-4">
+            <AlertTriangle className="h-5 w-5 text-muted-foreground shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Perfil não configurado</p>
+              <p className="text-[13px] text-muted-foreground mt-0.5">Configure seu perfil antes de gerar carrosséis.</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => navigate("/setup")} className="gap-1.5 text-xs h-8">
+              <Settings className="h-3.5 w-3.5" /> Configurar
+            </Button>
+          </div>
         ) : (
-          <div className={`grid gap-6 ${roteiro ? "lg:grid-cols-5" : "lg:grid-cols-1 max-w-3xl"}`}>
-            {/* ═══ LEFT: Input area ═══ */}
-            <div className={`space-y-4 ${roteiro ? "lg:col-span-2" : ""}`}>
+          <div className={`grid gap-8 ${roteiro ? "lg:grid-cols-5" : "lg:grid-cols-1 max-w-3xl"}`}>
+            {/* ═══ LEFT: Briefing panel ═══ */}
+            <div className={`space-y-6 ${roteiro ? "lg:col-span-2" : ""}`}>
               {/* Suggestions */}
               {!roteiro && (
                 <section className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-accent" />
-                      <h2 className="text-base font-semibold">Sugestões para você</h2>
-                      {suggestionsLoading && (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                      )}
-                    </div>
+                    <h3 className="text-label uppercase tracking-wider text-muted-foreground/60">
+                      Sugestões estratégicas
+                    </h3>
                     {suggestionsLoaded && (
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={loadSuggestions}
                         disabled={suggestionsLoading}
-                        className="text-xs h-7"
+                        className="text-xs h-7 text-muted-foreground"
                       >
                         <RefreshCw className="h-3 w-3 mr-1" />
-                        Novas
+                        Atualizar
                       </Button>
                     )}
                   </div>
 
                   {suggestionsLoading && suggestions.length === 0 && (
-                    <Card>
-                      <CardContent className="py-8 flex flex-col items-center gap-2">
-                        <Loader2 className="h-5 w-5 animate-spin text-accent" />
-                        <p className="text-sm text-muted-foreground">
-                          Buscando tendências para {profile?.especialidade}…
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <div className="surface-card p-8 flex flex-col items-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-accent" />
+                      <p className="text-[13px] text-muted-foreground">
+                        Buscando tendências para {profile?.especialidade}…
+                      </p>
+                    </div>
                   )}
 
                   {suggestionsError && !suggestionsLoading && suggestions.length === 0 && (
-                    <Card className="border-amber-500/50">
-                      <CardContent className="py-4 flex items-center gap-3">
-                        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-                        <p className="text-sm text-muted-foreground flex-1">
-                          Não foi possível carregar sugestões. Você pode preencher manualmente abaixo.
-                        </p>
-                        <Button variant="ghost" size="sm" onClick={loadSuggestions} className="shrink-0">
-                          Tentar novamente
-                        </Button>
-                      </CardContent>
-                    </Card>
+                    <div className="surface-card p-4 border-border flex items-center gap-3">
+                      <AlertTriangle className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <p className="text-[13px] text-muted-foreground flex-1">
+                        Não foi possível carregar sugestões.
+                      </p>
+                      <Button variant="ghost" size="sm" onClick={loadSuggestions} className="shrink-0 text-xs h-7">
+                        Tentar novamente
+                      </Button>
+                    </div>
                   )}
 
                   {suggestions.length > 0 && (
-                    <div className="grid gap-2 md:grid-cols-2">
+                    <div className="grid gap-2.5 md:grid-cols-2">
                       {suggestions.map((s, i) => (
-                        <Card
+                        <div
                           key={i}
-                          className="hover:border-accent/30 transition-all cursor-pointer"
+                          className="surface-card p-4 hover:shadow-premium-md hover:border-accent/20 transition-all cursor-pointer group"
                         >
-                          <CardContent className="pt-3 pb-2.5 space-y-1.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <h3 className="text-sm font-semibold leading-tight line-clamp-2">
-                                {s.titulo}
-                              </h3>
-                              <Badge
-                                variant="secondary"
-                                className="text-[10px] shrink-0"
-                              >
-                                {s.urgencia}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground line-clamp-2">
-                              {s.tese}
-                            </p>
-                            <div className="flex gap-2 pt-1">
-                              <Button
-                                size="sm"
-                                className="h-7 text-xs flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleGenerateFromSuggestion(s);
-                                }}
-                                disabled={loading}
-                              >
-                                {loading ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <>
-                                    <Zap className="h-3 w-3 mr-1" />
-                                    Gerar
-                                  </>
-                                )}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectSuggestion(s);
-                                }}
-                              >
-                                Editar
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <h4 className="text-[13px] font-medium leading-snug line-clamp-2 group-hover:text-foreground transition-colors">
+                              {s.titulo}
+                            </h4>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium shrink-0 ${
+                              urgenciaCor[s.urgencia] || "bg-secondary text-muted-foreground"
+                            }`}>
+                              {s.urgencia}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                            {s.tese}
+                          </p>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
+                              onClick={(e) => { e.stopPropagation(); handleGenerateFromSuggestion(s); }}
+                              disabled={loading}
+                            >
+                              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Zap className="h-3 w-3 mr-1" />Gerar</>}
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={(e) => { e.stopPropagation(); handleSelectSuggestion(s); }}>
+                              Editar
+                            </Button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   )}
                 </section>
               )}
 
-              {/* Brief form */}
-              <Card>
-                <CardContent className="pt-5 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="tema">Qual é o tema?</Label>
-                    <Textarea
-                      id="tema"
-                      value={tema}
-                      onChange={(e) => setTema(e.target.value)}
-                      placeholder="Ex: Bioestimuladores de colágeno para rejuvenescimento"
-                      rows={2}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tese">Qual é a tese? (o que você defende)</Label>
-                    <Textarea
-                      id="tese"
-                      value={tese}
-                      onChange={(e) => setTese(e.target.value)}
-                      placeholder="Ex: A maioria dos pacientes começa bioestimuladores tarde demais — o melhor momento é antes dos sinais aparecerem."
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Objetivo</Label>
-                      <Select value={objetivo} onValueChange={(v) => setObjetivo(v as ObjetivoEnum)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {objetivoOptions.map((o) => (
-                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Formato</Label>
-                      <Select value={formato} onValueChange={setFormato}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {formatoOptions.map((f) => (
-                            <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+              {/* Brief form — styled as strategic direction */}
+              <div className="surface-card p-5 space-y-5">
+                <h3 className="text-label uppercase tracking-wider text-muted-foreground/60">
+                  Direção do conteúdo
+                </h3>
 
-                  {objetivoDetalhado && (
-                    <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
-                      <span className="font-medium">Contexto da inspiração:</span> {objetivoDetalhado}
-                    </div>
-                  )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="tema" className="text-xs text-muted-foreground">Tema</Label>
+                  <Textarea
+                    id="tema"
+                    value={tema}
+                    onChange={(e) => setTema(e.target.value)}
+                    placeholder="Ex: Bioestimuladores de colágeno para rejuvenescimento"
+                    rows={2}
+                    className="text-[13px] resize-none bg-background border-border/60 focus:border-accent/40"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="tese" className="text-xs text-muted-foreground">Tese central</Label>
+                  <Textarea
+                    id="tese"
+                    value={tese}
+                    onChange={(e) => setTese(e.target.value)}
+                    placeholder="O que você defende — a opinião que guia o conteúdo"
+                    rows={3}
+                    className="text-[13px] resize-none bg-background border-border/60 focus:border-accent/40"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Objetivo</Label>
+                    <Select value={objetivo} onValueChange={(v) => setObjetivo(v as ObjetivoEnum)}>
+                      <SelectTrigger className="h-9 text-[13px] bg-background"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {objetivoOptions.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Formato</Label>
+                    <Select value={formato} onValueChange={setFormato}>
+                      <SelectTrigger className="h-9 text-[13px] bg-background"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {formatoOptions.map((f) => (
+                          <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-                  {generateError && (
-                    <div className="text-sm text-destructive bg-destructive/10 rounded-md p-3 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 shrink-0" />
-                      <span>{generateError}</span>
-                    </div>
-                  )}
+                {objetivoDetalhado && (
+                  <div className="text-xs text-muted-foreground surface-inset p-2.5 rounded-md">
+                    <span className="font-medium">Contexto:</span> {objetivoDetalhado}
+                  </div>
+                )}
 
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      onClick={handleGenerate}
-                      disabled={loading || !tese.trim()}
-                      className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Gerando…
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Gerar Carrossel
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant={labMode ? "default" : "outline"}
-                      size="icon"
-                      onClick={() => setLabMode(!labMode)}
-                      title="Prompt Lab — testar variações"
-                      className={labMode ? "bg-accent text-accent-foreground" : ""}
-                    >
-                      <FlaskConical className="h-4 w-4" />
-                    </Button>
-                    {roteiro && (
-                      <>
-                        <Button variant="outline" size="icon" onClick={handleReset} title="Novo">
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={handleSaveCarousel}
-                          disabled={savingCarousel}
-                          title="Salvar"
-                        >
-                          {savingCarousel ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Save className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </>
+                {generateError && (
+                  <div className="text-[13px] text-destructive bg-destructive/5 border border-destructive/10 rounded-md p-3 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>{generateError}</span>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={loading || !tese.trim()}
+                    className="flex-1 h-9 bg-accent text-accent-foreground hover:bg-accent/90 text-[13px]"
+                  >
+                    {loading ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Gerando…</>
+                    ) : (
+                      <><Sparkles className="h-4 w-4 mr-2" />Gerar Carrossel</>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
+                  </Button>
+                  <Button
+                    variant={labMode ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => setLabMode(!labMode)}
+                    title="Prompt Lab"
+                    className={`h-9 w-9 ${labMode ? "bg-accent text-accent-foreground" : ""}`}
+                  >
+                    <FlaskConical className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
 
               {/* Prompt Lab */}
               {labMode && tese.trim() && (
-                <Card>
-                  <CardContent className="pt-5">
-                    <PromptLab
-                      onGenerate={handleLabGenerate}
-                      onSelectVariation={handleSelectLabVariation}
-                      loading={loading}
-                      brandName={profile?.nome}
-                      brandHandle={profile?.instagram_handle || profile?.bio_instagram}
-                      doctorImageUrl={profile?.foto_url}
-                    />
-                  </CardContent>
-                </Card>
+                <div className="surface-card p-5">
+                  <PromptLab
+                    onGenerate={handleLabGenerate}
+                    onSelectVariation={handleSelectLabVariation}
+                    loading={loading}
+                    brandName={profile?.nome}
+                    brandHandle={profile?.instagram_handle || profile?.bio_instagram}
+                    doctorImageUrl={profile?.foto_url}
+                  />
+                </div>
               )}
 
               {/* Rewrite */}
               {roteiro && (
-                <Card>
-                  <CardContent className="pt-5 space-y-3">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      Reescrever roteiro
-                    </Label>
-                    <Textarea
-                      value={feedback}
-                      onChange={(e) => setFeedback(e.target.value)}
-                      placeholder="O que quer mudar? Ex: Tom mais direto, menos slides…"
-                      rows={2}
-                    />
-                    <Button
-                      onClick={handleRewrite}
-                      disabled={rewriteLoading || !feedback.trim()}
-                      variant="outline"
-                      size="sm"
-                    >
-                      {rewriteLoading ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                      )}
-                      Reescrever
-                    </Button>
-                  </CardContent>
-                </Card>
+                <div className="surface-card p-5 space-y-3">
+                  <h3 className="text-label uppercase tracking-wider text-muted-foreground/60 flex items-center gap-1.5">
+                    <RefreshCw className="h-3 w-3" /> Refinar roteiro
+                  </h3>
+                  <Textarea
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    placeholder="O que quer mudar? Ex: Tom mais direto, menos slides…"
+                    rows={2}
+                    className="text-[13px] resize-none bg-background border-border/60"
+                  />
+                  <Button
+                    onClick={handleRewrite}
+                    disabled={rewriteLoading || !feedback.trim()}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                  >
+                    {rewriteLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
+                    Reescrever
+                  </Button>
+                </div>
               )}
 
               {/* Performance Score */}
@@ -748,38 +700,34 @@ const Carrossel = () => {
 
               {/* Warnings */}
               {roteiro && warnings.length > 0 && (
-                <Card className="border-amber-500/50">
-                  <CardContent className="py-3 space-y-1">
-                    <p className="text-sm font-medium text-amber-700 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      {warnings.length} aviso(s)
-                    </p>
-                    {warnings.map((w, i) => (
-                      <p key={i} className="text-xs text-amber-600 ml-6">{w}</p>
-                    ))}
-                  </CardContent>
-                </Card>
+                <div className="surface-card p-4 border-border">
+                  <p className="text-[13px] font-medium text-muted-foreground flex items-center gap-2 mb-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    {warnings.length} aviso(s)
+                  </p>
+                  {warnings.map((w, i) => (
+                    <p key={i} className="text-xs text-muted-foreground/70 ml-5.5">{w}</p>
+                  ))}
+                </div>
               )}
 
               {/* Legenda */}
               {roteiro?.legenda && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Legenda e Hashtags</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm whitespace-pre-wrap">{roteiro.legenda}</p>
-                    {roteiro.hashtags && (
-                      <div className="flex flex-wrap gap-1">
-                        {roteiro.hashtags.map((h) => (
-                          <Badge key={h} variant="secondary" className="text-xs">
-                            {h.startsWith("#") ? h : `#${h}`}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <div className="surface-card p-5 space-y-3">
+                  <h3 className="text-label uppercase tracking-wider text-muted-foreground/60">
+                    Legenda e Hashtags
+                  </h3>
+                  <p className="text-[13px] whitespace-pre-wrap leading-relaxed">{roteiro.legenda}</p>
+                  {roteiro.hashtags && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {roteiro.hashtags.map((h) => (
+                        <span key={h} className="text-[11px] text-accent/70 bg-accent/5 px-2 py-0.5 rounded-sm">
+                          {h.startsWith("#") ? h : `#${h}`}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
