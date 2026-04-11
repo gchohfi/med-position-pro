@@ -18,7 +18,7 @@ import {
   Globe,
   Network,
   Image,
-  Compass,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
@@ -34,6 +34,7 @@ const mainLinks: NavLinkItem[] = [
   { label: "Carrossel", icon: Layers, path: ROUTES.carrossel },
   { label: "Biblioteca", icon: Archive, path: ROUTES.biblioteca },
   { label: "Referências", icon: Image, path: ROUTES.referenciasVisuais },
+  { label: "Personas", icon: Users, path: ROUTES.personas },
 ];
 
 const ideaLinks: NavLinkItem[] = [
@@ -41,7 +42,6 @@ const ideaLinks: NavLinkItem[] = [
   { label: "Radar", icon: Radar, path: ROUTES.radar },
   { label: "Benchmark", icon: Globe, path: ROUTES.benchmark },
   { label: "Clusters", icon: Network, path: ROUTES.topicClusters },
-  { label: "Diferenciação", icon: Compass, path: ROUTES.mapaDiferenciacao },
 ];
 
 export function AppSidebar() {

@@ -553,6 +553,57 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_personas: {
+        Row: {
+          created_at: string
+          cta_ideal: string
+          desejo: string
+          dor_principal: string
+          faixa_etaria: string
+          gatilhos_confianca: Json
+          id: string
+          is_active: boolean
+          linguagem_ideal: string
+          momento_vida: string
+          nome_interno: string
+          objecoes: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cta_ideal?: string
+          desejo?: string
+          dor_principal?: string
+          faixa_etaria?: string
+          gatilhos_confianca?: Json
+          id?: string
+          is_active?: boolean
+          linguagem_ideal?: string
+          momento_vida?: string
+          nome_interno: string
+          objecoes?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cta_ideal?: string
+          desejo?: string
+          dor_principal?: string
+          faixa_etaria?: string
+          gatilhos_confianca?: Json
+          id?: string
+          is_active?: boolean
+          linguagem_ideal?: string
+          momento_vida?: string
+          nome_interno?: string
+          objecoes?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       positioning: {
         Row: {
           archetype: string | null

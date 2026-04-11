@@ -42,20 +42,6 @@ Para cada referência, analise:
 - Como adaptar para outra médica brasileira
 
 Responda APENAS com JSON válido.`,
-
-  differentiation_map: `Você é um estrategista de posicionamento competitivo para médicos no Instagram.
-
-Sua tarefa: analisar o posicionamento de uma médica em relação a perfis de referência,
-plotando cada um em dois eixos estratégicos escolhidos pelo usuário.
-
-Você deve:
-- Estimar a posição de cada perfil nos eixos (0 = extremo esquerdo/topo, 100 = extremo direito/base)
-- Identificar zonas vazias onde nenhum perfil está posicionado
-- Sugerir oportunidades de diferenciação
-- Alertar sobre semelhanças excessivas com concorrentes
-- Recomendar o benchmark preset mais coerente
-
-Responda APENAS com JSON válido.`,
 };
 
 const PERPLEXITY_QUERIES: Record<string, (esp: string) => string[]> = {
@@ -70,9 +56,6 @@ const PERPLEXITY_QUERIES: Record<string, (esp: string) => string[]> = {
   benchmark: (esp) => [
     `International medical content trends for ${esp} on social media 2026. Best practices from US, Europe, Asia doctors on Instagram and TikTok.`,
     `Innovative medical education content formats used by top ${esp} influencers globally 2026. What's working in US, UK, Germany, Korea?`,
-  ],
-  differentiation_map: (esp) => [
-    `Positioning strategies of successful ${esp} doctors on Instagram 2026. How do they differentiate? Premium vs accessible, technical vs conversational.`,
   ],
 };
 
@@ -162,44 +145,6 @@ Formato:
     }
   ]
 }`,
-
-  differentiation_map: (ctx) => `Analise o posicionamento competitivo:
-
-Médica:
-- Nome: ${ctx.profile?.nome || ctx.profile?.full_name || "Médica"}
-- Especialidade: ${ctx.especialidade}${ctx.sub}
-- Tom: ${ctx.tom_de_voz}
-
-Perfis de referência: ${ctx.benchmarks?.join(", ") || "nenhum"}
-
-Eixo X: ${ctx.axis_x?.left || "Esquerda"} ↔ ${ctx.axis_x?.right || "Direita"}
-Eixo Y: ${ctx.axis_y?.left || "Topo"} ↔ ${ctx.axis_y?.right || "Base"}
-
-${ctx.perplexityContext ? `\n## DADOS DE MERCADO\n${ctx.perplexityContext}\n` : ""}
-
-IMPORTANTE: x=0 significa extremo "${ctx.axis_x?.left}", x=100 significa extremo "${ctx.axis_x?.right}".
-y=0 significa extremo "${ctx.axis_y?.left}", y=100 significa extremo "${ctx.axis_y?.right}".
-
-Formato:
-{
-  "map": {
-    "profiles": [
-      {
-        "name": "Nome ou @handle",
-        "isUser": true/false,
-        "x": 0-100,
-        "y": 0-100,
-        "preset": "impacto_viral | autoridade_premium | educacao_sofisticada | consultorio_humano",
-        "insight": "Observação curta sobre o posicionamento"
-      }
-    ],
-    "empty_zones": ["Descrição de zona vazia 1", "Descrição de zona vazia 2"],
-    "opportunities": ["Oportunidade estratégica 1", "Oportunidade 2"],
-    "similarities": ["Semelhança excessiva 1"],
-    "recommended_preset": "impacto_viral | autoridade_premium | educacao_sofisticada | consultorio_humano",
-    "recommended_preset_reason": "Por que este preset é o mais coerente"
-  }
-}`,
 };
 
 serve(async (req) => {
@@ -207,18 +152,12 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { mode, especialidade, subespecialidade, publico_alvo, tom_de_voz, pilares, type } = body;
+    const { mode, especialidade, subespecialidade, publico_alvo, tom_de_voz, pilares } = body;
 
-    // Support both 'mode' and 'type' field names
-    const resolvedMode = mode || type;
-
-    if (!resolvedMode || !SYSTEM_PROMPTS[resolvedMode]) {
-      throw new Error("Campo 'mode' obrigatório: inspiracao | radar | benchmark | differentiation_map");
+    if (!mode || !SYSTEM_PROMPTS[mode]) {
+      throw new Error("Campo 'mode' obrigatório: inspiracao | radar | benchmark");
     }
-
-    // For differentiation_map, especialidade comes from profile
-    const esp = especialidade || body.profile?.specialty || body.profile?.especialidade;
-    if (!esp && resolvedMode !== "differentiation_map") throw new Error("Campo 'especialidade' é obrigatório");
+    if (!especialidade) throw new Error("Campo 'especialidade' é obrigatório");
 
     const sub = subespecialidade ? ` (${subespecialidade})` : "";
     const pilaresStr = Array.isArray(pilares) && pilares.length > 0 ? pilares.join(", ") : "";
@@ -226,9 +165,9 @@ serve(async (req) => {
     // Perplexity enrichment
     let perplexityContext = "";
     const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
-    if (perplexityKey && esp) {
+    if (perplexityKey) {
       try {
-        const queries = (PERPLEXITY_QUERIES[resolvedMode] || (() => []))(esp + sub);
+        const queries = PERPLEXITY_QUERIES[mode](especialidade + sub);
         const results = await Promise.all(
           queries.map((q) =>
             callPerplexityText(perplexityKey, [{ role: "user", content: q }], "sonar")
@@ -240,22 +179,17 @@ serve(async (req) => {
     }
 
     const ctx = {
-      especialidade: esp || "Medicina",
+      especialidade,
       sub,
       publico_alvo: publico_alvo ?? "Pacientes em geral",
       tom_de_voz: tom_de_voz ?? "Educativo e acolhedor",
       pilaresStr,
       perplexityContext,
-      // Extra fields for differentiation_map
-      profile: body.profile,
-      benchmarks: body.benchmarks,
-      axis_x: body.axis_x,
-      axis_y: body.axis_y,
     };
 
-    const result = await callClaude("", SYSTEM_PROMPTS[resolvedMode], USER_PROMPTS[resolvedMode](ctx));
+    const result = await callClaude("", SYSTEM_PROMPTS[mode], USER_PROMPTS[mode](ctx));
 
-    return new Response(JSON.stringify({ mode: resolvedMode, ...result }), {
+    return new Response(JSON.stringify({ mode, ...result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
