@@ -24,6 +24,11 @@ import {
   type StrategicMemory,
   type MemorySignal,
 } from "@/lib/strategic-memory";
+import {
+  getFeedbackForUser,
+  getPerformanceHint,
+} from "@/lib/content-feedback";
+import ContentFeedbackPanel from "@/components/carousel/ContentFeedbackPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,6 +51,7 @@ import {
   Sparkles,
   Zap,
   TrendingUp,
+  Star,
   Settings,
 } from "lucide-react";
 
@@ -121,12 +127,15 @@ const Carrossel = () => {
 
   // Strategic memory
   const [memory, setMemory] = useState<StrategicMemory | null>(null);
+  const [performanceHint, setPerformanceHint] = useState<string | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
   const memoryHint = getMemoryHint(memory);
 
-  // Load strategic memory
+  // Load strategic memory + feedback history
   useEffect(() => {
     if (!user) return;
     getStrategicMemoryForUser(user.id).then(setMemory);
+    getFeedbackForUser(user.id).then((fb) => setPerformanceHint(getPerformanceHint(fb)));
   }, [user?.id]);
 
   // Pre-fill from navigation state — map free text to enum
@@ -329,8 +338,8 @@ const Carrossel = () => {
       }).select("id").single();
       if (error) throw error;
       setSavedContentOutputId(data.id);
+      setShowFeedback(true);
       toast.success("Carrossel salvo na biblioteca!");
-      // Track save signal
       processMemorySignals(user.id, [{ type: "save", preset: activePreset, visual: visualStyle }])
         .then(() => getStrategicMemoryForUser(user.id).then(setMemory));
     } catch {
@@ -503,14 +512,27 @@ const Carrossel = () => {
                 </section>
               )}
 
-              {/* Memory hint */}
-              {memoryHint && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/5 border border-accent/10">
-                  <TrendingUp className="h-3.5 w-3.5 text-accent shrink-0" />
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">{memoryHint}</span>
-                    {" · "}Baseado no seu histórico
-                  </p>
+              {/* Memory + performance hints */}
+              {(memoryHint || performanceHint) && (
+                <div className="flex flex-col gap-1.5 px-3 py-2.5 rounded-lg bg-accent/5 border border-accent/10">
+                  {memoryHint && (
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-3.5 w-3.5 text-accent shrink-0" />
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">{memoryHint}</span>
+                        {" · "}Baseado no seu histórico
+                      </p>
+                    </div>
+                  )}
+                  {performanceHint && (
+                    <div className="flex items-center gap-2">
+                      <Star className="h-3.5 w-3.5 text-accent shrink-0" />
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">{performanceHint}</span>
+                        {" · "}Performance percebida
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -686,6 +708,20 @@ const Carrossel = () => {
                     )}
                   </CardContent>
                 </Card>
+              )}
+
+              {/* Feedback panel — shown after save */}
+              {showFeedback && user && savedContentOutputId && (
+                <ContentFeedbackPanel
+                  userId={user.id}
+                  contentOutputId={savedContentOutputId}
+                  benchmarkPreset={activePreset}
+                  visualStyle={visualStyle}
+                  onComplete={() => {
+                    setShowFeedback(false);
+                    getFeedbackForUser(user.id).then((fb) => setPerformanceHint(getPerformanceHint(fb)));
+                  }}
+                />
               )}
             </div>
 
