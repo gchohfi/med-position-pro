@@ -84,7 +84,7 @@ function profileToRow(userId: string, profile: DoctorProfile) {
     specialty: profile.especialidade || null,
     instagram_handle: profile.instagram_handle || null,
     photo_url: profile.foto_url || null,
-    profile_data: profile as Json,
+    profile_data: JSON.parse(JSON.stringify(profile)),
   };
 }
 
@@ -168,7 +168,7 @@ export const DoctorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const payload = profileToRow(user.id, p);
       const { error } = await supabase
         .from("profiles")
-        .upsert(payload as Record<string, unknown>, { onConflict: "id" });
+        .upsert(payload, { onConflict: "id" });
 
       if (error) {
         console.error("[DoctorContext] Remote sync failed:", error.message);
