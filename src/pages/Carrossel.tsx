@@ -630,6 +630,15 @@ const Carrossel = () => {
                         </>
                       )}
                     </Button>
+                    <Button
+                      variant={labMode ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => setLabMode(!labMode)}
+                      title="Prompt Lab — testar variações"
+                      className={labMode ? "bg-accent text-accent-foreground" : ""}
+                    >
+                      <FlaskConical className="h-4 w-4" />
+                    </Button>
                     {roteiro && (
                       <>
                         <Button variant="outline" size="icon" onClick={handleReset} title="Novo">
@@ -653,6 +662,22 @@ const Carrossel = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Prompt Lab */}
+              {labMode && tese.trim() && (
+                <Card>
+                  <CardContent className="pt-5">
+                    <PromptLab
+                      onGenerate={handleLabGenerate}
+                      onSelectVariation={handleSelectLabVariation}
+                      loading={loading}
+                      brandName={profile?.nome}
+                      brandHandle={profile?.instagram_handle || profile?.bio_instagram}
+                      doctorImageUrl={profile?.foto_url}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Rewrite */}
               {roteiro && (
