@@ -29,13 +29,18 @@ Analise o cenário competitivo da especialidade informada:
 - Analise formatos que estão performando melhor (carrossel, reels, stories)
 Responda APENAS com JSON válido.`,
 
-  benchmark: `Você é um pesquisador de tendências internacionais de comunicação médica em redes sociais.
+  benchmark: `Você é um analista estratégico de benchmarks de conteúdo médico para Instagram.
 
-Pesquise e analise:
-- Tendências de conteúdo médico nos EUA, Europa e Ásia
-- Formatos inovadores que médicos internacionais estão usando
-- Estratégias de engajamento validadas internacionalmente
-- Ideias adaptáveis para o contexto médico brasileiro
+Sua tarefa: criar perfis detalhados de referências internacionais FICTÍCIAS mas realistas,
+baseados em padrões reais de perfis médicos de sucesso no Instagram.
+
+Para cada referência, analise:
+- Posicionamento percebido e sensação de marca
+- Estilo editorial e visual dominante
+- Tipo de hook e CTA
+- Forças e fraquezas estratégicas
+- Como adaptar para outra médica brasileira
+
 Responda APENAS com JSON válido.`,
 };
 
