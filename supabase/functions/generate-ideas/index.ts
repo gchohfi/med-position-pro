@@ -112,32 +112,36 @@ Formato:
   ]
 }`,
 
-  benchmark: (ctx) => `Pesquise benchmarks internacionais para:
+  benchmark: (ctx) => `Crie 4 perfis de benchmark para a especialidade:
 Especialidade: ${ctx.especialidade}${ctx.sub}
-${ctx.perplexityContext ? `\n## TENDÊNCIAS INTERNACIONAIS\n${ctx.perplexityContext}\n` : ""}
+${ctx.perplexityContext ? `\n## DADOS DE MERCADO\n${ctx.perplexityContext}\n` : ""}
 
 Formato:
 {
-  "tendencias_globais": [
+  "referencias": [
     {
-      "tendencia": "Nome/descrição da tendência",
-      "origem": "País/região de origem",
-      "exemplo": "Exemplo concreto de aplicação",
-      "adaptacao_brasil": "Como adaptar para médica brasileira"
+      "nome": "Nome fictício do perfil (@handle)",
+      "posicionamento": "Frase-síntese do posicionamento percebido",
+      "estilo_editorial": "educativo | manifesto | hibrido | conversao",
+      "estilo_visual": "editorial_black_gold | ivory_sage | travessia",
+      "hook_style": "provocativo | sofisticado | didatico | acolhedor",
+      "cta_style": "provocativo | refinado | acolhedor | intimo",
+      "sensacao_marca": "Descrição em 1 frase da percepção geral",
+      "forca_autoridade": 1-10,
+      "forca_engajamento": 1-10,
+      "densidade_texto": "minimal | moderada | rica",
+      "ritmo": "alta_tensao | elegante | didatico | conversacional",
+      "pontos_fortes": ["Ponto 1", "Ponto 2"],
+      "o_que_evitar": ["O que não copiar 1"],
+      "como_adaptar": "Sugestão de adaptação para a médica",
+      "preset_sugerido": "impacto_viral | autoridade_premium | educacao_sofisticada | consultorio_humano"
     }
   ],
-  "formatos_inovadores": [
-    {
-      "formato": "Nome do formato",
-      "descricao": "Como funciona",
-      "por_que_funciona": "Motivo do sucesso",
-      "ideia_carrossel": "Sugestão de carrossel usando este formato"
-    }
-  ],
-  "insights": [
+  "insights_estrategicos": [
     {
       "insight": "Observação estratégica",
-      "acao": "O que a médica pode fazer a partir disso"
+      "acao": "O que fazer com isso",
+      "impacto": "alto | medio | baixo"
     }
   ]
 }`,
