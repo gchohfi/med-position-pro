@@ -608,7 +608,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cidade: string | null
           created_at: string
+          crm: string | null
+          estado: string | null
           full_name: string | null
           id: string
           instagram_handle: string | null
@@ -619,7 +622,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cidade?: string | null
           created_at?: string
+          crm?: string | null
+          estado?: string | null
           full_name?: string | null
           id: string
           instagram_handle?: string | null
@@ -630,7 +636,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cidade?: string | null
           created_at?: string
+          crm?: string | null
+          estado?: string | null
           full_name?: string | null
           id?: string
           instagram_handle?: string | null
