@@ -775,6 +775,66 @@ export type Database = {
         }
         Relationships: []
       }
+      topic_clusters: {
+        Row: {
+          benchmark_affinity: Json
+          cluster_name: string
+          contraindications: Json
+          created_at: string
+          description: string | null
+          id: string
+          intent: string
+          last_used_at: string | null
+          notes: string | null
+          priority: string
+          recommended_objectives: Json
+          recommended_visual_styles: Json
+          specialty: string
+          subtopics: Json
+          updated_at: string
+          usage_count: number
+          user_id: string
+        }
+        Insert: {
+          benchmark_affinity?: Json
+          cluster_name: string
+          contraindications?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          intent?: string
+          last_used_at?: string | null
+          notes?: string | null
+          priority?: string
+          recommended_objectives?: Json
+          recommended_visual_styles?: Json
+          specialty: string
+          subtopics?: Json
+          updated_at?: string
+          usage_count?: number
+          user_id: string
+        }
+        Update: {
+          benchmark_affinity?: Json
+          cluster_name?: string
+          contraindications?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          intent?: string
+          last_used_at?: string | null
+          notes?: string | null
+          priority?: string
+          recommended_objectives?: Json
+          recommended_visual_styles?: Json
+          specialty?: string
+          subtopics?: Json
+          updated_at?: string
+          usage_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       uploaded_assets: {
         Row: {
           category: string
