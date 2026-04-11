@@ -117,9 +117,19 @@ const Carrossel = () => {
   // Pre-fill from navigation state — map free text to enum
   useEffect(() => {
     const state = location.state as Record<string, string> | null;
-    if (!state?.tese) return;
+    if (!state) return;
 
-    setTese(state.tese);
+    // Cluster context
+    if (state.clusterName) {
+      setTese(state.clusterName);
+    }
+    if (state.preset && state.preset in BENCHMARK_PRESETS) {
+      setActivePreset(state.preset as BenchmarkPresetId);
+    }
+
+    if (state.tese) {
+      setTese(state.tese);
+    }
 
     if (state.objetivoEnum && objetivoOptions.some((o) => o.value === state.objetivoEnum)) {
       setObjetivo(state.objetivoEnum as ObjetivoEnum);
