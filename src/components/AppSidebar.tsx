@@ -17,6 +17,7 @@ import {
   Radar,
   Globe,
   Network,
+  Image,
   type LucideIcon,
 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
@@ -31,6 +32,7 @@ const mainLinks: NavLinkItem[] = [
   { label: "Perfil", icon: Settings, path: ROUTES.setup },
   { label: "Carrossel", icon: Layers, path: ROUTES.carrossel },
   { label: "Biblioteca", icon: Archive, path: ROUTES.biblioteca },
+  { label: "Referências", icon: Image, path: ROUTES.referenciasVisuais },
 ];
 
 const ideaLinks: NavLinkItem[] = [

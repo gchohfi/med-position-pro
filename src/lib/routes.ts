@@ -37,6 +37,7 @@ export const ROUTES = {
   metricas: "/metricas",
   evolucao: "/evolucao",
   biblioteca: "/biblioteca",
+  referenciasVisuais: "/referencias-visuais",
   memoriaViva: "/memoria-viva",
   atualizacoes: "/atualizacoes",
   supervisor: "/supervisor",
