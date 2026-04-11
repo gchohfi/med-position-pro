@@ -177,17 +177,16 @@ const BenchmarkPage = () => {
 
         {/* Loading */}
         {loading && (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-card rounded-2xl border border-border p-6 space-y-3">
-                <Skeleton className="h-5 w-2/3" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-4/5" />
+              <div key={i} className="surface-card p-5 space-y-3">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-4/5" />
                 <div className="flex gap-2">
-                  <Skeleton className="h-6 w-20" />
-                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-5 w-16" />
+                  <Skeleton className="h-5 w-16" />
                 </div>
-                <Skeleton className="h-1.5 w-full" />
                 <Skeleton className="h-1.5 w-full" />
               </div>
             ))}
@@ -207,7 +206,7 @@ const BenchmarkPage = () => {
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden"
                 >
-                  <div className="bg-card rounded-2xl border border-accent/20 p-6 space-y-4">
+                  <div className="surface-card border-accent/20 p-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
                         <Eye className="h-5 w-5 text-accent" /> Comparação estratégica
@@ -269,16 +268,16 @@ const BenchmarkPage = () => {
             {/* Benchmark cards */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-accent" /> Referências analisadas
-                </h2>
+                <h3 className="text-label uppercase tracking-wider text-muted-foreground/60">
+                  Referências analisadas
+                </h3>
                 {data.referencias.length > 1 && (
                   <p className="text-[11px] text-muted-foreground">
                     Selecione 2-3 cards para comparar
                   </p>
                 )}
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-2">
                 {data.referencias.map((ref, i) => {
                   const isSelected = selected.has(i);
                   const presetId = ref.preset_sugerido as BenchmarkPresetId;
@@ -290,10 +289,12 @@ const BenchmarkPage = () => {
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
-                      className={`bg-card rounded-2xl border-2 p-6 transition-all cursor-pointer ${
-                        isSelected ? "border-accent shadow-md" : "border-border hover:border-accent/20"
+                      className={`surface-card transition-all cursor-pointer ${
+                        isSelected ? "border-accent shadow-premium-md ring-1 ring-accent/10" : "hover:shadow-premium-md hover:border-accent/20"
                       }`}
                       onClick={() => toggleSelect(i)}
+                    >
+                      <div className="p-5">
                     >
                       {/* Header */}
                       <div className="flex items-start justify-between gap-2 mb-3">
