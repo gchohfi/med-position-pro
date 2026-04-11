@@ -1,16 +1,14 @@
 /**
  * Shared JSON extraction helper for Edge Functions.
- *
- * Attempts:
- *  1. Direct JSON.parse
- *  2. Strip markdown code fences, then parse
- *  3. Find the first { … } block, then parse
+ * Uses safeJsonParse for robust handling of truncated/malformed AI output.
  */
 
+import { safeJsonParse } from "./json-utils.ts";
+
 export function extractJSON(text: string): Record<string, unknown> {
-  // 1. Direct parse
+  // 1. Direct robust parse
   try {
-    return JSON.parse(text);
+    return safeJsonParse(text);
   } catch {
     // fall through
   }
@@ -22,7 +20,7 @@ export function extractJSON(text: string): Record<string, unknown> {
     .trim();
 
   try {
-    return JSON.parse(stripped);
+    return safeJsonParse(stripped);
   } catch {
     // fall through
   }
@@ -30,7 +28,7 @@ export function extractJSON(text: string): Record<string, unknown> {
   // 3. Find first { … } block
   const match = stripped.match(/\{[\s\S]*\}/);
   if (match) {
-    return JSON.parse(match[0]);
+    return safeJsonParse(match[0]);
   }
 
   throw new Error("Não foi possível extrair JSON da resposta");
