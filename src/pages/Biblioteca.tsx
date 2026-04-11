@@ -406,7 +406,13 @@ const Biblioteca = () => {
           </p>
         </div>
 
-        {/* Stats bar */}
+        {/* Instagram connection status */}
+        {!loading && items.length > 0 && (
+          <div className="mb-4">
+            <InstagramConnectionStatus connected={false} />
+          </div>
+        )}
+
         {!loading && items.length > 0 && (
           <div className="flex gap-3 mb-6 flex-wrap">
             <StatPill label="Total" value={stats.total} />
