@@ -652,6 +652,13 @@ const Biblioteca = () => {
                     )}
                   </div>
 
+                  {/* Performance metrics */}
+                  {perfMap[item.id] && (
+                    <div className="mb-2">
+                      <MetricsMiniRow metrics={perfMap[item.id].metrics} />
+                    </div>
+                  )}
+
                   {/* CTA preview */}
                   {item.ctaFinal && (
                     <p className="text-[10px] text-muted-foreground italic line-clamp-1 mb-3">
