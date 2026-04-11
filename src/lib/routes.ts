@@ -43,6 +43,7 @@ export const ROUTES = {
   supervisor: "/supervisor",
   topicClusters: "/topic-clusters",
   personas: "/personas",
+  campanhas: "/campanhas",
 } as const;
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES];

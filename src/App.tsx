@@ -48,6 +48,7 @@ const App = () => (
               <Route path={ROUTES.topicClusters} element={<ProtectedRoute><TopicClusters /></ProtectedRoute>} />
               <Route path={ROUTES.referenciasVisuais} element={<ProtectedRoute><ReferenciasVisuais /></ProtectedRoute>} />
               <Route path={ROUTES.personas} element={<ProtectedRoute><Personas /></ProtectedRoute>} />
+              <Route path={ROUTES.campanhas} element={<ProtectedRoute><Campanhas /></ProtectedRoute>} />
 
               {/* Redirect old routes to carrossel */}
               <Route path="/dashboard" element={<Navigate to={ROUTES.carrossel} replace />} />
