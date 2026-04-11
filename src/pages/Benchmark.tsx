@@ -149,25 +149,29 @@ const BenchmarkPage = () => {
 
   return (
     <AppLayout>
-      <div className="p-6 md:p-10 max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-heading text-3xl font-semibold text-foreground mb-1">
-            Benchmark Estratégico
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Analise referências, compare direções e transforme benchmarks em decisões de conteúdo.
-          </p>
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <div className="space-y-1">
+            <h1 className="font-heading text-title tracking-tight text-foreground">
+              Benchmark Estratégico
+            </h1>
+            <p className="text-[13px] text-muted-foreground">
+              Analise referências, compare direções e transforme benchmarks em decisões.
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            {data && selectedRefs.length >= 2 && (
+              <Button variant="outline" size="sm" onClick={() => setCompareMode(!compareMode)} className="h-8 text-xs gap-1.5">
+                <Target className="h-3.5 w-3.5" />
+                {compareMode ? "Fechar" : `Comparar (${selectedRefs.length})`}
+              </Button>
+            )}
+            <Button onClick={generate} disabled={loading} size="sm" className="h-8 text-xs gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90">
+              {loading ? <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> Analisando…</> : <><Globe className="h-3.5 w-3.5" /> Gerar análise</>}
+            </Button>
+          </div>
         </div>
-
-        <div className="flex items-center gap-3 mb-8">
-          <Button onClick={generate} disabled={loading} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90">
-            {loading ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Analisando...</> : <><Globe className="h-4 w-4 mr-2" /> Gerar análise de benchmarks</>}
-          </Button>
-          {data && selectedRefs.length >= 2 && (
-            <Button variant="outline" onClick={() => setCompareMode(!compareMode)} className="rounded-xl gap-2">
-              <Target className="h-4 w-4" />
-              {compareMode ? "Fechar comparação" : `Comparar (${selectedRefs.length})`}
             </Button>
           )}
         </div>
