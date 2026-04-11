@@ -97,154 +97,6 @@ const REGRAS_CFM = `
 - Cite fontes científicas quando usar dados estatísticos
 `;
 
-/* ───────────────────────────────────────────
-   Benchmark Presets — Creative Direction
-   ─────────────────────────────────────────── */
-
-interface PresetBehavior {
-  editorialTone: string;
-  hookStyle: string;
-  ctaStyle: string;
-  narrativeStyle: string;
-  headlineMaxWords: number;
-  bodyDensity: string;
-  recommendedLayouts: string[];
-  avoidLayouts: string[];
-  forbiddenPatterns: string[];
-  turningFrequency: string;
-  statEmphasis: string;
-}
-
-interface BenchmarkPresetDef {
-  label: string;
-  tagline: string;
-  description: string;
-  behavior: PresetBehavior;
-  preferredVisualStyle: string;
-}
-
-const BENCHMARK_PRESETS: Record<string, BenchmarkPresetDef> = {
-  impacto_viral: {
-    label: "Impacto Viral",
-    tagline: "Gancho forte. Quebra de crença. Máximo engajamento.",
-    description: "Conteúdo que provoca, gera debate e maximiza salvamentos e comentários.",
-    behavior: {
-      editorialTone: "Tom direto e provocativo. Frases curtas que criam tensão. Cada slide deve provocar uma reação. Linguagem de consultório informal, como se a médica estivesse revelando algo que poucos sabem. Usar dados que surpreendem. Hooks no estilo: 'Você está fazendo ERRADO', 'Tomei X e AGORA?', 'Ninguém te conta isso'.",
-      hookStyle: "Provocativo e confrontador. A capa DEVE criar tensão imediata. Headline max 5 palavras.",
-      ctaStyle: "CTA confrontador que desafia o leitor. Ex: 'Você vai continuar fazendo errado?'",
-      narrativeStyle: "Ritmo alto: gancho provocativo → dado surpreendente → virada de perspectiva → revelação → CTA confrontador. Alternar tensão forte com respiros mínimos.",
-      headlineMaxWords: 5,
-      bodyDensity: "Ultra conciso, máximo 30 palavras por slide.",
-      recommendedLayouts: ["capa", "turning", "stat", "tonly", "final"],
-      avoidLayouts: ["timeline"],
-      forbiddenPatterns: ["Headlines genéricas", "Tom neutro ou acadêmico", "Frases longas na capa", "CTA genérico"],
-      turningFrequency: "Usar 2-3 slides de virada (turning)",
-      statEmphasis: "Pelo menos 1-2 slides stat com dados de impacto",
-    },
-    preferredVisualStyle: "travessia",
-  },
-  autoridade_premium: {
-    label: "Autoridade Premium",
-    tagline: "Sofisticação médica. Percepção de alto valor.",
-    description: "Construir autoridade e marca pessoal forte. Capa manifesto, tipografia elegante.",
-    behavior: {
-      editorialTone: "Tom de autoridade sofisticada. A médica fala como quem domina o assunto. Menos coloquial, mais posicionamento. Frases assertivas. Termos técnicos com elegância. Sensação de editorial médico premium.",
-      hookStyle: "Sofisticado e assertivo. A capa transmite autoridade e elegância. Headline max 6 palavras.",
-      ctaStyle: "CTA sóbrio e elegante. Ex: 'Se identificou? Salve para sua próxima consulta.'",
-      narrativeStyle: "Ritmo controlado: manifesto → contexto profundo → evidência sólida → opinião de autoridade → recomendação refinada → assinatura. Menos viradas bruscas, mais construção de percepção.",
-      headlineMaxWords: 6,
-      bodyDensity: "Conciso, máximo 40 palavras por slide.",
-      recommendedLayouts: ["capa", "tonly", "stat", "timg", "turning", "final"],
-      avoidLayouts: [],
-      forbiddenPatterns: ["Tom excessivamente coloquial", "Hooks sensacionalistas", "Perguntas de engajamento genéricas"],
-      turningFrequency: "Usar 1-2 slides de virada",
-      statEmphasis: "Pelo menos 1 slide stat com dado contextualizado",
-    },
-    preferredVisualStyle: "editorial_black_gold",
-  },
-  educacao_sofisticada: {
-    label: "Educação Sofisticada",
-    tagline: "Didática elegante. Conteúdo útil e salvável.",
-    description: "Conteúdo educativo de alto nível com clareza, acessibilidade e elegância visual.",
-    behavior: {
-      editorialTone: "Tom didático e acolhedor. A médica ensina com clareza e gentileza. Explicações acessíveis sem simplificar demais. Cada slide deve ter uma pepita de conhecimento prático. Sensação de consultório premium e organizado.",
-      hookStyle: "Didático e claro. A capa promete conhecimento valioso. Headline max 8 palavras.",
-      ctaStyle: "CTA gentil e convidativo. Ex: 'Qual dessas dicas você já faz? Me conta nos comentários.'",
-      narrativeStyle: "Ritmo suave e progressivo: contexto → explicação clara → dado de suporte → dica prática → resumo → convite. Mais slides explicativos e light. Menos viradas bruscas.",
-      headlineMaxWords: 8,
-      bodyDensity: "Moderado, máximo 50 palavras por slide.",
-      recommendedLayouts: ["capa", "timg", "tonly", "light", "stat", "timeline", "final"],
-      avoidLayouts: [],
-      forbiddenPatterns: ["Hooks agressivos", "Tom de confronto", "Linguagem que gera ansiedade", "Dados sem contexto"],
-      turningFrequency: "Usar no máximo 1 slide de virada",
-      statEmphasis: "1 slide stat com dado contextualizado",
-    },
-    preferredVisualStyle: "ivory_sage",
-  },
-  consultorio_humano: {
-    label: "Consultório Humano",
-    tagline: "Proximidade real. Conteúdo que abraça.",
-    description: "Conteúdo profundamente humano e empático. Conexão genuína com pacientes.",
-    behavior: {
-      editorialTone: "Tom conversacional e íntimo. A médica fala como se estivesse sentada com a paciente tomando café. Vulnerabilidade calculada: bastidores, dúvidas de pacientes, situações reais. Usa 'eu', 'você', 'a gente'. Menos dados, mais histórias e acolhimento.",
-      hookStyle: "Acolhedor e identificável. A capa cria conexão emocional. Headline max 7 palavras.",
-      ctaStyle: "CTA íntimo e pessoal. Ex: 'Me conta: você já passou por isso? Quero te ouvir nos comentários.'",
-      narrativeStyle: "Ritmo orgânico: identificação → empatia → contexto pessoal → orientação gentil → convite íntimo. Hooks menos agressivos, mais identificáveis. Soar como conselho de amiga médica.",
-      headlineMaxWords: 7,
-      bodyDensity: "Moderado, máximo 50 palavras por slide.",
-      recommendedLayouts: ["capa", "tonly", "timg", "light", "turning", "final"],
-      avoidLayouts: ["timeline"],
-      forbiddenPatterns: ["Tom frio ou distante", "Linguagem excessivamente técnica", "Hooks que geram medo", "CTA imperativo ou comercial"],
-      turningFrequency: "Usar 1-2 slides de virada",
-      statEmphasis: "Stat opcional, priorizar narrativa humana",
-    },
-    preferredVisualStyle: "ivory_sage",
-  },
-};
-
-function buildPresetPrompt(presetId?: string): string {
-  if (!presetId || !(presetId in BENCHMARK_PRESETS)) return "";
-  const p = BENCHMARK_PRESETS[presetId];
-  const b = p.behavior;
-  return `
-## DIREÇÃO CRIATIVA ATIVA: ${p.label.toUpperCase()}
-${p.description}
-
-### TOM EDITORIAL (OBRIGATÓRIO — siga rigorosamente)
-${b.editorialTone}
-
-### ESTILO DO HOOK
-${b.hookStyle}
-
-### RITMO NARRATIVO
-${b.narrativeStyle}
-
-### ESTILO DO CTA FINAL
-${b.ctaStyle}
-
-### REGRAS DE DENSIDADE
-- Headline máximo: ${b.headlineMaxWords} palavras (RIGOROSO)
-- Corpo: ${b.bodyDensity}
-- Viradas (turning): ${b.turningFrequency}
-- Dados (stat): ${b.statEmphasis}
-
-### LAYOUTS RECOMENDADOS
-Priorizar: ${b.recommendedLayouts.join(", ")}
-${b.avoidLayouts.length > 0 ? `Evitar: ${b.avoidLayouts.join(", ")}` : ""}
-
-### PROIBIÇÕES DESTA DIREÇÃO
-${b.forbiddenPatterns.map((p: string) => `- ${p}`).join("\n")}
-
-### VISUAL RECOMENDADO
-preferredVisualStyle: "${p.preferredVisualStyle}"
-Use este valor no campo preferredVisualStyle do JSON de resposta.
-`;
-}
-
-/* ───────────────────────────────────────────
-   Base system prompt
-   ─────────────────────────────────────────── */
-
 const BASE_SYSTEM = `Você é o roteirista da TravessIA, sistema de carrosséis médicos para Instagram.
 
 ${LAYOUTS_DOC}
@@ -333,19 +185,12 @@ serve(async (req) => {
     const body = await req.json();
     const action = body.action ?? "generate";
     const skill = body.skill;
-    const benchmarkPreset = body.benchmarkPreset;
 
     let systemPrompt = "";
     if (skill) {
       systemPrompt += `## CARROSSEL_SKILL (estilo do cliente)\n${JSON.stringify(skill, null, 2)}\n\n`;
     }
     systemPrompt += BASE_SYSTEM;
-
-    // Inject benchmark preset as creative direction
-    const presetBlock = buildPresetPrompt(benchmarkPreset);
-    if (presetBlock) {
-      systemPrompt += "\n" + presetBlock;
-    }
 
     let userPrompt: string;
 
@@ -354,6 +199,7 @@ serve(async (req) => {
       if (!roteiro) throw new Error("Campo 'roteiro' é obrigatório para rewrite");
       if (!feedback) throw new Error("Campo 'feedback' é obrigatório para rewrite");
 
+      // Accept full roteiro object (with titulo_carrossel, tese, jornada, slides, legenda, hashtags, cta_final)
       const roteiroContext = typeof roteiro === "object" && !Array.isArray(roteiro)
         ? roteiro
         : { slides: roteiro };
@@ -366,7 +212,7 @@ ${JSON.stringify(roteiroContext, null, 2)}
 ## FEEDBACK DO CLIENTE
 ${feedback}
 
-Mantenha os layouts válidos do sistema TravessIA. Preserve titulo_carrossel, tese, jornada, legenda, hashtags e cta_final, ajustando conforme o feedback.${benchmarkPreset ? ` Mantenha a direção criativa "${BENCHMARK_PRESETS[benchmarkPreset]?.label || benchmarkPreset}" ao reescrever.` : ""} Retorne APENAS o JSON completo do novo roteiro.`;
+Mantenha os layouts válidos do sistema TravessIA. Preserve titulo_carrossel, tese, jornada, legenda, hashtags e cta_final, ajustando conforme o feedback. Retorne APENAS o JSON completo do novo roteiro.`;
     } else {
       const { profile, tese, objetivo, objetivoDetalhado } = body;
       if (!profile) throw new Error("Campo 'profile' é obrigatório");
@@ -380,6 +226,7 @@ Instruções extras para NUTROLOGIA:
 - Finalize com pergunta que convide o paciente a relatar sua dificuldade principal.`
         : "";
 
+      // Unified: use "pilares" consistently (frontend sends profile.pilares = profile.diferenciais)
       const pilares = Array.isArray(profile.pilares) ? profile.pilares.join(", ") : (profile.pilares ?? "Não informados");
 
       userPrompt = `Crie um roteiro completo de carrossel para este médico:
@@ -392,7 +239,6 @@ Tom de voz: ${profile.tom_de_voz ?? "Não informado"}
 
 Tese central: ${tese ?? "Não informada"}
 Objetivo: ${objetivo ?? "Educar e engajar"}${objetivoDetalhado ? `\nContexto do objetivo: ${objetivoDetalhado}` : ""}
-${benchmarkPreset ? `Direção criativa: ${BENCHMARK_PRESETS[benchmarkPreset]?.label || benchmarkPreset}` : ""}
 ${nutrologiaHint}
 
 Gere entre 7 e 10 slides usando os layouts do sistema TravessIA.
