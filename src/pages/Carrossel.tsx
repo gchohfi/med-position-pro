@@ -119,6 +119,16 @@ const Carrossel = () => {
   const [savingCarousel, setSavingCarousel] = useState(false);
   const [savedContentOutputId, setSavedContentOutputId] = useState<string | null>(null);
 
+  // Strategic memory
+  const [memory, setMemory] = useState<StrategicMemory | null>(null);
+  const memoryHint = getMemoryHint(memory);
+
+  // Load strategic memory
+  useEffect(() => {
+    if (!user) return;
+    getStrategicMemoryForUser(user.id).then(setMemory);
+  }, [user?.id]);
+
   // Pre-fill from navigation state — map free text to enum
   useEffect(() => {
     const state = location.state as Record<string, string> | null;
