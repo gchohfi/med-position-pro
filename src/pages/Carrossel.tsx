@@ -104,6 +104,7 @@ const Carrossel = () => {
   const [activePreset, setActivePreset] = useState<BenchmarkPresetId>("autoridade_premium");
   const [loading, setLoading] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [labMode, setLabMode] = useState(false);
 
   // Rewrite
   const [feedback, setFeedback] = useState("");
