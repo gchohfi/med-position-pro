@@ -126,12 +126,15 @@ const Carrossel = () => {
 
   // Strategic memory
   const [memory, setMemory] = useState<StrategicMemory | null>(null);
+  const [performanceHint, setPerformanceHint] = useState<string | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
   const memoryHint = getMemoryHint(memory);
 
-  // Load strategic memory
+  // Load strategic memory + feedback history
   useEffect(() => {
     if (!user) return;
     getStrategicMemoryForUser(user.id).then(setMemory);
+    getFeedbackForUser(user.id).then((fb) => setPerformanceHint(getPerformanceHint(fb)));
   }, [user?.id]);
 
   // Pre-fill from navigation state — map free text to enum
