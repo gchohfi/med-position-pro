@@ -42,6 +42,20 @@ Para cada referência, analise:
 - Como adaptar para outra médica brasileira
 
 Responda APENAS com JSON válido.`,
+
+  differentiation_map: `Você é um estrategista de posicionamento competitivo para médicos no Instagram.
+
+Sua tarefa: analisar o posicionamento de uma médica em relação a perfis de referência,
+plotando cada um em dois eixos estratégicos escolhidos pelo usuário.
+
+Você deve:
+- Estimar a posição de cada perfil nos eixos (0 = extremo esquerdo/topo, 100 = extremo direito/base)
+- Identificar zonas vazias onde nenhum perfil está posicionado
+- Sugerir oportunidades de diferenciação
+- Alertar sobre semelhanças excessivas com concorrentes
+- Recomendar o benchmark preset mais coerente
+
+Responda APENAS com JSON válido.`,
 };
 
 const PERPLEXITY_QUERIES: Record<string, (esp: string) => string[]> = {
@@ -56,6 +70,9 @@ const PERPLEXITY_QUERIES: Record<string, (esp: string) => string[]> = {
   benchmark: (esp) => [
     `International medical content trends for ${esp} on social media 2026. Best practices from US, Europe, Asia doctors on Instagram and TikTok.`,
     `Innovative medical education content formats used by top ${esp} influencers globally 2026. What's working in US, UK, Germany, Korea?`,
+  ],
+  differentiation_map: (esp) => [
+    `Positioning strategies of successful ${esp} doctors on Instagram 2026. How do they differentiate? Premium vs accessible, technical vs conversational.`,
   ],
 };
 
