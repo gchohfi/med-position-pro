@@ -240,20 +240,20 @@ export default function Personas() {
   /* ── Render ── */
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto space-y-8 pb-12">
+      <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="font-heading text-2xl text-foreground tracking-tight flex items-center gap-2">
-              <Users className="h-6 w-6 text-accent" />
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="font-heading text-title tracking-tight text-foreground flex items-center gap-2.5">
+              <Users className="h-5 w-5 text-accent" />
               Personas de Paciente
             </h1>
-            <p className="text-sm text-muted-foreground mt-1 max-w-lg">
+            <p className="text-[13px] text-muted-foreground max-w-lg">
               Defina quem é seu público para gerar conteúdo com linguagem, dor e CTA precisos.
             </p>
           </div>
-          <Button onClick={openNew} size="sm" className="gap-2">
-            <Plus className="h-4 w-4" /> Nova Persona
+          <Button onClick={openNew} size="sm" className="h-8 text-xs gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90">
+            <Plus className="h-3.5 w-3.5" /> Nova Persona
           </Button>
         </div>
 
