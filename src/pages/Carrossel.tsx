@@ -320,6 +320,69 @@ const Carrossel = () => {
     }
   };
 
+  /* ── Prompt Lab handlers ───────────────────────── */
+
+  const handleLabGenerate = async (axes: VariationAxis[]): Promise<TravessIARoteiro[]> => {
+    if (!profile || !tese.trim()) {
+      toast.error("Preencha a tese antes de gerar variações.");
+      return [];
+    }
+    const results: TravessIARoteiro[] = [];
+    for (const axis of axes) {
+      const preset = getPreset(axis.presetId);
+      try {
+        const { data, error } = await supabase.functions.invoke("agent-carrossel", {
+          body: {
+            profile: { ...profile, pilares: profile.diferenciais },
+            tese,
+            objetivo,
+            objetivoDetalhado,
+            formato,
+            action: "generate",
+            skill: profile?.skill,
+            topic: tema || tese,
+            especialidade: profile.especialidade,
+            subespecialidade: profile.subespecialidade,
+            publico_alvo: profile.publico_alvo,
+            tom_de_voz: profile.tom_de_voz,
+            pilares: profile.diferenciais,
+            medica_nome: profile.nome,
+            medica_handle: profile.instagram_handle || profile.skill?.handle,
+            labAxis: {
+              presetId: axis.presetId,
+              hookIntensity: axis.hookIntensity,
+              didatismo: axis.didatismo,
+              sofisticacao: axis.sofisticacao,
+              editorialTone: preset.behavior.editorialTone,
+              hookStyle: preset.behavior.hookStyle,
+              ctaStyle: preset.behavior.ctaStyle,
+              narrativeRhythm: preset.behavior.narrativeRhythm,
+              textDensity: preset.behavior.textDensity,
+            },
+          },
+        });
+        if (error) throw error;
+        results.push(data as TravessIARoteiro);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Erro na variação.";
+        toast.error(`Variação ${preset.label}: ${msg}`);
+      }
+    }
+    if (results.length === 0) {
+      toast.error("Nenhuma variação foi gerada.");
+    }
+    return results;
+  };
+
+  const handleSelectLabVariation = (variation: LabVariation) => {
+    applyRoteiro(variation.roteiro);
+    setActivePreset(variation.axis.presetId);
+    const preset = getPreset(variation.axis.presetId);
+    setVisualStyle(preset.preferredVisualStyle);
+    setLabMode(false);
+    toast.success(`Versão "${preset.label}" aplicada ao carrossel.`);
+  };
+
   const handleReset = () => {
     setRoteiro(null);
     setSavedContentOutputId(null);
@@ -330,6 +393,7 @@ const Carrossel = () => {
     setFeedback("");
     setObjetivoDetalhado("");
     setGenerateError(null);
+    setLabMode(false);
   };
 
   /* ── Render ──────────────────────────────────────────── */
