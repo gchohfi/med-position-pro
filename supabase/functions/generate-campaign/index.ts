@@ -141,6 +141,20 @@ Retorne APENAS JSON válido com a estrutura:
   "objetivo": "..."
 }`;
 
+    const personasBlock = activePersonas.length > 0
+      ? `\nPERSONAS DE PACIENTE ATIVAS:\n${JSON.stringify(activePersonas.map((p: any) => ({
+          nome: p.nome_interno,
+          faixa_etaria: p.faixa_etaria,
+          momento_vida: p.momento_vida,
+          dor_principal: p.dor_principal,
+          objecoes: p.objecoes,
+          desejo: p.desejo,
+          gatilhos_confianca: p.gatilhos_confianca,
+          linguagem_ideal: p.linguagem_ideal,
+          cta_ideal: p.cta_ideal,
+        })), null, 2)}\n\nIMPORTANTE: Adapte linguagem, hooks, exemplos e CTAs para ressoar com estas personas. Use a dor principal como gancho, o desejo como promessa e os gatilhos de confiança como prova.`
+      : "";
+
     const userPrompt = `BRIEF DA CAMPANHA:
 ${JSON.stringify(brief, null, 2)}
 
@@ -155,6 +169,7 @@ ${JSON.stringify(memory, null, 2)}
 
 CONTEÚDOS RECENTES (últimos 5):
 ${JSON.stringify(recentContent, null, 2)}
+${personasBlock}
 
 Gere o plano de slides completo para esta campanha, respeitando o tipo "${campaignType}" e o posicionamento do médico. Garanta que o carrossel tenha entre 7 e 10 slides com progressão narrativa clara.`;
 
