@@ -24,6 +24,11 @@ import {
   type StrategicMemory,
   type MemorySignal,
 } from "@/lib/strategic-memory";
+import {
+  getFeedbackForUser,
+  getPerformanceHint,
+} from "@/lib/content-feedback";
+import ContentFeedbackPanel from "@/components/carousel/ContentFeedbackPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
