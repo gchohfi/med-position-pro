@@ -294,190 +294,212 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
 
       {/* Preview area */}
       <div className="p-6">
-        {/* Current slide preview (scaled down) */}
-        <div className="flex flex-col items-center gap-4">
-          <div
-            className={`relative bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center ${
-              expanded ? "w-full" : ""
-            }`}
-            style={{
-              maxWidth: expanded ? "100%" : 400,
-              margin: "0 auto",
-            }}
-          >
-            {/* Scaled preview */}
-            <div
-              style={{
-                width: expanded ? 540 : 320,
-                height: expanded ? 675 : 400,
-                overflow: "hidden",
-                position: "relative",
+        <AnimatePresence mode="wait">
+          {compareMode && onPresetChange ? (
+            <BenchmarkCompareMode
+              key="compare"
+              slides={slides}
+              currentSlide={currentSlide}
+              onSlideChange={setCurrentSlide}
+              brandName={brandName}
+              brandHandle={brandHandle}
+              doctorImageUrl={doctorImageUrl}
+              onSelectPreset={(id) => {
+                onPresetChange(id);
+                setCompareMode(false);
+                toast.success("Direção criativa aplicada.");
               }}
-            >
-              <div
-                style={{
-                  transform: expanded ? "scale(0.5)" : "scale(0.2963)",
-                  transformOrigin: "top left",
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                }}
-              >
-                <SlideRenderer
-                  slide={slides[currentSlide]}
-                  visualSystem={activeStyle}
-                  brandName={brandName}
-                  brandHandle={brandHandle}
-                  contentType={contentType}
-                  doctorImageUrl={doctorImageUrl}
-                />
-              </div>
-            </div>
-
-            {/* Nav arrows */}
-            {currentSlide > 0 && (
-              <button
-                onClick={() => setCurrentSlide((p) => p - 1)}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-background transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4 text-foreground" />
-              </button>
-            )}
-            {currentSlide < slides.length - 1 && (
-              <button
-                onClick={() => setCurrentSlide((p) => p + 1)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-background transition-colors"
-              >
-                <ChevronRight className="h-4 w-4 text-foreground" />
-              </button>
-            )}
-
-            {/* Expand/collapse */}
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-background transition-colors"
-            >
-              {expanded ? (
-                <Minimize2 className="h-3.5 w-3.5 text-foreground" />
-              ) : (
-                <Maximize2 className="h-3.5 w-3.5 text-foreground" />
-              )}
-            </button>
-          </div>
-
-          {/* Slide dots */}
-          <div className="flex items-center gap-1.5">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentSlide(i)}
-                className={`h-2 rounded-full transition-all ${
-                  i === currentSlide
-                    ? "w-6 bg-accent"
-                    : "w-2 bg-muted-foreground/20 hover:bg-muted-foreground/40"
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Slide info + edit button */}
-          <div className="text-center flex flex-col items-center gap-2">
-            <div>
-              <p className="text-xs font-medium text-accent uppercase tracking-wide">
-                {slides[currentSlide]?.label}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Slide {currentSlide + 1} de {slides.length}
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setEditingIndex(editingIndex === currentSlide ? null : currentSlide)}
-              className="text-xs h-7 gap-1.5"
-            >
-              <Pencil className="h-3 w-3" />
-              {editingIndex === currentSlide ? "Fechar editor" : "Editar texto"}
-            </Button>
-          </div>
-
-          {/* Inline slide editor */}
-          {editingIndex === currentSlide && (
-            <SlideEditor
-              slide={slides[currentSlide]}
-              onSave={(updated) => handleSlideEdit(currentSlide, updated)}
-              onCancel={() => setEditingIndex(null)}
+              activePresetId={activePresetId}
             />
-          )}
-        </div>
-
-        {/* Slide thumbnails */}
-        <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
-          {slides.map((slide, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentSlide(i)}
-              className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
-                i === currentSlide
-                  ? "border-accent shadow-md"
-                  : "border-transparent opacity-60 hover:opacity-100"
-              }`}
-              style={{ width: 64, height: 80 }}
-            >
-              <div
-                style={{
-                  width: 64,
-                  height: 80,
-                  overflow: "hidden",
-                  position: "relative",
-                }}
-              >
+          ) : (
+            <motion.div key="normal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              {/* Current slide preview (scaled down) */}
+              <div className="flex flex-col items-center gap-4">
                 <div
+                  className={`relative bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center ${
+                    expanded ? "w-full" : ""
+                  }`}
                   style={{
-                    transform: "scale(0.0593)",
-                    transformOrigin: "top left",
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
+                    maxWidth: expanded ? "100%" : 400,
+                    margin: "0 auto",
                   }}
                 >
-                  <SlideRenderer
-                    slide={slide}
-                    visualSystem={activeStyle}
-                    brandName={brandName}
-                    brandHandle={brandHandle}
-                    contentType={contentType}
-                    doctorImageUrl={doctorImageUrl}
-                  />
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
+                  {/* Scaled preview */}
+                  <div
+                    style={{
+                      width: expanded ? 540 : 320,
+                      height: expanded ? 675 : 400,
+                      overflow: "hidden",
+                      position: "relative",
+                    }}
+                  >
+                    <div
+                      style={{
+                        transform: expanded ? "scale(0.5)" : "scale(0.2963)",
+                        transformOrigin: "top left",
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                      }}
+                    >
+                      <SlideRenderer
+                        slide={slides[currentSlide]}
+                        visualSystem={activeStyle}
+                        brandName={brandName}
+                        brandHandle={brandHandle}
+                        contentType={contentType}
+                        doctorImageUrl={doctorImageUrl}
+                      />
+                    </div>
+                  </div>
 
-        {/* Actions */}
-        <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-border">
-          <Button
-            onClick={() => exportSlide(currentSlide)}
-            variant="outline"
-            className="rounded-xl text-sm"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Baixar slide atual
-          </Button>
-          <Button
-            onClick={exportAll}
-            disabled={exporting}
-            className="rounded-xl text-sm bg-accent text-accent-foreground hover:bg-accent/90"
-          >
-            {exporting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Cloud className="h-4 w-4 mr-2" />
-            )}
-            {exporting ? "Exportando e salvando na nuvem…" : "Baixar e salvar na nuvem (PNG)"}
-          </Button>
-        </div>
+                  {/* Nav arrows */}
+                  {currentSlide > 0 && (
+                    <button
+                      onClick={() => setCurrentSlide((p) => p - 1)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-background transition-colors"
+                    >
+                      <ChevronLeft className="h-4 w-4 text-foreground" />
+                    </button>
+                  )}
+                  {currentSlide < slides.length - 1 && (
+                    <button
+                      onClick={() => setCurrentSlide((p) => p + 1)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-background transition-colors"
+                    >
+                      <ChevronRight className="h-4 w-4 text-foreground" />
+                    </button>
+                  )}
+
+                  {/* Expand/collapse */}
+                  <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-background transition-colors"
+                  >
+                    {expanded ? (
+                      <Minimize2 className="h-3.5 w-3.5 text-foreground" />
+                    ) : (
+                      <Maximize2 className="h-3.5 w-3.5 text-foreground" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Slide dots */}
+                <div className="flex items-center gap-1.5">
+                  {slides.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentSlide(i)}
+                      className={`h-2 rounded-full transition-all ${
+                        i === currentSlide
+                          ? "w-6 bg-accent"
+                          : "w-2 bg-muted-foreground/20 hover:bg-muted-foreground/40"
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* Slide info + edit button */}
+                <div className="text-center flex flex-col items-center gap-2">
+                  <div>
+                    <p className="text-xs font-medium text-accent uppercase tracking-wide">
+                      {slides[currentSlide]?.label}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Slide {currentSlide + 1} de {slides.length}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingIndex(editingIndex === currentSlide ? null : currentSlide)}
+                    className="text-xs h-7 gap-1.5"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    {editingIndex === currentSlide ? "Fechar editor" : "Editar texto"}
+                  </Button>
+                </div>
+
+                {/* Inline slide editor */}
+                {editingIndex === currentSlide && (
+                  <SlideEditor
+                    slide={slides[currentSlide]}
+                    onSave={(updated) => handleSlideEdit(currentSlide, updated)}
+                    onCancel={() => setEditingIndex(null)}
+                  />
+                )}
+              </div>
+
+              {/* Slide thumbnails */}
+              <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
+                {slides.map((slide, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentSlide(i)}
+                    className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
+                      i === currentSlide
+                        ? "border-accent shadow-md"
+                        : "border-transparent opacity-60 hover:opacity-100"
+                    }`}
+                    style={{ width: 64, height: 80 }}
+                  >
+                    <div
+                      style={{
+                        width: 64,
+                        height: 80,
+                        overflow: "hidden",
+                        position: "relative",
+                      }}
+                    >
+                      <div
+                        style={{
+                          transform: "scale(0.0593)",
+                          transformOrigin: "top left",
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                        }}
+                      >
+                        <SlideRenderer
+                          slide={slide}
+                          visualSystem={activeStyle}
+                          brandName={brandName}
+                          brandHandle={brandHandle}
+                          contentType={contentType}
+                          doctorImageUrl={doctorImageUrl}
+                        />
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-border">
+                <Button
+                  onClick={() => exportSlide(currentSlide)}
+                  variant="outline"
+                  className="rounded-xl text-sm"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Baixar slide atual
+                </Button>
+                <Button
+                  onClick={exportAll}
+                  disabled={exporting}
+                  className="rounded-xl text-sm bg-accent text-accent-foreground hover:bg-accent/90"
+                >
+                  {exporting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Cloud className="h-4 w-4 mr-2" />
+                  )}
+                  {exporting ? "Exportando e salvando na nuvem…" : "Baixar e salvar na nuvem (PNG)"}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Hidden full-size slides for export */}
