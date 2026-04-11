@@ -298,6 +298,8 @@ const Carrossel = () => {
       applyRoteiro(data as TravessIARoteiro);
       setFeedback("");
       toast.success("Roteiro reescrito!");
+      // Track rewrite signal
+      if (user) processMemorySignals(user.id, [{ type: "rewrite" }]).then((m) => getStrategicMemoryForUser(user.id).then(setMemory));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao reescrever.";
       toast.error(msg);
