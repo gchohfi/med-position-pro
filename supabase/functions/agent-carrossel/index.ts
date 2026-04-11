@@ -214,7 +214,7 @@ ${feedback}
 
 Mantenha os layouts válidos do sistema TravessIA. Preserve titulo_carrossel, tese, jornada, legenda, hashtags e cta_final, ajustando conforme o feedback. Retorne APENAS o JSON completo do novo roteiro.`;
     } else {
-      const { profile, tese, objetivo, objetivoDetalhado } = body;
+      const { profile, tese, objetivo, objetivoDetalhado, labAxis } = body;
       if (!profile) throw new Error("Campo 'profile' é obrigatório");
       const especialidade = String(profile.especialidade ?? "");
       const nutrologiaHint = /nutrol/i.test(especialidade)
@@ -229,6 +229,27 @@ Instruções extras para NUTROLOGIA:
       // Unified: use "pilares" consistently (frontend sends profile.pilares = profile.diferenciais)
       const pilares = Array.isArray(profile.pilares) ? profile.pilares.join(", ") : (profile.pilares ?? "Não informados");
 
+      // Lab axis adjustments
+      let labDirective = "";
+      if (labAxis) {
+        labDirective = `
+## DIREÇÃO DO PROMPT LAB (ajuste criativo obrigatório)
+- Preset editorial: ${labAxis.presetId}
+- Tom editorial: ${labAxis.editorialTone ?? "padrão"}
+- Estilo do gancho: ${labAxis.hookStyle ?? "padrão"} (intensidade ${labAxis.hookIntensity ?? 3}/5)
+- Estilo do CTA: ${labAxis.ctaStyle ?? "padrão"}
+- Ritmo narrativo: ${labAxis.narrativeRhythm ?? "padrão"}
+- Densidade de texto: ${labAxis.textDensity ?? "moderada"}
+- Nível de didatismo: ${labAxis.didatismo ?? 3}/5
+- Nível de sofisticação: ${labAxis.sofisticacao ?? 3}/5
+
+Ajuste TODOS os slides para refletir essa direção de forma coerente.
+Se hookIntensity >= 4, use headline provocativa e curta.
+Se didatismo >= 4, inclua mais slides "tonly" e "timeline" com explicações claras.
+Se sofisticacao >= 4, use tom refinado e visual editorial.
+`;
+      }
+
       userPrompt = `Crie um roteiro completo de carrossel para este médico:
 
 Nome: ${profile.nome ?? "Não informado"}
@@ -240,7 +261,7 @@ Tom de voz: ${profile.tom_de_voz ?? "Não informado"}
 Tese central: ${tese ?? "Não informada"}
 Objetivo: ${objetivo ?? "Educar e engajar"}${objetivoDetalhado ? `\nContexto do objetivo: ${objetivoDetalhado}` : ""}
 ${nutrologiaHint}
-
+${labDirective}
 Gere entre 7 e 10 slides usando os layouts do sistema TravessIA.
 Retorne APENAS o JSON válido.`;
     }

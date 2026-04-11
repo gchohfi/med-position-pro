@@ -16,19 +16,7 @@ import { mapToObjetivoEnum, type ObjetivoEnum } from "@/types/inspiration";
 import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
 import type { SlideData } from "@/components/carousel/SlideRenderer";
 import { getPreset, BENCHMARK_PRESETS, type BenchmarkPresetId } from "@/lib/benchmark-presets";
-import {
-  getStrategicMemoryForUser,
-  processMemorySignals,
-  getMemoryAwarePresetRecommendation,
-  getMemoryHint,
-  type StrategicMemory,
-  type MemorySignal,
-} from "@/lib/strategic-memory";
-import {
-  getFeedbackForUser,
-  getPerformanceHint,
-} from "@/lib/content-feedback";
-import ContentFeedbackPanel from "@/components/carousel/ContentFeedbackPanel";
+import PromptLab, { type VariationAxis, type LabVariation } from "@/components/carousel/PromptLab";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -51,8 +39,8 @@ import {
   Sparkles,
   Zap,
   TrendingUp,
-  Star,
   Settings,
+  FlaskConical,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────── */
@@ -116,6 +104,7 @@ const Carrossel = () => {
   const [activePreset, setActivePreset] = useState<BenchmarkPresetId>("autoridade_premium");
   const [loading, setLoading] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [labMode, setLabMode] = useState(false);
 
   // Rewrite
   const [feedback, setFeedback] = useState("");
@@ -124,19 +113,6 @@ const Carrossel = () => {
   // Save
   const [savingCarousel, setSavingCarousel] = useState(false);
   const [savedContentOutputId, setSavedContentOutputId] = useState<string | null>(null);
-
-  // Strategic memory
-  const [memory, setMemory] = useState<StrategicMemory | null>(null);
-  const [performanceHint, setPerformanceHint] = useState<string | null>(null);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const memoryHint = getMemoryHint(memory);
-
-  // Load strategic memory + feedback history
-  useEffect(() => {
-    if (!user) return;
-    getStrategicMemoryForUser(user.id).then(setMemory);
-    getFeedbackForUser(user.id).then((fb) => setPerformanceHint(getPerformanceHint(fb)));
-  }, [user?.id]);
 
   // Pre-fill from navigation state — map free text to enum
   useEffect(() => {
@@ -307,8 +283,6 @@ const Carrossel = () => {
       applyRoteiro(data as TravessIARoteiro);
       setFeedback("");
       toast.success("Roteiro reescrito!");
-      // Track rewrite signal
-      if (user) processMemorySignals(user.id, [{ type: "rewrite" }]).then((m) => getStrategicMemoryForUser(user.id).then(setMemory));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao reescrever.";
       toast.error(msg);
@@ -338,15 +312,75 @@ const Carrossel = () => {
       }).select("id").single();
       if (error) throw error;
       setSavedContentOutputId(data.id);
-      setShowFeedback(true);
       toast.success("Carrossel salvo na biblioteca!");
-      processMemorySignals(user.id, [{ type: "save", preset: activePreset, visual: visualStyle }])
-        .then(() => getStrategicMemoryForUser(user.id).then(setMemory));
     } catch {
       toast.error("Erro ao salvar carrossel.");
     } finally {
       setSavingCarousel(false);
     }
+  };
+
+  /* ── Prompt Lab handlers ───────────────────────── */
+
+  const handleLabGenerate = async (axes: VariationAxis[]): Promise<TravessIARoteiro[]> => {
+    if (!profile || !tese.trim()) {
+      toast.error("Preencha a tese antes de gerar variações.");
+      return [];
+    }
+    const results: TravessIARoteiro[] = [];
+    for (const axis of axes) {
+      const preset = getPreset(axis.presetId);
+      try {
+        const { data, error } = await supabase.functions.invoke("agent-carrossel", {
+          body: {
+            profile: { ...profile, pilares: profile.diferenciais },
+            tese,
+            objetivo,
+            objetivoDetalhado,
+            formato,
+            action: "generate",
+            skill: profile?.skill,
+            topic: tema || tese,
+            especialidade: profile.especialidade,
+            subespecialidade: profile.subespecialidade,
+            publico_alvo: profile.publico_alvo,
+            tom_de_voz: profile.tom_de_voz,
+            pilares: profile.diferenciais,
+            medica_nome: profile.nome,
+            medica_handle: profile.instagram_handle || profile.skill?.handle,
+            labAxis: {
+              presetId: axis.presetId,
+              hookIntensity: axis.hookIntensity,
+              didatismo: axis.didatismo,
+              sofisticacao: axis.sofisticacao,
+              editorialTone: preset.behavior.editorialTone,
+              hookStyle: preset.behavior.hookStyle,
+              ctaStyle: preset.behavior.ctaStyle,
+              narrativeRhythm: preset.behavior.narrativeRhythm,
+              textDensity: preset.behavior.textDensity,
+            },
+          },
+        });
+        if (error) throw error;
+        results.push(data as TravessIARoteiro);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Erro na variação.";
+        toast.error(`Variação ${preset.label}: ${msg}`);
+      }
+    }
+    if (results.length === 0) {
+      toast.error("Nenhuma variação foi gerada.");
+    }
+    return results;
+  };
+
+  const handleSelectLabVariation = (variation: LabVariation) => {
+    applyRoteiro(variation.roteiro);
+    setActivePreset(variation.axis.presetId);
+    const preset = getPreset(variation.axis.presetId);
+    setVisualStyle(preset.preferredVisualStyle);
+    setLabMode(false);
+    toast.success(`Versão "${preset.label}" aplicada ao carrossel.`);
   };
 
   const handleReset = () => {
@@ -359,6 +393,7 @@ const Carrossel = () => {
     setFeedback("");
     setObjetivoDetalhado("");
     setGenerateError(null);
+    setLabMode(false);
   };
 
   /* ── Render ──────────────────────────────────────────── */
@@ -512,30 +547,6 @@ const Carrossel = () => {
                 </section>
               )}
 
-              {/* Memory + performance hints */}
-              {(memoryHint || performanceHint) && (
-                <div className="flex flex-col gap-1.5 px-3 py-2.5 rounded-lg bg-accent/5 border border-accent/10">
-                  {memoryHint && (
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-3.5 w-3.5 text-accent shrink-0" />
-                      <p className="text-xs text-muted-foreground">
-                        <span className="font-medium text-foreground">{memoryHint}</span>
-                        {" · "}Baseado no seu histórico
-                      </p>
-                    </div>
-                  )}
-                  {performanceHint && (
-                    <div className="flex items-center gap-2">
-                      <Star className="h-3.5 w-3.5 text-accent shrink-0" />
-                      <p className="text-xs text-muted-foreground">
-                        <span className="font-medium text-foreground">{performanceHint}</span>
-                        {" · "}Performance percebida
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* Brief form */}
               <Card>
                 <CardContent className="pt-5 space-y-4">
@@ -619,6 +630,15 @@ const Carrossel = () => {
                         </>
                       )}
                     </Button>
+                    <Button
+                      variant={labMode ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => setLabMode(!labMode)}
+                      title="Prompt Lab — testar variações"
+                      className={labMode ? "bg-accent text-accent-foreground" : ""}
+                    >
+                      <FlaskConical className="h-4 w-4" />
+                    </Button>
                     {roteiro && (
                       <>
                         <Button variant="outline" size="icon" onClick={handleReset} title="Novo">
@@ -642,6 +662,22 @@ const Carrossel = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Prompt Lab */}
+              {labMode && tese.trim() && (
+                <Card>
+                  <CardContent className="pt-5">
+                    <PromptLab
+                      onGenerate={handleLabGenerate}
+                      onSelectVariation={handleSelectLabVariation}
+                      loading={loading}
+                      brandName={profile?.nome}
+                      brandHandle={profile?.instagram_handle || profile?.bio_instagram}
+                      doctorImageUrl={profile?.foto_url}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Rewrite */}
               {roteiro && (
@@ -709,20 +745,6 @@ const Carrossel = () => {
                   </CardContent>
                 </Card>
               )}
-
-              {/* Feedback panel — shown after save */}
-              {showFeedback && user && savedContentOutputId && (
-                <ContentFeedbackPanel
-                  userId={user.id}
-                  contentOutputId={savedContentOutputId}
-                  benchmarkPreset={activePreset}
-                  visualStyle={visualStyle}
-                  onComplete={() => {
-                    setShowFeedback(false);
-                    getFeedbackForUser(user.id).then((fb) => setPerformanceHint(getPerformanceHint(fb)));
-                  }}
-                />
-              )}
             </div>
 
             {/* ═══ RIGHT: Visual preview ═══ */}
@@ -740,10 +762,6 @@ const Carrossel = () => {
                     setActivePreset(id);
                     const preset = getPreset(id);
                     setVisualStyle(preset.preferredVisualStyle);
-                    if (user) {
-                      processMemorySignals(user.id, [{ type: "preset_chosen", preset: id }])
-                        .then(() => getStrategicMemoryForUser(user.id).then(setMemory));
-                    }
                   }}
                   onSlidesChange={setSlideDataList}
                   onRegenerate={handleGenerate}
