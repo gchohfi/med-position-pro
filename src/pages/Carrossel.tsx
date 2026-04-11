@@ -709,6 +709,20 @@ const Carrossel = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Feedback panel — shown after save */}
+              {showFeedback && user && savedContentOutputId && (
+                <ContentFeedbackPanel
+                  userId={user.id}
+                  contentOutputId={savedContentOutputId}
+                  benchmarkPreset={activePreset}
+                  visualStyle={visualStyle}
+                  onComplete={() => {
+                    setShowFeedback(false);
+                    getFeedbackForUser(user.id).then((fb) => setPerformanceHint(getPerformanceHint(fb)));
+                  }}
+                />
+              )}
             </div>
 
             {/* ═══ RIGHT: Visual preview ═══ */}
