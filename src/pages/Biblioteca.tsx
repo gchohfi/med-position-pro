@@ -156,7 +156,7 @@ const Biblioteca = () => {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [outputsRes, feedbackRes] = await Promise.all([
+      const [outputsRes, feedbackRes, perfRes] = await Promise.all([
         supabase
           .from("content_outputs")
           .select("*")
@@ -166,6 +166,10 @@ const Biblioteca = () => {
         supabase
           .from("content_feedback")
           .select("content_output_id, satisfaction, outcome_tags, reuse_direction, posted")
+          .eq("user_id", user!.id),
+        supabase
+          .from("content_performance")
+          .select("*")
           .eq("user_id", user!.id),
       ]);
       if (outputsRes.error) throw outputsRes.error;
@@ -183,6 +187,13 @@ const Biblioteca = () => {
         }
       }
       setFeedbacks(fbMap);
+
+      const pm: Record<string, ContentPerformanceRecord> = {};
+      for (const row of perfRes.data || []) {
+        const rec = normalizePerformanceRow(row);
+        if (rec.contentOutputId) pm[rec.contentOutputId] = rec;
+      }
+      setPerfMap(pm);
     } catch {
       toast.error("Erro ao carregar biblioteca.");
     } finally {
