@@ -28,7 +28,9 @@ import {
   TrendingUp,
   Sparkles,
   X,
+  RefreshCw,
 } from "lucide-react";
+import ContentTransformDialog from "@/components/ContentTransformDialog";
 import AppLayout from "@/components/AppLayout";
 import {
   PerformanceBadge,
@@ -673,7 +675,7 @@ const Biblioteca = () => {
                   )}
 
                   {/* Actions */}
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 flex-wrap">
                     <Button
                       size="sm"
                       variant="outline"
@@ -683,6 +685,24 @@ const Biblioteca = () => {
                       <Eye className="h-3 w-3 mr-1" />
                       Ver
                     </Button>
+                    <ContentTransformDialog
+                      sourceId={item.id}
+                      sourceTitle={item.title || "Carrossel"}
+                      sourceContent={item.generated_content}
+                      strategicInput={item.strategic_input}
+                      originalPreset={item.preset}
+                      onTransformComplete={loadAll}
+                    >
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1"
+                        title="Transformar em outro formato"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        Transformar
+                      </Button>
+                    </ContentTransformDialog>
                     <Button
                       size="sm"
                       variant="ghost"

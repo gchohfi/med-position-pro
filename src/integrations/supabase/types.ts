@@ -182,6 +182,7 @@ export type Database = {
           carousel_slide_urls: Json | null
           content_type: string
           created_at: string
+          derived_from: string | null
           generated_content: Json
           golden_case: boolean
           golden_reason: string | null
@@ -195,6 +196,7 @@ export type Database = {
           carousel_slide_urls?: Json | null
           content_type: string
           created_at?: string
+          derived_from?: string | null
           generated_content?: Json
           golden_case?: boolean
           golden_reason?: string | null
@@ -208,6 +210,7 @@ export type Database = {
           carousel_slide_urls?: Json | null
           content_type?: string
           created_at?: string
+          derived_from?: string | null
           generated_content?: Json
           golden_case?: boolean
           golden_reason?: string | null
@@ -218,6 +221,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "content_outputs_derived_from_fkey"
+            columns: ["derived_from"]
+            isOneToOne: false
+            referencedRelation: "content_outputs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "content_outputs_series_id_fkey"
             columns: ["series_id"]

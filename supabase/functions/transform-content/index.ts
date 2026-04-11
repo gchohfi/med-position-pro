@@ -3,6 +3,19 @@ import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callGemini } from "../_shared/gemini.ts";
 import { safeJsonParse } from "../_shared/json-utils.ts";
 
+const FORMATS = [
+  "stories",
+  "reel",
+  "legenda_alternativa",
+  "post_unico",
+  "thread",
+  "versao_premium",
+  "versao_humana",
+  "versao_engajadora",
+] as const;
+
+type Format = (typeof FORMATS)[number];
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
@@ -20,19 +33,18 @@ Deno.serve(async (req) => {
     if (!user) throw new Error("Unauthorized");
 
     const body = await req.json();
-    const { format, content, strategic_input } = body;
+    const { format, source_content, strategic_input, benchmark_preset, source_id } = body;
 
-    if (!format || !content) {
+    if (!format || !source_content) {
       return new Response(
-        JSON.stringify({ error: "format and content are required" }),
+        JSON.stringify({ error: "format and source_content are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const validFormats = ["carrossel", "reels", "legenda"];
-    if (!validFormats.includes(format)) {
+    if (!FORMATS.includes(format as Format)) {
       return new Response(
-        JSON.stringify({ error: `Invalid format. Use: ${validFormats.join(", ")}` }),
+        JSON.stringify({ error: `Invalid format. Use: ${FORMATS.join(", ")}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -43,130 +55,210 @@ Deno.serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    const contentText = Object.entries(content)
-      .map(([k, v]) => `${k}:\n${v}`)
-      .join("\n\n");
+    const archetype = positioning?.archetype || "não definido";
+    const tone = positioning?.tone || "consultivo e premium";
+    const tese = strategic_input?.tese || "";
+    const objetivo = strategic_input?.objetivo || "";
+    const presetLabel = benchmark_preset || "não definido";
 
-    const prompts: Record<string, string> = {
-      carrossel: `Você é o MEDSHIFT, sistema premium de posicionamento para médicos.
+    const sourceText = typeof source_content === "string"
+      ? source_content
+      : JSON.stringify(source_content);
 
-Transforme o conteúdo estratégico abaixo em um CARROSSEL de Instagram com 7-10 slides.
+    const baseContext = `CONTEXTO ESTRATÉGICO:
+- Arquétipo: ${archetype}
+- Tom: ${tone}
+- Benchmark preset: ${presetLabel}
+- Tese original: ${tese}
+- Objetivo: ${objetivo}
 
-CONTEXTO ESTRATÉGICO:
-- Arquétipo: ${positioning?.archetype || "não definido"}
-- Tom: ${positioning?.tone || "não definido"}
-- Tipo: ${strategic_input?.tipo || "estratégico"}
-- Tese: ${strategic_input?.tese || ""}
-- Objetivo: ${strategic_input?.objetivo || ""}
+CONTEÚDO ORIGINAL (carrossel):
+${sourceText}`;
 
-CONTEÚDO BASE:
-${contentText}
+    const prompts: Record<Format, string> = {
+      stories: `Você é o MEDSHIFT, sistema premium de posicionamento para médicos.
 
-Gere um JSON com:
+Transforme o carrossel abaixo em uma SEQUÊNCIA DE STORIES (5-8 stories).
+
+${baseContext}
+
+Gere um JSON:
 {
-  "slides": [
+  "stories": [
     {
-      "slide_number": 1,
-      "type": "capa|conteudo|fechamento",
-      "headline": "Título principal do slide (máx 8 palavras)",
-      "body": "Texto do slide (máx 30 palavras)",
-      "visual_direction": "Direção visual sugerida para o design",
-      "speaker_notes": "Nota para quem vai gravar ou criar o visual"
+      "story_number": 1,
+      "type": "texto|enquete|quiz|cta",
+      "content": "Texto principal do story",
+      "visual_cue": "Direção visual",
+      "interaction": "Enquete/quiz se aplicável"
     }
   ],
-  "caption": "Legenda sugerida para o post do carrossel (com CTA)",
-  "hashtags": ["hashtag1", "hashtag2"]
+  "strategy_note": "Como esta sequência complementa o carrossel original"
 }
 
 REGRAS:
-- Slide 1: capa com hook forte
-- Slides 2-8: conteúdo progressivo
-- Último slide: fechamento com CTA
-- Headlines curtas e impactantes
-- Body conciso e direto
-- Visual direction deve ser prática
-- Tom: ${positioning?.tone || "consultivo e premium"}
+- Story 1: hook que conecta com o carrossel
+- Stories intermediários: conteúdo fragmentado e interativo
+- Último story: CTA direto
+- Use enquetes e quizzes quando possível
+- Tom: ${tone}
 - PT-BR`,
 
-      reels: `Você é o MEDSHIFT, sistema premium de posicionamento para médicos.
+      reel: `Você é o MEDSHIFT, sistema premium de posicionamento para médicos.
 
-Transforme o conteúdo estratégico abaixo em um ROTEIRO DE REELS (30-60 segundos).
+Transforme o carrossel abaixo em um ROTEIRO DE REELS (30-60 segundos).
 
-CONTEXTO ESTRATÉGICO:
-- Arquétipo: ${positioning?.archetype || "não definido"}
-- Tom: ${positioning?.tone || "não definido"}
-- Tese: ${strategic_input?.tese || ""}
-- Objetivo: ${strategic_input?.objetivo || ""}
+${baseContext}
 
-CONTEÚDO BASE:
-${contentText}
-
-Gere um JSON com:
+Gere um JSON:
 {
   "duration_estimate": "30-45s",
-  "hook": {
-    "text": "Frase de abertura (primeiros 3 segundos)",
-    "visual_cue": "O que mostrar na tela"
-  },
+  "hook": { "text": "Frase de abertura (3s)", "visual_cue": "O que mostrar" },
   "sections": [
     {
       "section": "desenvolvimento|virada|prova|fechamento",
-      "text": "O que falar neste trecho",
+      "text": "O que falar",
       "duration": "5-10s",
-      "visual_cue": "Direção visual ou corte sugerido",
-      "on_screen_text": "Texto overlay opcional"
+      "visual_cue": "Direção visual",
+      "on_screen_text": "Texto overlay"
     }
   ],
-  "cta": {
-    "text": "Call to action final",
-    "visual_cue": "Direção visual do CTA"
-  },
-  "caption": "Legenda para o post do Reels",
-  "hashtags": ["hashtag1", "hashtag2"],
-  "audio_suggestion": "Sugestão de áudio/música de fundo"
+  "cta": { "text": "CTA final", "visual_cue": "Direção visual" },
+  "caption": "Legenda do reels",
+  "strategy_note": "Como este reels complementa o carrossel"
 }
 
-REGRAS:
-- Hook nos primeiros 3 segundos
-- Máximo 60 segundos total
-- Linguagem falada, natural
-- Cortes sugeridos a cada 5-10s
-- Tom: ${positioning?.tone || "consultivo e premium"}
-- PT-BR`,
+REGRAS: Hook em 3s. Máximo 60s. Linguagem falada. Tom: ${tone}. PT-BR`,
 
-      legenda: `Você é o MEDSHIFT, sistema premium de posicionamento para médicos.
+      legenda_alternativa: `Você é o MEDSHIFT, sistema premium de posicionamento para médicos.
 
-Transforme o conteúdo estratégico abaixo em uma LEGENDA DE INSTAGRAM completa.
+Crie uma LEGENDA ALTERNATIVA para o carrossel abaixo, com ângulo diferente do original.
 
-CONTEXTO ESTRATÉGICO:
-- Arquétipo: ${positioning?.archetype || "não definido"}
-- Tom: ${positioning?.tone || "não definido"}
-- Tese: ${strategic_input?.tese || ""}
-- Objetivo: ${strategic_input?.objetivo || ""}
+${baseContext}
 
-CONTEÚDO BASE:
-${contentText}
-
-Gere um JSON com:
+Gere um JSON:
 {
-  "hook": "Primeira linha da legenda (hook forte que aparece antes do 'ver mais')",
-  "body": "Corpo da legenda (3-5 parágrafos curtos, quebrados em linhas)",
-  "cta": "Call to action final",
-  "hashtags": ["hashtag1", "hashtag2", "hashtag3"],
-  "emoji_strategy": "Como usar emojis nesta legenda"
+  "angle": "Qual ângulo diferente esta legenda explora",
+  "hook": "Primeira linha (aparece no feed)",
+  "body": "Corpo da legenda (3-5 parágrafos curtos)",
+  "cta": "Call to action",
+  "hashtags": ["hashtag1", "hashtag2"],
+  "strategy_note": "Como esta legenda complementa o carrossel"
 }
 
-REGRAS:
-- Hook forte na primeira linha (aparece no feed)
-- Parágrafos curtos e escaneáveis
-- CTA claro e específico
-- 5-15 hashtags estratégicas
-- Tom: ${positioning?.tone || "consultivo e premium"}
-- PT-BR`,
+REGRAS: Hook forte. Ângulo diferente do original. Tom: ${tone}. PT-BR`,
+
+      post_unico: `Você é o MEDSHIFT, sistema premium de posicionamento para médicos.
+
+Transforme o carrossel abaixo em um POST ÚNICO de imagem estática com legenda.
+
+${baseContext}
+
+Gere um JSON:
+{
+  "headline": "Título principal para a imagem (máx 10 palavras)",
+  "subheadline": "Subtítulo ou frase de apoio",
+  "visual_direction": "Como deve ser o design da imagem",
+  "caption": "Legenda completa do post",
+  "hashtags": ["hashtag1", "hashtag2"],
+  "strategy_note": "Como este post simplifica a mensagem do carrossel"
+}
+
+REGRAS: Condensar a essência. Uma imagem, uma mensagem. Tom: ${tone}. PT-BR`,
+
+      thread: `Você é o MEDSHIFT, sistema premium de posicionamento para médicos.
+
+Transforme o carrossel abaixo em uma THREAD CURTA (5-7 posts sequenciais).
+
+${baseContext}
+
+Gere um JSON:
+{
+  "thread_title": "Título da thread",
+  "posts": [
+    {
+      "post_number": 1,
+      "content": "Texto do post (máx 280 chars)",
+      "emoji": "Emoji principal"
+    }
+  ],
+  "strategy_note": "Como esta thread expande o carrossel"
+}
+
+REGRAS: Posts curtos e escaneáveis. Progressão lógica. Último post com CTA. Tom: ${tone}. PT-BR`,
+
+      versao_premium: `Você é o MEDSHIFT, sistema premium de posicionamento para médicos.
+
+Reescreva o carrossel abaixo em uma VERSÃO MAIS PREMIUM — mais sofisticada, com linguagem mais elevada e posicionamento de autoridade.
+
+${baseContext}
+
+Gere um JSON com a mesma estrutura do carrossel original, mas com:
+{
+  "slides": [
+    {
+      "numero": 1,
+      "papel": "gancho|desconstrucao|revelacao|metodo|prova|ampliacao|identidade|cta",
+      "titulo": "Título refinado",
+      "corpo": "Texto mais premium",
+      "nota_visual": "Direção visual premium"
+    }
+  ],
+  "legenda": "Legenda premium",
+  "strategy_note": "O que mudou e por quê"
+}
+
+REGRAS: Elevar sofisticação sem perder clareza. Mais autoridade. Tom premium e consultivo. PT-BR`,
+
+      versao_humana: `Você é o MEDSHIFT, sistema premium de posicionamento para médicos.
+
+Reescreva o carrossel abaixo em uma VERSÃO MAIS HUMANA — mais próxima, vulnerável, pessoal e conectada.
+
+${baseContext}
+
+Gere um JSON:
+{
+  "slides": [
+    {
+      "numero": 1,
+      "papel": "gancho|desconstrucao|revelacao|metodo|prova|ampliacao|identidade|cta",
+      "titulo": "Título humanizado",
+      "corpo": "Texto mais pessoal e próximo",
+      "nota_visual": "Direção visual mais calorosa"
+    }
+  ],
+  "legenda": "Legenda humanizada",
+  "strategy_note": "O que mudou e por quê"
+}
+
+REGRAS: Mais proximidade. Histórias pessoais. Menos técnico. Tom caloroso. PT-BR`,
+
+      versao_engajadora: `Você é o MEDSHIFT, sistema premium de posicionamento para médicos.
+
+Reescreva o carrossel abaixo em uma VERSÃO MAIS ENGAJADORA — com hooks mais fortes, mais provocação, mais interação.
+
+${baseContext}
+
+Gere um JSON:
+{
+  "slides": [
+    {
+      "numero": 1,
+      "papel": "gancho|desconstrucao|revelacao|metodo|prova|ampliacao|identidade|cta",
+      "titulo": "Título provocador",
+      "corpo": "Texto com mais engajamento",
+      "nota_visual": "Direção visual mais impactante"
+    }
+  ],
+  "legenda": "Legenda engajadora com perguntas",
+  "strategy_note": "O que mudou e por quê"
+}
+
+REGRAS: Hooks mais agressivos. Perguntas retóricas. Provocações. CTAs conversacionais. PT-BR`,
     };
 
     const aiRes = await callGemini("unused", {
-      messages: [{ role: "user", content: prompts[format] }],
+      messages: [{ role: "user", content: prompts[format as Format] }],
       temperature: 0.7,
       response_format: { type: "json_object" },
     });
@@ -182,8 +274,21 @@ REGRAS:
 
     const result = safeJsonParse(aiContent);
 
+    // Save as derived content
+    if (source_id) {
+      const { error: saveError } = await supabase.from("content_outputs").insert({
+        user_id: user.id,
+        content_type: format,
+        title: `${format.replace(/_/g, " ")} — derivado`,
+        strategic_input: strategic_input || {},
+        generated_content: { ...result, original_format: "carrossel", transform_format: format },
+        derived_from: source_id,
+      });
+      if (saveError) console.error("Error saving derived:", saveError.message);
+    }
+
     return new Response(
-      JSON.stringify({ format, result }),
+      JSON.stringify({ format, result, saved: !!source_id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
