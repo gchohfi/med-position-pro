@@ -16,6 +16,14 @@ import { mapToObjetivoEnum, type ObjetivoEnum } from "@/types/inspiration";
 import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
 import type { SlideData } from "@/components/carousel/SlideRenderer";
 import { getPreset, BENCHMARK_PRESETS, type BenchmarkPresetId } from "@/lib/benchmark-presets";
+import {
+  getStrategicMemoryForUser,
+  processMemorySignals,
+  getMemoryAwarePresetRecommendation,
+  getMemoryHint,
+  type StrategicMemory,
+  type MemorySignal,
+} from "@/lib/strategic-memory";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -110,6 +118,16 @@ const Carrossel = () => {
   // Save
   const [savingCarousel, setSavingCarousel] = useState(false);
   const [savedContentOutputId, setSavedContentOutputId] = useState<string | null>(null);
+
+  // Strategic memory
+  const [memory, setMemory] = useState<StrategicMemory | null>(null);
+  const memoryHint = getMemoryHint(memory);
+
+  // Load strategic memory
+  useEffect(() => {
+    if (!user) return;
+    getStrategicMemoryForUser(user.id).then(setMemory);
+  }, [user?.id]);
 
   // Pre-fill from navigation state — map free text to enum
   useEffect(() => {
@@ -280,6 +298,8 @@ const Carrossel = () => {
       applyRoteiro(data as TravessIARoteiro);
       setFeedback("");
       toast.success("Roteiro reescrito!");
+      // Track rewrite signal
+      if (user) processMemorySignals(user.id, [{ type: "rewrite" }]).then((m) => getStrategicMemoryForUser(user.id).then(setMemory));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao reescrever.";
       toast.error(msg);
@@ -310,6 +330,9 @@ const Carrossel = () => {
       if (error) throw error;
       setSavedContentOutputId(data.id);
       toast.success("Carrossel salvo na biblioteca!");
+      // Track save signal
+      processMemorySignals(user.id, [{ type: "save", preset: activePreset, visual: visualStyle }])
+        .then(() => getStrategicMemoryForUser(user.id).then(setMemory));
     } catch {
       toast.error("Erro ao salvar carrossel.");
     } finally {
@@ -478,6 +501,17 @@ const Carrossel = () => {
                     </div>
                   )}
                 </section>
+              )}
+
+              {/* Memory hint */}
+              {memoryHint && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/5 border border-accent/10">
+                  <TrendingUp className="h-3.5 w-3.5 text-accent shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">{memoryHint}</span>
+                    {" · "}Baseado no seu histórico
+                  </p>
+                </div>
               )}
 
               {/* Brief form */}
@@ -670,6 +704,10 @@ const Carrossel = () => {
                     setActivePreset(id);
                     const preset = getPreset(id);
                     setVisualStyle(preset.preferredVisualStyle);
+                    if (user) {
+                      processMemorySignals(user.id, [{ type: "preset_chosen", preset: id }])
+                        .then(() => getStrategicMemoryForUser(user.id).then(setMemory));
+                    }
                   }}
                   onSlidesChange={setSlideDataList}
                   onRegenerate={handleGenerate}
