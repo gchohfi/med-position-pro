@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
 import { useDoctor } from "@/contexts/DoctorContext";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Camera, Instagram, Loader2, X, Save } from "lucide-react";
+import { Camera, Instagram, Loader2, X, Save, Check, Cloud, CloudOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const especialidades: Especialidade[] = [
@@ -43,7 +43,7 @@ const tomOptions = [
 ];
 
 const Setup = () => {
-  const { profile, setProfile } = useDoctor();
+  const { profile, persistProfile, isProfileLoading } = useDoctor();
 
   const [form, setForm] = useState<DoctorProfile>(
     profile || {
@@ -69,7 +69,18 @@ const Setup = () => {
     profile?.instagram_handle || profile?.skill?.handle || ""
   );
   const [importLoading, setImportLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [fotoPreview, setFotoPreview] = useState<string | null>(form.foto_url ?? null);
+
+  // Rehydrate form when profile loads from remote
+  useEffect(() => {
+    if (profile && !isProfileLoading) {
+      setForm(profile);
+      setSkill(profile.skill || DEFAULT_SKILL);
+      setInstagramHandle(profile.instagram_handle || profile.skill?.handle || "");
+      setFotoPreview(profile.foto_url ?? null);
+    }
+  }, [profile, isProfileLoading]);
 
   const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -99,10 +110,8 @@ const Setup = () => {
 
   const parseInstagramInput = (input: string): string => {
     const trimmed = input.trim().replace(/\/+$/, "");
-    // URL format: https://instagram.com/handle or https://www.instagram.com/handle
     const urlMatch = trimmed.match(/(?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-zA-Z0-9._]+)/);
     if (urlMatch) return urlMatch[1];
-    // Handle format: @handle or handle
     return trimmed.replace(/^@/, "");
   };
 
@@ -114,38 +123,6 @@ const Setup = () => {
     tom: profileData.tom_de_voz || skill.tom,
     pilares: profileData.diferenciais.length > 0 ? profileData.diferenciais : skill.pilares,
   });
-
-  const persistProfile = async (profileData: DoctorProfile) => {
-    const normalizedHandle = profileData.instagram_handle?.trim() || undefined;
-    const persistedProfile: DoctorProfile = {
-      ...profileData,
-      instagram_handle: normalizedHandle,
-      skill: buildUpdatedSkill(profileData, normalizedHandle || ""),
-    };
-
-    setProfile(persistedProfile);
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) return persistedProfile;
-
-    const { error } = await supabase.from("profiles").upsert(
-      {
-        id: user.id,
-        full_name: persistedProfile.nome || null,
-        specialty: persistedProfile.especialidade || null,
-        instagram_handle: normalizedHandle || null,
-        photo_url: persistedProfile.foto_url || null,
-      },
-      { onConflict: "id" }
-    );
-
-    if (error) throw error;
-
-    return persistedProfile;
-  };
 
   const handleInstagramImport = async () => {
     if (!instagramHandle.trim()) {
@@ -186,10 +163,15 @@ const Setup = () => {
 
       setForm(importedProfile);
       setInstagramHandle(handle);
-      await persistProfile(importedProfile);
+
+      const fullProfile: DoctorProfile = {
+        ...importedProfile,
+        skill: buildUpdatedSkill(importedProfile, handle),
+      };
+      const result = await persistProfile(fullProfile);
       const confidence = data.confidence ?? 0;
       toast.success(
-        `Perfil importado e salvo com ${Math.round(confidence * 100)}% de confiança.`
+        `Perfil importado com ${Math.round(confidence * 100)}% de confiança.${result.remote ? " Sincronizado." : ""}`
       );
     } catch (err: unknown) {
       toast.error(
@@ -220,17 +202,43 @@ const Setup = () => {
       return;
     }
 
+    setSaving(true);
     try {
-      await persistProfile({
+      const normalizedHandle = instagramHandle.trim() || undefined;
+      const fullProfile: DoctorProfile = {
         ...form,
-        instagram_handle: instagramHandle.trim(),
-      });
-      toast.success("Perfil salvo com sucesso!");
-    } catch (err) {
-      console.error("Failed to persist profile:", err);
-      toast.error("Perfil salvo localmente, mas não sincronizou com sua conta.");
+        instagram_handle: normalizedHandle,
+        skill: buildUpdatedSkill(form, normalizedHandle || ""),
+      };
+
+      const result = await persistProfile(fullProfile);
+
+      if (result.remote) {
+        toast.success("Perfil salvo e sincronizado com sua conta.", {
+          icon: <Cloud className="h-4 w-4 text-accent" />,
+        });
+      } else {
+        toast.warning("Perfil salvo no dispositivo. Não foi possível sincronizar com a conta.", {
+          icon: <CloudOff className="h-4 w-4" />,
+          duration: 5000,
+        });
+      }
+    } catch {
+      toast.error("Erro ao salvar. Tente novamente.");
+    } finally {
+      setSaving(false);
     }
   };
+
+  if (isProfileLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -459,9 +467,18 @@ const Setup = () => {
           </CardContent>
         </Card>
 
-        <Button onClick={handleSave} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg">
-          <Save className="h-4 w-4 mr-2" />
-          Salvar perfil
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+          size="lg"
+        >
+          {saving ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
+          {saving ? "Salvando..." : "Salvar perfil"}
         </Button>
       </div>
     </AppLayout>
