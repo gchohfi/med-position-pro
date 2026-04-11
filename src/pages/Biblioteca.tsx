@@ -352,6 +352,34 @@ const Biblioteca = () => {
     }
   };
 
+  const handleSaveMetrics = async (
+    contentOutputId: string,
+    metrics: Partial<ContentPerformanceMetrics>,
+    postUrl?: string
+  ) => {
+    try {
+      const insert = toPerformanceInsert(user!.id, contentOutputId, metrics, {
+        source: "manual",
+        externalPostUrl: postUrl,
+      });
+      const { data, error } = await supabase
+        .from("content_performance")
+        .upsert(insert as any, { onConflict: "user_id,content_output_id" })
+        .select()
+        .single();
+      if (error) throw error;
+      if (data) {
+        setPerfMap((prev) => ({
+          ...prev,
+          [contentOutputId]: normalizePerformanceRow(data),
+        }));
+      }
+      toast.success("Métricas salvas!");
+    } catch {
+      toast.error("Erro ao salvar métricas.");
+    }
+  };
+
   const hasActiveFilters = filterPreset !== "all" || filterVisual !== "all" || filterObjetivo !== "all" || filterStatus !== "all" || search.trim() !== "";
 
   const clearFilters = () => {
