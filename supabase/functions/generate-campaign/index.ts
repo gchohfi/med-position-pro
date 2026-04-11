@@ -64,7 +64,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch user context in parallel
-    const [positioningRes, diagnosisRes, memoryRes, contentRes] =
+    const [positioningRes, diagnosisRes, memoryRes, contentRes, personasRes] =
       await Promise.all([
         supabase
           .from("positioning")
@@ -89,12 +89,18 @@ serve(async (req) => {
           .eq("user_id", user_id)
           .order("created_at", { ascending: false })
           .limit(5),
+        supabase
+          .from("patient_personas")
+          .select("*")
+          .eq("user_id", user_id)
+          .eq("is_active", true),
       ]);
 
     const positioning = positioningRes.data ?? {};
     const diagnosis = diagnosisRes.data?.diagnosis ?? {};
     const memory = memoryRes.data?.memory ?? {};
     const recentContent = contentRes.data ?? [];
+    const activePersonas = personasRes.data ?? [];
 
     const campaignType = brief.tipo ?? "manifesto_editorial";
     const modeInstruction =
