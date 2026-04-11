@@ -58,10 +58,12 @@ export type Database = {
       }
       calendar_items: {
         Row: {
+          benchmark_preset: string | null
           content_type: string
           created_at: string
           date: string
           id: string
+          objetivo: string | null
           series_id: string | null
           status: string
           strategic_objective: string | null
@@ -72,10 +74,12 @@ export type Database = {
           visual_direction: string | null
         }
         Insert: {
+          benchmark_preset?: string | null
           content_type: string
           created_at?: string
           date: string
           id?: string
+          objetivo?: string | null
           series_id?: string | null
           status?: string
           strategic_objective?: string | null
@@ -86,10 +90,12 @@ export type Database = {
           visual_direction?: string | null
         }
         Update: {
+          benchmark_preset?: string | null
           content_type?: string
           created_at?: string
           date?: string
           id?: string
+          objetivo?: string | null
           series_id?: string | null
           status?: string
           strategic_objective?: string | null
