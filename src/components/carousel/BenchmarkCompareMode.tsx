@@ -225,7 +225,7 @@ const BenchmarkCompareMode: React.FC<BenchmarkCompareModeProps> = ({
         </div>
       ) : (
         /* Desktop: side by side */
-        <div className="grid grid-cols-2 gap-5">
+        <div className="flex gap-5">
           <PresetColumn
             preset={pA}
             slide={slide}
@@ -236,7 +236,7 @@ const BenchmarkCompareMode: React.FC<BenchmarkCompareModeProps> = ({
             onSelect={() => onSelectPreset(presetA)}
             isActive={presetA === activePresetId}
           />
-          <div className="w-px bg-border self-stretch mx-auto" />
+          <div className="w-px bg-border shrink-0" />
           <PresetColumn
             preset={pB}
             slide={slide}
