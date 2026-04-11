@@ -115,6 +115,111 @@ export type Database = {
           },
         ]
       }
+      content_activity_log: {
+        Row: {
+          action: string
+          actor_name: string
+          content_output_id: string
+          created_at: string
+          details: Json
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          actor_name?: string
+          content_output_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          actor_name?: string
+          content_output_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      content_approvals: {
+        Row: {
+          content_output_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          reviewer_email: string | null
+          reviewer_name: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_output_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reviewer_email?: string | null
+          reviewer_name?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_output_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reviewer_email?: string | null
+          reviewer_name?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      content_comments: {
+        Row: {
+          author_name: string
+          author_role: string
+          comment: string
+          content_output_id: string
+          created_at: string
+          id: string
+          resolved: boolean
+          slide_number: number | null
+          user_id: string
+          version_label: string | null
+        }
+        Insert: {
+          author_name?: string
+          author_role?: string
+          comment: string
+          content_output_id: string
+          created_at?: string
+          id?: string
+          resolved?: boolean
+          slide_number?: number | null
+          user_id: string
+          version_label?: string | null
+        }
+        Update: {
+          author_name?: string
+          author_role?: string
+          comment?: string
+          content_output_id?: string
+          created_at?: string
+          id?: string
+          resolved?: boolean
+          slide_number?: number | null
+          user_id?: string
+          version_label?: string | null
+        }
+        Relationships: []
+      }
       content_feedback: {
         Row: {
           aesthetic_score: number | null
