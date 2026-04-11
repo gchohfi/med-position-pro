@@ -665,6 +665,12 @@ const Carrossel = () => {
                   doctorImageUrl={profile?.foto_url}
                   visualStyle={visualStyle}
                   contentOutputId={savedContentOutputId}
+                  activePresetId={activePreset}
+                  onPresetChange={(id) => {
+                    setActivePreset(id);
+                    const preset = getPreset(id);
+                    setVisualStyle(preset.preferredVisualStyle);
+                  }}
                   onSlidesChange={setSlideDataList}
                   onRegenerate={handleGenerate}
                 />
