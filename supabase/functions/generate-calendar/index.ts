@@ -3,6 +3,24 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.1";
 import { corsHeaders, handleOptions } from "../_shared/cors.ts";
 import { callGemini, errorResponse } from "../_shared/gemini.ts";
 
+/* ── Benchmark presets for the AI prompt ─── */
+
+const PRESET_DESCRIPTIONS = `
+## BENCHMARK PRESETS DISPONÍVEIS (use EXATAMENTE estes IDs)
+1. "impacto_viral" — Tom provocativo, gancho forte, retenção máxima, headlines curtas, CTA provocativo
+2. "autoridade_premium" — Tom sofisticado, marca pessoal forte, visual editorial, CTA refinado
+3. "educacao_sofisticada" — Tom didático, clareza com elegância, conteúdo salvável, CTA acolhedor
+4. "consultorio_humano" — Tom acolhedor, empatia, linguagem consultiva, CTA íntimo
+`;
+
+const OBJETIVO_DESCRIPTIONS = `
+## OBJETIVOS ESTRATÉGICOS (use EXATAMENTE estes IDs)
+- "educar" — Conteúdo educativo, gerar salvamentos
+- "salvar" — Conteúdo altamente salvável
+- "comentar" — Provocar comentários e engajamento
+- "conversao" — Conversão, agendamento, consulta
+`;
+
 const CALENDAR_TOOL = {
   type: "function" as const,
   function: {
@@ -26,9 +44,19 @@ const CALENDAR_TOOL = {
               thesis: { type: "string", description: "Central thesis of the content piece" },
               strategic_objective: { type: "string", description: "Why this content exists strategically" },
               visual_direction: { type: "string", description: "Visual/format direction: carrossel, reels, post único, stories" },
+              benchmark_preset: {
+                type: "string",
+                enum: ["impacto_viral", "autoridade_premium", "educacao_sofisticada", "consultorio_humano"],
+                description: "Benchmark preset for this content piece",
+              },
+              objetivo: {
+                type: "string",
+                enum: ["educar", "salvar", "comentar", "conversao"],
+                description: "Strategic objective type",
+              },
               series_suggestion: { type: "string", description: "Suggested series name this could belong to, or empty" },
             },
-            required: ["day_offset", "title", "content_type", "thesis", "strategic_objective", "visual_direction"],
+            required: ["day_offset", "title", "content_type", "thesis", "strategic_objective", "visual_direction", "benchmark_preset", "objetivo"],
             additionalProperties: false,
           },
         },
@@ -43,7 +71,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
 
   try {
-    const { positioning, specialty, series } = await req.json();
+    const { positioning, specialty, series, usedTopics, usedPresets, memoryHints } = await req.json();
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return errorResponse("Missing Authorization header", 401);
@@ -62,8 +90,24 @@ serve(async (req) => {
       ? `\nSéries ativas do perfil:\n${series.map((s: any) => `- ${s.name} (${s.frequency}) — ${s.strategic_role}`).join("\n")}\nDistribua conteúdos dessas séries no calendário.`
       : "";
 
+    const usedTopicsContext = usedTopics?.length
+      ? `\n\n## TEMAS JÁ UTILIZADOS (evite repetição excessiva)\n${usedTopics.slice(0, 20).map((t: string) => `- ${t}`).join("\n")}`
+      : "";
+
+    const usedPresetsContext = usedPresets?.length
+      ? `\n\n## PRESETS MAIS USADOS (diversifique)\n${usedPresets.map((p: string) => `- ${p}`).join("\n")}`
+      : "";
+
+    const memoryContext = memoryHints
+      ? `\n\n## MEMÓRIA ESTRATÉGICA DA MÉDICA\n${memoryHints}`
+      : "";
+
     const systemPrompt = `Você é um estrategista editorial sênior para posicionamento médico no Instagram.
 Crie um calendário editorial estratégico de 30 dias para este profissional.
+
+${PRESET_DESCRIPTIONS}
+
+${OBJETIVO_DESCRIPTIONS}
 
 Regras:
 - 12 a 16 peças de conteúdo distribuídas estrategicamente (não todos os dias)
@@ -74,7 +118,14 @@ Regras:
 - A distribuição deve reforçar posicionamento, não apenas frequência
 - Linguagem consultiva em português brasileiro
 - Se há séries ativas, distribua conteúdos dessas séries no calendário
-${seriesContext}`;
+
+## REGRAS DE DIVERSIFICAÇÃO
+- NÃO repita o mesmo benchmark_preset mais que 4 vezes em 30 dias
+- NÃO use o mesmo objetivo mais que 5 vezes em 30 dias
+- Alterne entre presets provocativos e acolhedores
+- Intercale conteúdo de autoridade com conteúdo de conexão
+- A sequência visual não pode ter 3 carrosséis seguidos sem variação
+${seriesContext}${usedTopicsContext}${usedPresetsContext}${memoryContext}`;
 
     const userPrompt = `Especialidade: ${specialty || "Não informada"}
 Arquétipo: ${positioning?.archetype || "Não definido"}
@@ -83,7 +134,7 @@ Pilares editoriais: ${positioning?.pillars?.join(", ") || "Não definidos"}
 Público-alvo: ${positioning?.target_audience || "Não definido"}
 Objetivos: ${positioning?.goals || "Não definidos"}
 
-Gere um calendário editorial estratégico de 30 dias.`;
+Gere um calendário editorial estratégico de 30 dias com benchmark presets e objetivos definidos.`;
 
     const response = await callGemini("unused", {
       messages: [
@@ -130,6 +181,8 @@ Gere um calendário editorial estratégico de 30 dias.`;
         thesis: item.thesis,
         strategic_objective: item.strategic_objective,
         visual_direction: item.visual_direction,
+        benchmark_preset: item.benchmark_preset || "autoridade_premium",
+        objetivo: item.objetivo || "educar",
         status: "planejado",
       };
     });
