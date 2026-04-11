@@ -109,6 +109,68 @@ export type Database = {
           },
         ]
       }
+      content_feedback: {
+        Row: {
+          aesthetic_score: number | null
+          authority_score: number | null
+          benchmark_preset: string | null
+          clarity_score: number | null
+          content_output_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          outcome_tags: Json
+          posted: boolean
+          reuse_direction: boolean
+          satisfaction: number | null
+          updated_at: string
+          user_id: string
+          visual_style: string | null
+        }
+        Insert: {
+          aesthetic_score?: number | null
+          authority_score?: number | null
+          benchmark_preset?: string | null
+          clarity_score?: number | null
+          content_output_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outcome_tags?: Json
+          posted?: boolean
+          reuse_direction?: boolean
+          satisfaction?: number | null
+          updated_at?: string
+          user_id: string
+          visual_style?: string | null
+        }
+        Update: {
+          aesthetic_score?: number | null
+          authority_score?: number | null
+          benchmark_preset?: string | null
+          clarity_score?: number | null
+          content_output_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outcome_tags?: Json
+          posted?: boolean
+          reuse_direction?: boolean
+          satisfaction?: number | null
+          updated_at?: string
+          user_id?: string
+          visual_style?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_feedback_content_output_id_fkey"
+            columns: ["content_output_id"]
+            isOneToOne: false
+            referencedRelation: "content_outputs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_outputs: {
         Row: {
           carousel_slide_urls: Json | null
