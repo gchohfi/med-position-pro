@@ -371,9 +371,9 @@ const BenchmarkPage = () => {
             {/* Strategic insights */}
             {data.insights_estrategicos?.length > 0 && (
               <div>
-                <h2 className="font-heading text-lg font-semibold mb-3 flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-accent" /> Insights Estratégicos
-                </h2>
+                <h3 className="text-label uppercase tracking-wider text-muted-foreground/60 mb-3">
+                  Insights Estratégicos
+                </h3>
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {data.insights_estrategicos.map((ins, i) => (
                     <motion.div
@@ -381,7 +381,7 @@ const BenchmarkPage = () => {
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 + i * 0.05 }}
-                      className="bg-card rounded-2xl border border-border p-5"
+                      className="surface-card p-5"
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <p className="text-sm font-medium text-foreground">{ins.insight}</p>
@@ -400,13 +400,10 @@ const BenchmarkPage = () => {
 
         {/* Empty state */}
         {!loading && !data && (
-          <div className="flex flex-col items-center py-16 text-center">
-            <Globe className="h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground text-sm max-w-sm mb-1">
-              Analise referências de conteúdo médico e transforme em decisões estratégicas para seus carrosséis.
-            </p>
-            <p className="text-muted-foreground/60 text-xs max-w-xs">
-              Gere benchmarks, compare direções e escolha o preset ideal.
+          <div className="flex flex-col items-center py-20 text-center">
+            <Globe className="h-10 w-10 text-muted-foreground/25 mb-4" />
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Analise referências e transforme em decisões estratégicas para seus carrosséis.
             </p>
           </div>
         )}
