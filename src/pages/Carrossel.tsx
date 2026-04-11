@@ -324,8 +324,7 @@ const Carrossel = () => {
         user_id: user.id,
         content_type: "carrossel",
         title: roteiro.titulo_carrossel || tema || "Carrossel sem título",
-        strategic_input: { tese, objetivo, objetivoDetalhado, formato, tema, preset: activePreset } as any,
-        generated_content: {
+        strategic_input: { tese, objetivo, objetivoDetalhado, formato, tema, preset: activePreset },
         generated_content: {
           roteiro,
           slideDataList,
@@ -333,7 +332,7 @@ const Carrossel = () => {
           legenda: roteiro.legenda,
           hashtags: roteiro.hashtags,
           cta_final: roteiro.cta_final,
-        } as any,
+        },
       };
       if (campaignId) insertPayload.campaign_id = campaignId;
       const { data, error } = await supabase.from("content_outputs").insert(insertPayload).select("id").single();
