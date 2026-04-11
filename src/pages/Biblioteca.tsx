@@ -74,6 +74,7 @@ interface EnrichedItem {
   slideCount: number;
   ctaFinal: string | null;
   tom: string | null;
+  campaign_id: string | null;
 }
 
 interface FeedbackMap {
