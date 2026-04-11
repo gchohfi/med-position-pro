@@ -17,9 +17,13 @@ import {
   X,
   RefreshCw,
   Palette,
+  Columns2,
+  Eye,
 } from "lucide-react";
 import SlideRenderer, { type SlideData, type ArchetypeStyle, VISUAL_SYSTEMS } from "./SlideRenderer";
 import SlideEditor from "./SlideEditor";
+import BenchmarkCompareMode from "./BenchmarkCompareMode";
+import type { BenchmarkPresetId } from "@/lib/benchmark-presets";
 
 /** Convert a data-URL to a Blob */
 function dataUrlToBlob(dataUrl: string): Blob {
