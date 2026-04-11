@@ -41,7 +41,8 @@ export async function callClaudeRaw(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: DEFAULT_MODEL,
+      model: opts.model || DEFAULT_MODEL,
+      max_tokens: opts.maxTokens || 4096,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
