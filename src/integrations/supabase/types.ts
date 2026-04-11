@@ -227,6 +227,89 @@ export type Database = {
           },
         ]
       }
+      content_performance: {
+        Row: {
+          clicks: number | null
+          comments: number | null
+          content_output_id: string | null
+          created_at: string
+          engagement_rate: number | null
+          external_post_id: string | null
+          external_post_url: string | null
+          follows: number | null
+          id: string
+          impressions: number | null
+          notes: string | null
+          predicted_score: number | null
+          published_at: string | null
+          reach: number | null
+          retention_rate: number | null
+          saves: number | null
+          shares: number | null
+          source: string
+          sync_status: string
+          synced_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          clicks?: number | null
+          comments?: number | null
+          content_output_id?: string | null
+          created_at?: string
+          engagement_rate?: number | null
+          external_post_id?: string | null
+          external_post_url?: string | null
+          follows?: number | null
+          id?: string
+          impressions?: number | null
+          notes?: string | null
+          predicted_score?: number | null
+          published_at?: string | null
+          reach?: number | null
+          retention_rate?: number | null
+          saves?: number | null
+          shares?: number | null
+          source?: string
+          sync_status?: string
+          synced_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          clicks?: number | null
+          comments?: number | null
+          content_output_id?: string | null
+          created_at?: string
+          engagement_rate?: number | null
+          external_post_id?: string | null
+          external_post_url?: string | null
+          follows?: number | null
+          id?: string
+          impressions?: number | null
+          notes?: string | null
+          predicted_score?: number | null
+          published_at?: string | null
+          reach?: number | null
+          retention_rate?: number | null
+          saves?: number | null
+          shares?: number | null
+          source?: string
+          sync_status?: string
+          synced_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_performance_content_output_id_fkey"
+            columns: ["content_output_id"]
+            isOneToOne: false
+            referencedRelation: "content_outputs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       diagnosis_outputs: {
         Row: {
           created_at: string
