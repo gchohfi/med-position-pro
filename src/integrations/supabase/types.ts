@@ -608,6 +608,60 @@ export type Database = {
         }
         Relationships: []
       }
+      strategic_memory: {
+        Row: {
+          created_at: string
+          cta_preferences: Json
+          export_count: number
+          hook_intensity: string
+          id: string
+          last_accepted_directions: Json
+          last_rejected_directions: Json
+          notes_summary: string | null
+          preferred_presets: Json
+          preferred_visual_styles: Json
+          rejected_patterns: Json
+          rewrite_count: number
+          tone_preferences: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cta_preferences?: Json
+          export_count?: number
+          hook_intensity?: string
+          id?: string
+          last_accepted_directions?: Json
+          last_rejected_directions?: Json
+          notes_summary?: string | null
+          preferred_presets?: Json
+          preferred_visual_styles?: Json
+          rejected_patterns?: Json
+          rewrite_count?: number
+          tone_preferences?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cta_preferences?: Json
+          export_count?: number
+          hook_intensity?: string
+          id?: string
+          last_accepted_directions?: Json
+          last_rejected_directions?: Json
+          notes_summary?: string | null
+          preferred_presets?: Json
+          preferred_visual_styles?: Json
+          rejected_patterns?: Json
+          rewrite_count?: number
+          tone_preferences?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       strategic_updates: {
         Row: {
           action_label: string | null
