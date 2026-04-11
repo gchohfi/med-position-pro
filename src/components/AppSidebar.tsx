@@ -16,6 +16,7 @@ import {
   Lightbulb,
   Radar,
   Globe,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
@@ -36,6 +37,7 @@ const ideaLinks: NavLinkItem[] = [
   { label: "Inspiração", icon: Lightbulb, path: ROUTES.ideias },
   { label: "Radar", icon: Radar, path: ROUTES.radar },
   { label: "Benchmark", icon: Globe, path: ROUTES.benchmark },
+  { label: "Clusters", icon: Network, path: ROUTES.topicClusters },
 ];
 
 export function AppSidebar() {
