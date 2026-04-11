@@ -30,6 +30,7 @@ import {
   X,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import ApprovalWorkflow, { ApprovalStatusBadge } from "@/components/ApprovalWorkflow";
 import {
   PerformanceBadge,
   MetricsMiniRow,
@@ -733,12 +734,12 @@ const Biblioteca = () => {
           </div>
         )}
 
-        {/* Preview */}
+        {/* Preview + Workflow */}
         {selectedItem && slideDataList.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-heading text-xl font-semibold">
+                <h2 className="font-heading text-title tracking-tight">
                   {selectedItem.title || "Carrossel"}
                 </h2>
                 <div className="flex gap-2 mt-1">
@@ -766,12 +767,19 @@ const Biblioteca = () => {
                 ← Voltar
               </Button>
             </div>
-            <CarouselVisualPreview
-              slides={slideDataList}
-              visualStyle={visualStyle}
-              contentOutputId={selectedItem.id}
-              onSlidesChange={setSlideDataList}
-            />
+            <div className="grid gap-6 lg:grid-cols-5">
+              <div className="lg:col-span-3">
+                <CarouselVisualPreview
+                  slides={slideDataList}
+                  visualStyle={visualStyle}
+                  contentOutputId={selectedItem.id}
+                  onSlidesChange={setSlideDataList}
+                />
+              </div>
+              <div className="lg:col-span-2">
+                <ApprovalWorkflow contentOutputId={selectedItem.id} />
+              </div>
+            </div>
           </div>
         )}
       </div>
