@@ -338,8 +338,8 @@ const Carrossel = () => {
       }).select("id").single();
       if (error) throw error;
       setSavedContentOutputId(data.id);
+      setShowFeedback(true);
       toast.success("Carrossel salvo na biblioteca!");
-      // Track save signal
       processMemorySignals(user.id, [{ type: "save", preset: activePreset, visual: visualStyle }])
         .then(() => getStrategicMemoryForUser(user.id).then(setMemory));
     } catch {
