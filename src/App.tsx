@@ -21,6 +21,7 @@ import BenchmarkPage from "./pages/Benchmark";
 import TopicClusters from "./pages/TopicClusters";
 import ReferenciasVisuais from "./pages/ReferenciasVisuais";
 import Personas from "./pages/Personas";
+import Campanhas from "./pages/Campanhas";
 
 const queryClient = new QueryClient();
 
