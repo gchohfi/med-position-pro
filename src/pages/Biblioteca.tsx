@@ -133,6 +133,7 @@ const Biblioteca = () => {
 
   const [rawItems, setRawItems] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<FeedbackMap>({});
+  const [perfMap, setPerfMap] = useState<Record<string, ContentPerformanceRecord>>({});
   const [loading, setLoading] = useState(true);
 
   // Filters
