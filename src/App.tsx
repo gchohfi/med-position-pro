@@ -20,6 +20,7 @@ import RadarPage from "./pages/Radar";
 import BenchmarkPage from "./pages/Benchmark";
 import TopicClusters from "./pages/TopicClusters";
 import ReferenciasVisuais from "./pages/ReferenciasVisuais";
+import MapaDiferenciacao from "./pages/MapaDiferenciacao";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
               <Route path={ROUTES.benchmark} element={<ProtectedRoute><BenchmarkPage /></ProtectedRoute>} />
               <Route path={ROUTES.topicClusters} element={<ProtectedRoute><TopicClusters /></ProtectedRoute>} />
               <Route path={ROUTES.referenciasVisuais} element={<ProtectedRoute><ReferenciasVisuais /></ProtectedRoute>} />
+              <Route path={ROUTES.mapaDiferenciacao} element={<ProtectedRoute><MapaDiferenciacao /></ProtectedRoute>} />
 
               {/* Redirect old routes to carrossel */}
               <Route path="/dashboard" element={<Navigate to={ROUTES.carrossel} replace />} />
