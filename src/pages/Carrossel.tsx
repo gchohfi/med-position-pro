@@ -330,6 +330,9 @@ const Carrossel = () => {
       if (error) throw error;
       setSavedContentOutputId(data.id);
       toast.success("Carrossel salvo na biblioteca!");
+      // Track save signal
+      processMemorySignals(user.id, [{ type: "save", preset: activePreset, visual: visualStyle }])
+        .then(() => getStrategicMemoryForUser(user.id).then(setMemory));
     } catch {
       toast.error("Erro ao salvar carrossel.");
     } finally {
