@@ -236,23 +236,41 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             {slides.length} slides · 1080×1350
           </span>
         </div>
-        {/* Visual style toggle */}
-        <div className="flex items-center gap-1.5 ml-2">
-          <Palette className="h-3.5 w-3.5 text-muted-foreground" />
-          {(Object.keys(VISUAL_SYSTEMS) as ArchetypeStyle[]).map((key) => (
+        {/* Mode toggle + visual style */}
+        <div className="flex items-center gap-2 ml-2">
+          {onPresetChange && (
             <button
-              key={key}
-              onClick={() => setStyleOverride(key)}
-              title={VISUAL_SYSTEMS[key].description}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all ${
-                activeStyle === key
-                  ? "bg-accent text-accent-foreground shadow-sm"
+              onClick={() => { setCompareMode(!compareMode); setEditingIndex(null); }}
+              className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 ${
+                compareMode
+                  ? "bg-foreground text-background shadow-sm"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"
               }`}
             >
-              {VISUAL_SYSTEMS[key].label}
+              {compareMode ? <Eye className="h-3 w-3" /> : <Columns2 className="h-3 w-3" />}
+              {compareMode ? "Preview" : "Comparar"}
             </button>
-          ))}
+          )}
+          {!compareMode && (
+            <>
+              <div className="w-px h-4 bg-border" />
+              <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+              {(Object.keys(VISUAL_SYSTEMS) as ArchetypeStyle[]).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => setStyleOverride(key)}
+                  title={VISUAL_SYSTEMS[key].description}
+                  className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all ${
+                    activeStyle === key
+                      ? "bg-accent text-accent-foreground shadow-sm"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {VISUAL_SYSTEMS[key].label}
+                </button>
+              ))}
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {onRegenerate && (
