@@ -703,6 +703,15 @@ const Biblioteca = () => {
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
+                    <ManualMetricsDialog
+                      contentOutputId={item.id}
+                      existingMetrics={perfMap[item.id]?.metrics}
+                      onSave={(m, url) => handleSaveMetrics(item.id, m, url)}
+                    >
+                      <Button size="sm" variant="ghost" className="h-7 text-xs" title="Métricas">
+                        <TrendingUp className="h-3 w-3" />
+                      </Button>
+                    </ManualMetricsDialog>
                     <Button
                       size="sm"
                       variant="ghost"
