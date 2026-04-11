@@ -294,8 +294,6 @@ const BenchmarkPage = () => {
                       }`}
                       onClick={() => toggleSelect(i)}
                     >
-                      <div className="p-5">
-                    >
                       {/* Header */}
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <div className="min-w-0">
