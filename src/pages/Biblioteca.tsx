@@ -31,6 +31,18 @@ import {
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import {
+  PerformanceBadge,
+  MetricsMiniRow,
+  ManualMetricsDialog,
+  InstagramConnectionStatus,
+} from "@/components/PerformanceMetrics";
+import {
+  normalizePerformanceRow,
+  toPerformanceInsert,
+  type ContentPerformanceRecord,
+  type ContentPerformanceMetrics,
+} from "@/lib/instagram-performance";
+import {
   TravessIARoteiro,
   travessiaToSlideData,
   type PreferredVisualStyle,
@@ -121,6 +133,7 @@ const Biblioteca = () => {
 
   const [rawItems, setRawItems] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<FeedbackMap>({});
+  const [perfMap, setPerfMap] = useState<Record<string, ContentPerformanceRecord>>({});
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -143,7 +156,7 @@ const Biblioteca = () => {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [outputsRes, feedbackRes] = await Promise.all([
+      const [outputsRes, feedbackRes, perfRes] = await Promise.all([
         supabase
           .from("content_outputs")
           .select("*")
@@ -153,6 +166,10 @@ const Biblioteca = () => {
         supabase
           .from("content_feedback")
           .select("content_output_id, satisfaction, outcome_tags, reuse_direction, posted")
+          .eq("user_id", user!.id),
+        supabase
+          .from("content_performance")
+          .select("*")
           .eq("user_id", user!.id),
       ]);
       if (outputsRes.error) throw outputsRes.error;
@@ -170,6 +187,13 @@ const Biblioteca = () => {
         }
       }
       setFeedbacks(fbMap);
+
+      const pm: Record<string, ContentPerformanceRecord> = {};
+      for (const row of perfRes.data || []) {
+        const rec = normalizePerformanceRow(row);
+        if (rec.contentOutputId) pm[rec.contentOutputId] = rec;
+      }
+      setPerfMap(pm);
     } catch {
       toast.error("Erro ao carregar biblioteca.");
     } finally {
@@ -328,6 +352,34 @@ const Biblioteca = () => {
     }
   };
 
+  const handleSaveMetrics = async (
+    contentOutputId: string,
+    metrics: Partial<ContentPerformanceMetrics>,
+    postUrl?: string
+  ) => {
+    try {
+      const insert = toPerformanceInsert(user!.id, contentOutputId, metrics, {
+        source: "manual",
+        externalPostUrl: postUrl,
+      });
+      const { data, error } = await supabase
+        .from("content_performance")
+        .upsert(insert as any, { onConflict: "user_id,content_output_id" })
+        .select()
+        .single();
+      if (error) throw error;
+      if (data) {
+        setPerfMap((prev) => ({
+          ...prev,
+          [contentOutputId]: normalizePerformanceRow(data),
+        }));
+      }
+      toast.success("Métricas salvas!");
+    } catch {
+      toast.error("Erro ao salvar métricas.");
+    }
+  };
+
   const hasActiveFilters = filterPreset !== "all" || filterVisual !== "all" || filterObjetivo !== "all" || filterStatus !== "all" || search.trim() !== "";
 
   const clearFilters = () => {
@@ -354,7 +406,13 @@ const Biblioteca = () => {
           </p>
         </div>
 
-        {/* Stats bar */}
+        {/* Instagram connection status */}
+        {!loading && items.length > 0 && (
+          <div className="mb-4">
+            <InstagramConnectionStatus connected={false} />
+          </div>
+        )}
+
         {!loading && items.length > 0 && (
           <div className="flex gap-3 mb-6 flex-wrap">
             <StatPill label="Total" value={stats.total} />
@@ -600,6 +658,13 @@ const Biblioteca = () => {
                     )}
                   </div>
 
+                  {/* Performance metrics */}
+                  {perfMap[item.id] && (
+                    <div className="mb-2">
+                      <MetricsMiniRow metrics={perfMap[item.id].metrics} />
+                    </div>
+                  )}
+
                   {/* CTA preview */}
                   {item.ctaFinal && (
                     <p className="text-[10px] text-muted-foreground italic line-clamp-1 mb-3">
@@ -644,6 +709,15 @@ const Biblioteca = () => {
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
+                    <ManualMetricsDialog
+                      contentOutputId={item.id}
+                      existingMetrics={perfMap[item.id]?.metrics}
+                      onSave={(m, url) => handleSaveMetrics(item.id, m, url)}
+                    >
+                      <Button size="sm" variant="ghost" className="h-7 text-xs" title="Métricas">
+                        <TrendingUp className="h-3 w-3" />
+                      </Button>
+                    </ManualMetricsDialog>
                     <Button
                       size="sm"
                       variant="ghost"
