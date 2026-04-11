@@ -68,6 +68,8 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   doctorImageUrl,
   visualStyle,
   contentOutputId,
+  activePresetId,
+  onPresetChange,
   onRegenerate,
   onClose,
   onSlidesChange,
@@ -78,6 +80,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   const [exporting, setExporting] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [styleOverride, setStyleOverride] = useState<ArchetypeStyle | null>(null);
+  const [compareMode, setCompareMode] = useState(false);
   const activeStyle: ArchetypeStyle = styleOverride ?? visualStyle ?? "editorial_black_gold";
 
   const handleSlideEdit = (index: number, updated: SlideData) => {
