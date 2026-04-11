@@ -121,6 +121,8 @@ const Carrossel = () => {
 
     setTese(state.tese);
 
+    if (state.tema) setTema(state.tema);
+
     if (state.objetivoEnum && objetivoOptions.some((o) => o.value === state.objetivoEnum)) {
       setObjetivo(state.objetivoEnum as ObjetivoEnum);
     } else if (state.objetivo) {
@@ -131,6 +133,13 @@ const Carrossel = () => {
       setObjetivoDetalhado(state.objetivoDetalhado);
     } else if (state.objetivo) {
       setObjetivoDetalhado(state.objetivo);
+    }
+
+    // Apply preset and visual style from calendar
+    if (state.preset && state.preset in BENCHMARK_PRESETS) {
+      setActivePreset(state.preset as BenchmarkPresetId);
+      const preset = getPreset(state.preset as BenchmarkPresetId);
+      setVisualStyle(preset.preferredVisualStyle);
     }
   }, [location.state]);
 
