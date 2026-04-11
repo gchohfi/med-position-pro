@@ -48,16 +48,17 @@ function writeLocalCache(profile: DoctorProfile | null) {
 /** Convert a Supabase profiles row + profile_data into a DoctorProfile */
 function rowToProfile(row: Record<string, unknown>): DoctorProfile | null {
   const data = (row.profile_data ?? {}) as Record<string, unknown>;
-  const nome = (data.nome as string) || (row.full_name as string) || "";
+  // Columns take precedence, then profile_data, then defaults
+  const nome = (row.full_name as string) || (data.nome as string) || "";
   if (!nome) return null;
 
   return {
     nome,
-    especialidade: (data.especialidade as DoctorProfile["especialidade"]) || (row.specialty as DoctorProfile["especialidade"]) || "Outra",
+    especialidade: (row.specialty as DoctorProfile["especialidade"]) || (data.especialidade as DoctorProfile["especialidade"]) || "Outra",
     subespecialidade: (data.subespecialidade as string) || undefined,
-    crm: (data.crm as string) || "",
-    cidade: (data.cidade as string) || "",
-    estado: (data.estado as string) || "",
+    crm: (row.crm as string) || (data.crm as string) || "",
+    cidade: (row.cidade as string) || (data.cidade as string) || "",
+    estado: (row.estado as string) || (data.estado as string) || "",
     plataformas: (data.plataformas as DoctorProfile["plataformas"]) || ["instagram"],
     seguidores_instagram: (data.seguidores_instagram as number) || undefined,
     publico_alvo: (data.publico_alvo as string) || "",
@@ -67,8 +68,8 @@ function rowToProfile(row: Record<string, unknown>): DoctorProfile | null {
     concorrentes: (data.concorrentes as string[]) || undefined,
     referencia_visual: (data.referencia_visual as string) || undefined,
     bio_instagram: (data.bio_instagram as string) || undefined,
-    instagram_handle: (data.instagram_handle as string) || (row.instagram_handle as string) || undefined,
-    foto_url: (data.foto_url as string) || (row.photo_url as string) || undefined,
+    instagram_handle: (row.instagram_handle as string) || (data.instagram_handle as string) || undefined,
+    foto_url: (row.photo_url as string) || (data.foto_url as string) || undefined,
     referencias_conteudo: (data.referencias_conteudo as string[]) || undefined,
     referencias_design: (data.referencias_design as string[]) || undefined,
     skill: (data.skill as DoctorProfile["skill"]) || undefined,
@@ -81,7 +82,10 @@ function profileToRow(userId: string, profile: DoctorProfile) {
   return {
     id: userId,
     full_name: profile.nome || null,
-    specialty: profile.especialidade || null,
+    specialty: (profile.especialidade as string) || null,
+    crm: profile.crm || null,
+    cidade: profile.cidade || null,
+    estado: profile.estado || null,
     instagram_handle: profile.instagram_handle || null,
     photo_url: profile.foto_url || null,
     profile_data: JSON.parse(JSON.stringify(profile)),
