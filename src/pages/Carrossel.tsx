@@ -503,6 +503,17 @@ const Carrossel = () => {
                 </section>
               )}
 
+              {/* Memory hint */}
+              {memoryHint && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/5 border border-accent/10">
+                  <TrendingUp className="h-3.5 w-3.5 text-accent shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">{memoryHint}</span>
+                    {" · "}Baseado no seu histórico
+                  </p>
+                </div>
+              )}
+
               {/* Brief form */}
               <Card>
                 <CardContent className="pt-5 space-y-4">
