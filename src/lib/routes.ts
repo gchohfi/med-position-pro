@@ -40,6 +40,7 @@ export const ROUTES = {
   memoriaViva: "/memoria-viva",
   atualizacoes: "/atualizacoes",
   supervisor: "/supervisor",
+  topicClusters: "/topic-clusters",
 } as const;
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES];
