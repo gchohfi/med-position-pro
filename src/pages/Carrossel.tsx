@@ -511,14 +511,27 @@ const Carrossel = () => {
                 </section>
               )}
 
-              {/* Memory hint */}
-              {memoryHint && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/5 border border-accent/10">
-                  <TrendingUp className="h-3.5 w-3.5 text-accent shrink-0" />
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">{memoryHint}</span>
-                    {" · "}Baseado no seu histórico
-                  </p>
+              {/* Memory + performance hints */}
+              {(memoryHint || performanceHint) && (
+                <div className="flex flex-col gap-1.5 px-3 py-2.5 rounded-lg bg-accent/5 border border-accent/10">
+                  {memoryHint && (
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-3.5 w-3.5 text-accent shrink-0" />
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">{memoryHint}</span>
+                        {" · "}Baseado no seu histórico
+                      </p>
+                    </div>
+                  )}
+                  {performanceHint && (
+                    <div className="flex items-center gap-2">
+                      <Star className="h-3.5 w-3.5 text-accent shrink-0" />
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">{performanceHint}</span>
+                        {" · "}Performance percebida
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
