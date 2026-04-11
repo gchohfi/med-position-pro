@@ -82,13 +82,13 @@ function profileToRow(userId: string, profile: DoctorProfile) {
   return {
     id: userId,
     full_name: profile.nome || null,
-    specialty: profile.especialidade || null,
+    specialty: (profile.especialidade as string) || null,
     crm: profile.crm || null,
     cidade: profile.cidade || null,
     estado: profile.estado || null,
     instagram_handle: profile.instagram_handle || null,
     photo_url: profile.foto_url || null,
-    profile_data: JSON.parse(JSON.stringify(profile)) as Record<string, unknown>,
+    profile_data: JSON.parse(JSON.stringify(profile)),
   };
 }
 
