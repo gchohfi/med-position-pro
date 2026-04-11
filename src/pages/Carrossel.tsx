@@ -16,6 +16,14 @@ import { mapToObjetivoEnum, type ObjetivoEnum } from "@/types/inspiration";
 import CarouselVisualPreview from "@/components/carousel/CarouselVisualPreview";
 import type { SlideData } from "@/components/carousel/SlideRenderer";
 import { getPreset, BENCHMARK_PRESETS, type BenchmarkPresetId } from "@/lib/benchmark-presets";
+import {
+  getStrategicMemoryForUser,
+  processMemorySignals,
+  getMemoryAwarePresetRecommendation,
+  getMemoryHint,
+  type StrategicMemory,
+  type MemorySignal,
+} from "@/lib/strategic-memory";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
