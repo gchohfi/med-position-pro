@@ -614,6 +614,7 @@ export type Database = {
           instagram_handle: string | null
           onboarding_complete: boolean
           photo_url: string | null
+          profile_data: Json | null
           specialty: string | null
           updated_at: string
         }
@@ -624,6 +625,7 @@ export type Database = {
           instagram_handle?: string | null
           onboarding_complete?: boolean
           photo_url?: string | null
+          profile_data?: Json | null
           specialty?: string | null
           updated_at?: string
         }
@@ -634,6 +636,7 @@ export type Database = {
           instagram_handle?: string | null
           onboarding_complete?: boolean
           photo_url?: string | null
+          profile_data?: Json | null
           specialty?: string | null
           updated_at?: string
         }
