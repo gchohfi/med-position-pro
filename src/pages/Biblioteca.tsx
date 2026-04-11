@@ -28,7 +28,9 @@ import {
   TrendingUp,
   Sparkles,
   X,
+  RefreshCw,
 } from "lucide-react";
+import ContentTransformDialog from "@/components/ContentTransformDialog";
 import AppLayout from "@/components/AppLayout";
 import {
   PerformanceBadge,
