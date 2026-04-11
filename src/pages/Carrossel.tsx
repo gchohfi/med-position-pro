@@ -51,6 +51,7 @@ import {
   Sparkles,
   Zap,
   TrendingUp,
+  Star,
   Settings,
 } from "lucide-react";
 
