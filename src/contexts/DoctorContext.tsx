@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import type { DoctorProfile } from "@/types/doctor";
+import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -83,7 +84,7 @@ function profileToRow(userId: string, profile: DoctorProfile) {
     specialty: profile.especialidade || null,
     instagram_handle: profile.instagram_handle || null,
     photo_url: profile.foto_url || null,
-    profile_data: profile as unknown,
+    profile_data: profile as Json,
   };
 }
 
@@ -199,11 +200,12 @@ export const DoctorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     writeLocalCache(null);
 
     if (user) {
-      await supabase
-        .from("profiles")
-        .update({ profile_data: {} })
-        .eq("id", user.id)
-        .catch(() => {});
+      try {
+        await supabase
+          .from("profiles")
+          .update({ profile_data: {} })
+          .eq("id", user.id);
+      } catch { /* ignore */ }
     }
   }, [user]);
 
