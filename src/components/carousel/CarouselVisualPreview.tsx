@@ -45,6 +45,8 @@ interface CarouselVisualPreviewProps {
   doctorImageUrl?: string;
   visualStyle?: ArchetypeStyle;
   contentOutputId?: string | null;
+  activePresetId?: BenchmarkPresetId;
+  onPresetChange?: (id: BenchmarkPresetId) => void;
   onRegenerate?: () => void;
   onClose?: () => void;
   onSlidesChange?: (slides: SlideData[]) => void;
