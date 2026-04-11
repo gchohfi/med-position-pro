@@ -731,6 +731,21 @@ const Carrossel = () => {
                 </Card>
               )}
 
+              {/* Performance Score */}
+              {roteiro && (() => {
+                const perfScore = calculatePerformanceScore(roteiro, activePreset);
+                return (
+                  <PerformanceScoreCard
+                    score={perfScore}
+                    onPresetSuggestion={(presetId) => {
+                      setActivePreset(presetId);
+                      const preset = getPreset(presetId);
+                      setVisualStyle(preset.preferredVisualStyle);
+                    }}
+                  />
+                );
+              })()}
+
               {/* Warnings */}
               {roteiro && warnings.length > 0 && (
                 <Card className="border-amber-500/50">
