@@ -56,6 +56,39 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_scores: {
+        Row: {
+          created_at: string
+          data_snapshot: Json
+          dimensions: Json
+          explanations: Json
+          id: string
+          overall_score: number
+          recommendations: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_snapshot?: Json
+          dimensions?: Json
+          explanations?: Json
+          id?: string
+          overall_score?: number
+          recommendations?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_snapshot?: Json
+          dimensions?: Json
+          explanations?: Json
+          id?: string
+          overall_score?: number
+          recommendations?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_items: {
         Row: {
           benchmark_preset: string | null

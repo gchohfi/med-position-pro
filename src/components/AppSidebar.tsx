@@ -20,6 +20,7 @@ import {
   Image,
   Users,
   BarChart3,
+  Award,
   type LucideIcon,
 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
@@ -37,6 +38,7 @@ const mainLinks: NavLinkItem[] = [
   { label: "Biblioteca", icon: Archive, path: ROUTES.biblioteca },
   { label: "Referências", icon: Image, path: ROUTES.referenciasVisuais },
   { label: "Personas", icon: Users, path: ROUTES.personas },
+  { label: "Score", icon: Award, path: ROUTES.brandScore },
 ];
 
 const ideaLinks: NavLinkItem[] = [
