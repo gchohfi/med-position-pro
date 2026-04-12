@@ -21,6 +21,7 @@ import BenchmarkPage from "./pages/Benchmark";
 import TopicClusters from "./pages/TopicClusters";
 import ReferenciasVisuais from "./pages/ReferenciasVisuais";
 import Personas from "./pages/Personas";
+import DashboardExecutivo from "./pages/DashboardExecutivo";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
 
               {/* Core — 3 screens */}
               <Route path={ROUTES.setup} element={<ProtectedRoute><Setup /></ProtectedRoute>} />
+              <Route path={ROUTES.dashboardExecutivo} element={<ProtectedRoute><DashboardExecutivo /></ProtectedRoute>} />
               <Route path={ROUTES.carrossel} element={<ProtectedRoute><Carrossel /></ProtectedRoute>} />
               <Route path={ROUTES.biblioteca} element={<ProtectedRoute><Biblioteca /></ProtectedRoute>} />
               <Route path={ROUTES.ideias} element={<ProtectedRoute><Ideias /></ProtectedRoute>} />
