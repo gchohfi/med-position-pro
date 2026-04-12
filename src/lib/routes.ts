@@ -13,6 +13,7 @@ export const ROUTES = {
   // Core
   dashboard: "/dashboard",
   setup: "/setup",
+  dashboardExecutivo: "/dashboard-executivo",
 
   // Diagnóstico & Análise
   diagnostico: "/diagnostico",
