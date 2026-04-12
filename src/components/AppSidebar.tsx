@@ -20,6 +20,7 @@ import {
   Image,
   Users,
   BarChart3,
+  Award,
   type LucideIcon,
 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
