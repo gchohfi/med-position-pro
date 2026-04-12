@@ -59,6 +59,7 @@ export type Database = {
       calendar_items: {
         Row: {
           benchmark_preset: string | null
+          campaign_id: string | null
           content_type: string
           created_at: string
           date: string
@@ -75,6 +76,7 @@ export type Database = {
         }
         Insert: {
           benchmark_preset?: string | null
+          campaign_id?: string | null
           content_type: string
           created_at?: string
           date: string
@@ -91,6 +93,7 @@ export type Database = {
         }
         Update: {
           benchmark_preset?: string | null
+          campaign_id?: string | null
           content_type?: string
           created_at?: string
           date?: string
@@ -107,6 +110,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "calendar_items_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "calendar_items_series_id_fkey"
             columns: ["series_id"]
             isOneToOne: false
@@ -114,6 +124,162 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      campaigns: {
+        Row: {
+          benchmark_preset: string | null
+          cluster_ids: Json
+          created_at: string
+          end_date: string | null
+          id: string
+          name: string
+          notes: string | null
+          persona_ids: Json
+          start_date: string | null
+          status: string
+          strategic_objective: string | null
+          theme: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          benchmark_preset?: string | null
+          cluster_ids?: Json
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          persona_ids?: Json
+          start_date?: string | null
+          status?: string
+          strategic_objective?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          benchmark_preset?: string | null
+          cluster_ids?: Json
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          persona_ids?: Json
+          start_date?: string | null
+          status?: string
+          strategic_objective?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      content_activity_log: {
+        Row: {
+          action: string
+          actor_name: string
+          content_output_id: string
+          created_at: string
+          details: Json
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          actor_name?: string
+          content_output_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          actor_name?: string
+          content_output_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      content_approvals: {
+        Row: {
+          content_output_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          reviewer_email: string | null
+          reviewer_name: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_output_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reviewer_email?: string | null
+          reviewer_name?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_output_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reviewer_email?: string | null
+          reviewer_name?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      content_comments: {
+        Row: {
+          author_name: string
+          author_role: string
+          comment: string
+          content_output_id: string
+          created_at: string
+          id: string
+          resolved: boolean
+          slide_number: number | null
+          user_id: string
+          version_label: string | null
+        }
+        Insert: {
+          author_name?: string
+          author_role?: string
+          comment: string
+          content_output_id: string
+          created_at?: string
+          id?: string
+          resolved?: boolean
+          slide_number?: number | null
+          user_id: string
+          version_label?: string | null
+        }
+        Update: {
+          author_name?: string
+          author_role?: string
+          comment?: string
+          content_output_id?: string
+          created_at?: string
+          id?: string
+          resolved?: boolean
+          slide_number?: number | null
+          user_id?: string
+          version_label?: string | null
+        }
+        Relationships: []
       }
       content_feedback: {
         Row: {
@@ -179,6 +345,7 @@ export type Database = {
       }
       content_outputs: {
         Row: {
+          campaign_id: string | null
           carousel_slide_urls: Json | null
           content_type: string
           created_at: string
@@ -193,6 +360,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          campaign_id?: string | null
           carousel_slide_urls?: Json | null
           content_type: string
           created_at?: string
@@ -207,6 +375,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          campaign_id?: string | null
           carousel_slide_urls?: Json | null
           content_type?: string
           created_at?: string
@@ -221,6 +390,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "content_outputs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "content_outputs_derived_from_fkey"
             columns: ["derived_from"]
