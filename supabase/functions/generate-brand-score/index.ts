@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.1";
 import { corsHeaders, callGemini, errorResponse, jsonResponse, checkRateLimit, rateLimitResponse } from "../_shared/gemini.ts";
-import { extractJsonFromText } from "../_shared/json-utils.ts";
+import { safeJsonParse } from "../_shared/json-utils.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -158,11 +158,17 @@ Seja preciso, honesto e útil. Máximo 5 recomendações. Cada explicação deve
 
     const aiData = await aiRes.json();
     const rawText = aiData.choices?.[0]?.message?.content ?? "";
-    const parsed = extractJsonFromText(rawText);
-
-    if (!parsed || !parsed.dimensions || !parsed.overall_score) {
+    let parsed: any;
+    try {
+      parsed = safeJsonParse(rawText);
+    } catch {
       console.error("[brand-score] Failed to parse AI response:", rawText.slice(0, 500));
       return errorResponse("Erro ao processar resposta da IA", 500);
+    }
+
+    if (!parsed || !parsed.dimensions || !parsed.overall_score) {
+      console.error("[brand-score] Invalid structure:", JSON.stringify(parsed).slice(0, 500));
+      return errorResponse("Resposta da IA incompleta", 500);
     }
 
     // Save to DB
