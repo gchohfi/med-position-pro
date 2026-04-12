@@ -19,7 +19,7 @@ import {
   Network,
   Image,
   Users,
-  FolderOpen,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
@@ -31,12 +31,12 @@ interface NavLinkItem {
 }
 
 const mainLinks: NavLinkItem[] = [
+  { label: "Dashboard", icon: BarChart3, path: ROUTES.dashboardExecutivo },
   { label: "Perfil", icon: Settings, path: ROUTES.setup },
   { label: "Carrossel", icon: Layers, path: ROUTES.carrossel },
   { label: "Biblioteca", icon: Archive, path: ROUTES.biblioteca },
   { label: "Referências", icon: Image, path: ROUTES.referenciasVisuais },
   { label: "Personas", icon: Users, path: ROUTES.personas },
-  { label: "Campanhas", icon: FolderOpen, path: ROUTES.campanhas },
 ];
 
 const ideaLinks: NavLinkItem[] = [

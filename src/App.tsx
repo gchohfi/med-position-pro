@@ -21,7 +21,7 @@ import BenchmarkPage from "./pages/Benchmark";
 import TopicClusters from "./pages/TopicClusters";
 import ReferenciasVisuais from "./pages/ReferenciasVisuais";
 import Personas from "./pages/Personas";
-import Campanhas from "./pages/Campanhas";
+import DashboardExecutivo from "./pages/DashboardExecutivo";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +41,7 @@ const App = () => (
 
               {/* Core — 3 screens */}
               <Route path={ROUTES.setup} element={<ProtectedRoute><Setup /></ProtectedRoute>} />
+              <Route path={ROUTES.dashboardExecutivo} element={<ProtectedRoute><DashboardExecutivo /></ProtectedRoute>} />
               <Route path={ROUTES.carrossel} element={<ProtectedRoute><Carrossel /></ProtectedRoute>} />
               <Route path={ROUTES.biblioteca} element={<ProtectedRoute><Biblioteca /></ProtectedRoute>} />
               <Route path={ROUTES.ideias} element={<ProtectedRoute><Ideias /></ProtectedRoute>} />
@@ -49,7 +50,6 @@ const App = () => (
               <Route path={ROUTES.topicClusters} element={<ProtectedRoute><TopicClusters /></ProtectedRoute>} />
               <Route path={ROUTES.referenciasVisuais} element={<ProtectedRoute><ReferenciasVisuais /></ProtectedRoute>} />
               <Route path={ROUTES.personas} element={<ProtectedRoute><Personas /></ProtectedRoute>} />
-              <Route path={ROUTES.campanhas} element={<ProtectedRoute><Campanhas /></ProtectedRoute>} />
 
               {/* Redirect old routes to carrossel */}
               <Route path="/dashboard" element={<Navigate to={ROUTES.carrossel} replace />} />
