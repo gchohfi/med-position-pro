@@ -491,23 +491,23 @@ const Carrossel = () => {
             {/* ═══ Studio Mode: Side Panel + Preview ═══ */}
             {hasRoteiro ? (
               <>
-                {/* LEFT: Direction Panel */}
-                <div className="w-[340px] flex-shrink-0 border-r border-border/40 overflow-y-auto">
-                  <div className="p-5 space-y-4">
-                    {/* Briefing — collapsible */}
-                    <div>
+                {/* LEFT: Creative Direction Panel */}
+                <div className="w-[360px] flex-shrink-0 border-r border-border/30 overflow-y-auto">
+                  <div className="py-2">
+
+                    {/* ── Section: Creative Brief ── */}
+                    <div className="px-5 py-3">
                       <button
                         onClick={() => setBriefCollapsed(!briefCollapsed)}
-                        className="w-full flex items-center justify-between group"
+                        className="w-full flex items-center justify-between group mb-1"
                       >
-                        <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/50 font-semibold">
-                          Briefing
-                        </span>
-                        {briefCollapsed ? (
-                          <ChevronDown className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground" />
-                        ) : (
-                          <ChevronUp className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground" />
-                        )}
+                        <div className="flex items-center gap-2">
+                          <Crosshair className="h-3 w-3 text-accent/60" />
+                          <span className="text-[11px] font-semibold text-foreground/80 tracking-wide">
+                            Creative Brief
+                          </span>
+                        </div>
+                        <ChevronDown className={`h-3 w-3 text-muted-foreground/30 transition-transform ${!briefCollapsed ? "rotate-180" : ""}`} />
                       </button>
 
                       <AnimatePresence>
@@ -519,34 +519,45 @@ const Carrossel = () => {
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden"
                           >
-                            <div className="pt-3 space-y-3">
+                            <div className="pt-2 space-y-4">
+                              {/* Tema */}
                               <div className="space-y-1.5">
-                                <Label htmlFor="tema" className="text-[11px] text-muted-foreground/70">Tema</Label>
+                                <div className="flex items-center gap-1.5">
+                                  <Type className="h-2.5 w-2.5 text-muted-foreground/40" />
+                                  <Label htmlFor="tema" className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-medium">Tema</Label>
+                                </div>
                                 <Textarea
                                   id="tema"
                                   value={tema}
                                   onChange={(e) => setTema(e.target.value)}
-                                  placeholder="Ex: Bioestimuladores de colágeno"
+                                  placeholder="Assunto central do carrossel"
                                   rows={1}
-                                  className="text-[13px] resize-none bg-transparent border-border/40 focus:border-accent/40 min-h-0"
+                                  className="text-[13px] resize-none border-0 border-b border-border/30 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-accent/50 placeholder:text-muted-foreground/30 min-h-0"
                                 />
                               </div>
+
+                              {/* Tese */}
                               <div className="space-y-1.5">
-                                <Label htmlFor="tese" className="text-[11px] text-muted-foreground/70">Tese central</Label>
+                                <div className="flex items-center gap-1.5">
+                                  <Target className="h-2.5 w-2.5 text-muted-foreground/40" />
+                                  <Label htmlFor="tese" className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-medium">Tese editorial</Label>
+                                </div>
                                 <Textarea
                                   id="tese"
                                   value={tese}
                                   onChange={(e) => setTese(e.target.value)}
-                                  placeholder="O que você defende"
+                                  placeholder="A opinião que guia o conteúdo"
                                   rows={2}
-                                  className="text-[13px] resize-none bg-transparent border-border/40 focus:border-accent/40"
+                                  className="text-[13px] resize-none border-0 border-b border-border/30 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-accent/50 placeholder:text-muted-foreground/30"
                                 />
                               </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="space-y-1">
-                                  <Label className="text-[11px] text-muted-foreground/70">Objetivo</Label>
+
+                              {/* Objetivo + Formato — inline */}
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                  <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-medium">Objetivo</span>
                                   <Select value={objetivo} onValueChange={(v) => setObjetivo(v as ObjetivoEnum)}>
-                                    <SelectTrigger className="h-8 text-[12px] bg-transparent border-border/40"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="h-8 text-[12px] bg-transparent border-border/30 rounded-md"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                       {objetivoOptions.map((o) => (
                                         <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -554,10 +565,10 @@ const Carrossel = () => {
                                     </SelectContent>
                                   </Select>
                                 </div>
-                                <div className="space-y-1">
-                                  <Label className="text-[11px] text-muted-foreground/70">Formato</Label>
+                                <div className="space-y-1.5">
+                                  <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-medium">Formato</span>
                                   <Select value={formato} onValueChange={setFormato}>
-                                    <SelectTrigger className="h-8 text-[12px] bg-transparent border-border/40"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="h-8 text-[12px] bg-transparent border-border/30 rounded-md"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                       {formatoOptions.map((f) => (
                                         <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
@@ -566,10 +577,18 @@ const Carrossel = () => {
                                   </Select>
                                 </div>
                               </div>
+
+                              {objetivoDetalhado && (
+                                <p className="text-[11px] text-muted-foreground/40 italic pl-0.5">
+                                  {objetivoDetalhado}
+                                </p>
+                              )}
+
+                              {/* Regenerate CTA */}
                               <Button
                                 onClick={handleGenerate}
                                 disabled={loading || !tese.trim()}
-                                className="w-full h-8 bg-accent text-accent-foreground hover:bg-accent/90 text-[12px]"
+                                className="w-full h-9 bg-accent text-accent-foreground hover:bg-accent/90 text-[12px] rounded-lg shadow-sm"
                               >
                                 {loading ? (
                                   <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Gerando…</>
@@ -582,112 +601,222 @@ const Carrossel = () => {
                         )}
                       </AnimatePresence>
 
-                      {/* Collapsed summary */}
+                      {/* Collapsed brief summary */}
                       {briefCollapsed && tese && (
-                        <p className="text-[12px] text-muted-foreground/60 mt-2 line-clamp-1 italic">
-                          {tese}
-                        </p>
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <p className="text-[12px] text-muted-foreground/50 line-clamp-1 flex-1 italic">{tese}</p>
+                          <Button
+                            onClick={() => setBriefCollapsed(false)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] text-muted-foreground/40 hover:text-foreground shrink-0 px-2"
+                          >
+                            Editar
+                          </Button>
+                        </div>
                       )}
                     </div>
 
-                    <div className="h-px bg-border/30" />
+                    <div className="mx-5 h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
 
-                    {/* Refine */}
-                    <div className="space-y-2.5">
-                      <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/50 font-semibold flex items-center gap-1.5">
-                        <RefreshCw className="h-2.5 w-2.5" /> Refinar
-                      </span>
-                      <Textarea
-                        value={feedback}
-                        onChange={(e) => setFeedback(e.target.value)}
-                        placeholder="O que quer mudar? Ex: Tom mais direto…"
-                        rows={2}
-                        className="text-[13px] resize-none bg-transparent border-border/40"
-                      />
-                      <Button
-                        onClick={handleRewrite}
-                        disabled={rewriteLoading || !feedback.trim()}
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-[11px] w-full border-border/40"
-                      >
-                        {rewriteLoading ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1.5" />}
-                        Reescrever
-                      </Button>
+                    {/* ── Section: Direção Criativa (Preset) ── */}
+                    <div className="px-5 py-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-1 h-3.5 rounded-full bg-accent/40" />
+                        <span className="text-[11px] font-semibold text-foreground/80 tracking-wide">
+                          Direção criativa
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {(Object.values(BENCHMARK_PRESETS) as import("@/lib/benchmark-presets").BenchmarkPreset[]).map((preset) => {
+                          const isActive = activePreset === preset.id;
+                          return (
+                            <button
+                              key={preset.id}
+                              onClick={() => {
+                                setActivePreset(preset.id);
+                                const p = getPreset(preset.id);
+                                setVisualStyle(p.preferredVisualStyle);
+                              }}
+                              className={`relative text-left px-3 py-2.5 rounded-lg transition-all ${
+                                isActive
+                                  ? "bg-accent/8 border border-accent/25 shadow-sm"
+                                  : "hover:bg-muted/40 border border-transparent"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="text-sm">{preset.icon}</span>
+                                <span className={`text-[11px] font-semibold ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                                  {preset.label}
+                                </span>
+                              </div>
+                              <p className={`text-[10px] leading-snug ${isActive ? "text-muted-foreground" : "text-muted-foreground/50"}`}>
+                                {preset.tagline}
+                              </p>
+                              {isActive && (
+                                <div className="absolute top-2 right-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    <div className="h-px bg-border/30" />
+                    <div className="mx-5 h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
 
-                    {/* Prompt Lab toggle */}
-                    <button
-                      onClick={() => setLabMode(!labMode)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[12px] font-medium transition-all ${
-                        labMode
-                          ? "bg-accent/10 text-accent border border-accent/20"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-                      }`}
-                    >
-                      <FlaskConical className="h-3.5 w-3.5" />
-                      Prompt Lab
-                      <span className="text-[10px] text-muted-foreground/50 ml-auto">
-                        {labMode ? "ativo" : ""}
-                      </span>
-                    </button>
-
-                    {labMode && tese.trim() && (
-                      <PromptLab
-                        onGenerate={handleLabGenerate}
-                        onSelectVariation={handleSelectLabVariation}
-                        loading={loading}
-                        brandName={profile?.nome}
-                        brandHandle={profile?.instagram_handle || profile?.bio_instagram}
-                        doctorImageUrl={profile?.foto_url}
-                      />
-                    )}
-
-                    <div className="h-px bg-border/30" />
-
-                    {/* Performance Score */}
-                    {(() => {
-                      const perfScore = calculatePerformanceScore(roteiro, activePreset);
-                      return (
-                        <PerformanceScoreCard
-                          score={perfScore}
-                          onPresetSuggestion={(presetId) => {
-                            setActivePreset(presetId);
-                            const preset = getPreset(presetId);
-                            setVisualStyle(preset.preferredVisualStyle);
-                          }}
+                    {/* ── Section: Refinar ── */}
+                    <div className="px-5 py-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="h-3 w-3 text-muted-foreground/40" />
+                        <span className="text-[11px] font-semibold text-foreground/80 tracking-wide">
+                          Refinar direção
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <Textarea
+                          value={feedback}
+                          onChange={(e) => setFeedback(e.target.value)}
+                          placeholder="Descreva o que quer ajustar — tom, estrutura, profundidade, CTA…"
+                          rows={2}
+                          className="text-[12px] resize-none border-border/30 rounded-lg bg-muted/20 focus-visible:bg-transparent placeholder:text-muted-foreground/30 pr-20"
                         />
-                      );
-                    })()}
+                        <Button
+                          onClick={handleRewrite}
+                          disabled={rewriteLoading || !feedback.trim()}
+                          size="sm"
+                          className="absolute bottom-2 right-2 h-6 text-[10px] px-2.5 bg-accent/80 text-accent-foreground hover:bg-accent rounded-md"
+                        >
+                          {rewriteLoading ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <RefreshCw className="h-2.5 w-2.5 mr-1" />}
+                          {rewriteLoading ? "" : "Aplicar"}
+                        </Button>
+                      </div>
+                    </div>
 
-                    {/* Warnings */}
+                    <div className="mx-5 h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+
+                    {/* ── Section: Prompt Lab ── */}
+                    <div className="px-5 py-3">
+                      <button
+                        onClick={() => setLabMode(!labMode)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[12px] font-medium transition-all ${
+                          labMode
+                            ? "bg-accent/8 text-accent border border-accent/20"
+                            : "text-muted-foreground/60 hover:text-foreground hover:bg-muted/30 border border-transparent"
+                        }`}
+                      >
+                        <FlaskConical className="h-3.5 w-3.5" />
+                        <span>Prompt Lab</span>
+                        <span className="text-[9px] ml-auto opacity-40">
+                          Variações A/B
+                        </span>
+                      </button>
+
+                      <AnimatePresence>
+                        {labMode && tese.trim() && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="pt-3">
+                              <PromptLab
+                                onGenerate={handleLabGenerate}
+                                onSelectVariation={handleSelectLabVariation}
+                                loading={loading}
+                                brandName={profile?.nome}
+                                brandHandle={profile?.instagram_handle || profile?.bio_instagram}
+                                doctorImageUrl={profile?.foto_url}
+                              />
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    <div className="mx-5 h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+
+                    {/* ── Section: Performance ── */}
+                    <div className="px-5 py-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-1 h-3.5 rounded-full bg-accent/30" />
+                        <span className="text-[11px] font-semibold text-foreground/80 tracking-wide">
+                          Performance
+                        </span>
+                      </div>
+                      {(() => {
+                        const perfScore = calculatePerformanceScore(roteiro, activePreset);
+                        return (
+                          <PerformanceScoreCard
+                            score={perfScore}
+                            onPresetSuggestion={(presetId) => {
+                              setActivePreset(presetId);
+                              const preset = getPreset(presetId);
+                              setVisualStyle(preset.preferredVisualStyle);
+                            }}
+                          />
+                        );
+                      })()}
+                    </div>
+
+                    {/* ── Warnings (conditional) ── */}
                     {warnings.length > 0 && (
-                      <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 px-3 py-2.5">
-                        <p className="text-[11px] font-medium text-amber-600 flex items-center gap-1.5 mb-1">
-                          <AlertTriangle className="h-3 w-3" />
-                          {warnings.length} aviso(s)
-                        </p>
-                        {warnings.map((w, i) => (
-                          <p key={i} className="text-[11px] text-muted-foreground/60 ml-[18px]">{w}</p>
-                        ))}
+                      <div className="px-5 pb-3">
+                        <div className="rounded-lg bg-amber-500/[0.04] border border-amber-500/10 px-3 py-2.5">
+                          <p className="text-[10px] font-semibold text-amber-600/80 flex items-center gap-1.5 mb-1 uppercase tracking-wider">
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            {warnings.length} aviso{warnings.length > 1 ? "s" : ""}
+                          </p>
+                          {warnings.map((w, i) => (
+                            <p key={i} className="text-[11px] text-muted-foreground/50 ml-4 leading-relaxed">{w}</p>
+                          ))}
+                        </div>
                       </div>
                     )}
 
-                    {/* Legenda */}
+                    {generateError && (
+                      <div className="px-5 pb-3">
+                        <div className="rounded-lg bg-destructive/5 border border-destructive/10 px-3 py-2.5 flex items-center gap-2">
+                          <AlertTriangle className="h-3 w-3 text-destructive/60 shrink-0" />
+                          <span className="text-[11px] text-destructive/80">{generateError}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mx-5 h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+
+                    {/* ── Section: Legenda & Hashtags ── */}
                     {roteiro?.legenda && (
-                      <div className="space-y-2">
-                        <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/50 font-semibold">
-                          Legenda
-                        </span>
-                        <p className="text-[12px] text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      <div className="px-5 py-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Hash className="h-3 w-3 text-muted-foreground/40" />
+                            <span className="text-[11px] font-semibold text-foreground/80 tracking-wide">
+                              Legenda & Hashtags
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const text = `${roteiro.legenda}\n\n${(roteiro.hashtags || []).map(h => h.startsWith("#") ? h : `#${h}`).join(" ")}`;
+                              navigator.clipboard.writeText(text);
+                              toast.success("Legenda copiada!");
+                            }}
+                            className="text-[10px] text-muted-foreground/40 hover:text-foreground flex items-center gap-1 transition-colors"
+                          >
+                            <Copy className="h-2.5 w-2.5" />
+                            Copiar
+                          </button>
+                        </div>
+                        <p className="text-[12px] text-muted-foreground/70 leading-[1.6] whitespace-pre-wrap">
                           {roteiro.legenda}
                         </p>
-                        {roteiro.hashtags && (
+                        {roteiro.hashtags && roteiro.hashtags.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {roteiro.hashtags.map((h) => (
-                              <span key={h} className="text-[10px] text-accent/60 bg-accent/5 px-1.5 py-0.5 rounded">
+                              <span key={h} className="text-[10px] text-accent/50 bg-accent/[0.04] px-1.5 py-0.5 rounded">
                                 {h.startsWith("#") ? h : `#${h}`}
                               </span>
                             ))}
@@ -695,6 +824,9 @@ const Carrossel = () => {
                         )}
                       </div>
                     )}
+
+                    {/* Bottom padding */}
+                    <div className="h-6" />
                   </div>
                 </div>
 
