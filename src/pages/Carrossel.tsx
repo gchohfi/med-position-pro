@@ -199,6 +199,11 @@ const Carrossel = () => {
         cluster: state.cluster || undefined,
         campaign: state.campaign || undefined,
         persona: state.persona || undefined,
+        hook_angle: state.hook_angle || undefined,
+        cta_direction: state.cta_direction || undefined,
+        narrative_rhythm: state.narrative_rhythm || undefined,
+        confidence: state.confidence || undefined,
+        recommendation_reasoning: state.recommendation_reasoning || undefined,
       });
       setShowRecommendationBlock(true);
     } else if (state.source) {
