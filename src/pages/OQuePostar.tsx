@@ -91,11 +91,13 @@ const OBJETIVO_LABELS: Record<string, string> = {
 
 export default function OQuePostar() {
   const { user } = useAuth();
+  const { profile } = useDoctor();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [selected, setSelected] = useState(0);
+  const [generating, setGenerating] = useState<number | null>(null);
 
   const generate = async () => {
     if (!user) return;
