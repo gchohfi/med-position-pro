@@ -108,6 +108,9 @@ export default function OQuePostar() {
         campaign: s.campaign || null,
         persona: s.persona || null,
         source: "o_que_postar",
+        why_now: s.why_now || "",
+        strategic_opportunity: s.strategic_opportunity || "",
+        risk_repetition: s.risk_repetition || "",
       },
     });
   };

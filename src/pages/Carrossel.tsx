@@ -130,6 +130,15 @@ const Carrossel = () => {
   // Navigation source tracking
   const [navigationSource, setNavigationSource] = useState<string | null>(null);
   const [sourceContext, setSourceContext] = useState<Record<string, any> | null>(null);
+  const [recommendationContext, setRecommendationContext] = useState<{
+    why_now?: string;
+    strategic_opportunity?: string;
+    risk_repetition?: string;
+    cluster?: string;
+    campaign?: string;
+    persona?: string;
+  } | null>(null);
+  const [showRecommendationBlock, setShowRecommendationBlock] = useState(false);
 
   // Pre-fill from navigation state
   useEffect(() => {
