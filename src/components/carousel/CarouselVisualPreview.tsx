@@ -223,70 +223,65 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      className="bg-card rounded-2xl border border-accent/15 shadow-sm overflow-hidden"
+      className="overflow-hidden"
     >
-      {/* Header */}
-      <div className="bg-accent/5 px-6 py-4 flex items-center justify-between border-b border-accent/10">
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-accent" />
-          <h3 className="font-heading text-base font-semibold text-foreground">
-            Carrossel visual
-          </h3>
-          <span className="text-xs text-muted-foreground">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-muted-foreground/50 font-medium">
             {slides.length} slides · 1080×1350
           </span>
-        </div>
-        {/* Mode toggle + visual style */}
-        <div className="flex items-center gap-2 ml-2">
           {onPresetChange && (
-            <button
-              onClick={() => { setCompareMode(!compareMode); setEditingIndex(null); }}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 ${
-                compareMode
-                  ? "bg-foreground text-background shadow-sm"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {compareMode ? <Eye className="h-3 w-3" /> : <Columns2 className="h-3 w-3" />}
-              {compareMode ? "Preview" : "Comparar"}
-            </button>
+            <>
+              <div className="w-px h-3 bg-border/40" />
+              <button
+                onClick={() => { setCompareMode(!compareMode); setEditingIndex(null); }}
+                className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 ${
+                  compareMode
+                    ? "bg-foreground text-background shadow-sm"
+                    : "text-muted-foreground/60 hover:text-foreground hover:bg-muted/30"
+                }`}
+              >
+                {compareMode ? <Eye className="h-3 w-3" /> : <Columns2 className="h-3 w-3" />}
+                {compareMode ? "Preview" : "Comparar"}
+              </button>
+            </>
           )}
+        </div>
+        <div className="flex items-center gap-1.5">
           {!compareMode && (
             <>
-              <div className="w-px h-4 bg-border" />
-              <Palette className="h-3.5 w-3.5 text-muted-foreground" />
               {(Object.keys(VISUAL_SYSTEMS) as ArchetypeStyle[]).map((key) => (
                 <button
                   key={key}
                   onClick={() => setStyleOverride(key)}
                   title={VISUAL_SYSTEMS[key].description}
-                  className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all ${
+                  className={`h-6 px-2 rounded text-[10px] font-medium transition-all ${
                     activeStyle === key
-                      ? "bg-accent text-accent-foreground shadow-sm"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/30"
                   }`}
                 >
                   {VISUAL_SYSTEMS[key].label}
                 </button>
               ))}
+              <div className="w-px h-3 bg-border/30" />
             </>
           )}
-        </div>
-        <div className="flex items-center gap-2">
           {onRegenerate && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onRegenerate}
-              className="text-xs h-8"
+              className="text-[11px] h-7 text-muted-foreground/50 hover:text-foreground"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
               Regerar
             </Button>
           )}
           {onClose && (
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-              <X className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7">
+              <X className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
