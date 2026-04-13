@@ -16,7 +16,6 @@ import {
   Loader2,
   X,
   RefreshCw,
-  Palette,
   Columns2,
   Eye,
 } from "lucide-react";
@@ -223,77 +222,72 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      className="bg-card rounded-2xl border border-accent/15 shadow-sm overflow-hidden"
+      className="overflow-hidden"
     >
-      {/* Header */}
-      <div className="bg-accent/5 px-6 py-4 flex items-center justify-between border-b border-accent/10">
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-accent" />
-          <h3 className="font-heading text-base font-semibold text-foreground">
-            Carrossel visual
-          </h3>
-          <span className="text-xs text-muted-foreground">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-muted-foreground/50 font-medium">
             {slides.length} slides · 1080×1350
           </span>
-        </div>
-        {/* Mode toggle + visual style */}
-        <div className="flex items-center gap-2 ml-2">
           {onPresetChange && (
-            <button
-              onClick={() => { setCompareMode(!compareMode); setEditingIndex(null); }}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 ${
-                compareMode
-                  ? "bg-foreground text-background shadow-sm"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {compareMode ? <Eye className="h-3 w-3" /> : <Columns2 className="h-3 w-3" />}
-              {compareMode ? "Preview" : "Comparar"}
-            </button>
+            <>
+              <div className="w-px h-3 bg-border/40" />
+              <button
+                onClick={() => { setCompareMode(!compareMode); setEditingIndex(null); }}
+                className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 ${
+                  compareMode
+                    ? "bg-foreground text-background shadow-sm"
+                    : "text-muted-foreground/60 hover:text-foreground hover:bg-muted/30"
+                }`}
+              >
+                {compareMode ? <Eye className="h-3 w-3" /> : <Columns2 className="h-3 w-3" />}
+                {compareMode ? "Preview" : "Comparar"}
+              </button>
+            </>
           )}
+        </div>
+        <div className="flex items-center gap-1.5">
           {!compareMode && (
             <>
-              <div className="w-px h-4 bg-border" />
-              <Palette className="h-3.5 w-3.5 text-muted-foreground" />
               {(Object.keys(VISUAL_SYSTEMS) as ArchetypeStyle[]).map((key) => (
                 <button
                   key={key}
                   onClick={() => setStyleOverride(key)}
                   title={VISUAL_SYSTEMS[key].description}
-                  className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all ${
+                  className={`h-6 px-2 rounded text-[10px] font-medium transition-all ${
                     activeStyle === key
-                      ? "bg-accent text-accent-foreground shadow-sm"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/30"
                   }`}
                 >
                   {VISUAL_SYSTEMS[key].label}
                 </button>
               ))}
+              <div className="w-px h-3 bg-border/30" />
             </>
           )}
-        </div>
-        <div className="flex items-center gap-2">
           {onRegenerate && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onRegenerate}
-              className="text-xs h-8"
+              className="text-[11px] h-7 text-muted-foreground/50 hover:text-foreground"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
               Regerar
             </Button>
           )}
           {onClose && (
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-              <X className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7">
+              <X className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
       </div>
 
       {/* Preview area */}
-      <div className="p-6">
+      <div>
         <AnimatePresence mode="wait">
           {compareMode && onPresetChange ? (
             <BenchmarkCompareMode
@@ -313,29 +307,27 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             />
           ) : (
             <motion.div key="normal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              {/* Current slide preview (scaled down) */}
-              <div className="flex flex-col items-center gap-4">
+              {/* Current slide preview — hero size */}
+              <div className="flex flex-col items-center gap-5">
                 <div
-                  className={`relative bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center ${
-                    expanded ? "w-full" : ""
-                  }`}
+                  className="relative rounded-2xl overflow-hidden flex items-center justify-center bg-neutral-900/[0.03] dark:bg-white/[0.02]"
                   style={{
-                    maxWidth: expanded ? "100%" : 400,
+                    maxWidth: expanded ? "100%" : 440,
+                    width: "100%",
                     margin: "0 auto",
                   }}
                 >
-                  {/* Scaled preview */}
                   <div
                     style={{
-                      width: expanded ? 540 : 320,
-                      height: expanded ? 675 : 400,
+                      width: expanded ? 540 : 352,
+                      height: expanded ? 675 : 440,
                       overflow: "hidden",
                       position: "relative",
                     }}
                   >
                     <div
                       style={{
-                        transform: expanded ? "scale(0.5)" : "scale(0.2963)",
+                        transform: expanded ? "scale(0.5)" : "scale(0.326)",
                         transformOrigin: "top left",
                         position: "absolute",
                         top: 0,
@@ -357,7 +349,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                   {currentSlide > 0 && (
                     <button
                       onClick={() => setCurrentSlide((p) => p - 1)}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-background transition-colors"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/90 backdrop-blur-sm rounded-full p-2 hover:bg-background transition-colors shadow-sm"
                     >
                       <ChevronLeft className="h-4 w-4 text-foreground" />
                     </button>
@@ -365,7 +357,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                   {currentSlide < slides.length - 1 && (
                     <button
                       onClick={() => setCurrentSlide((p) => p + 1)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-background transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/90 backdrop-blur-sm rounded-full p-2 hover:bg-background transition-colors shadow-sm"
                     >
                       <ChevronRight className="h-4 w-4 text-foreground" />
                     </button>
@@ -374,14 +366,19 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                   {/* Expand/collapse */}
                   <button
                     onClick={() => setExpanded(!expanded)}
-                    className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-background transition-colors"
+                    className="absolute top-3 right-3 bg-background/80 backdrop-blur-sm rounded-full p-1.5 hover:bg-background transition-colors"
                   >
                     {expanded ? (
-                      <Minimize2 className="h-3.5 w-3.5 text-foreground" />
+                      <Minimize2 className="h-3 w-3 text-foreground" />
                     ) : (
-                      <Maximize2 className="h-3.5 w-3.5 text-foreground" />
+                      <Maximize2 className="h-3 w-3 text-foreground" />
                     )}
                   </button>
+
+                  {/* Slide counter overlay */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] text-muted-foreground font-medium">
+                    {currentSlide + 1} / {slides.length}
+                  </div>
                 </div>
 
                 {/* Slide dots */}
@@ -390,70 +387,66 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                     <button
                       key={i}
                       onClick={() => setCurrentSlide(i)}
-                      className={`h-2 rounded-full transition-all ${
+                      className={`h-1.5 rounded-full transition-all ${
                         i === currentSlide
                           ? "w-6 bg-accent"
-                          : "w-2 bg-muted-foreground/20 hover:bg-muted-foreground/40"
+                          : "w-1.5 bg-muted-foreground/15 hover:bg-muted-foreground/30"
                       }`}
                     />
                   ))}
                 </div>
 
-                {/* Slide info + edit button */}
-                <div className="text-center flex flex-col items-center gap-2">
-                  <div>
-                    <p className="text-xs font-medium text-accent uppercase tracking-wide">
-                      {slides[currentSlide]?.label}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Slide {currentSlide + 1} de {slides.length}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                {/* Slide label + edit */}
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] font-medium text-accent/70 uppercase tracking-wider">
+                    {slides[currentSlide]?.label}
+                  </span>
+                  <div className="w-px h-3 bg-border/30" />
+                  <button
                     onClick={() => setEditingIndex(editingIndex === currentSlide ? null : currentSlide)}
-                    className="text-xs h-7 gap-1.5"
+                    className="text-[11px] text-muted-foreground/50 hover:text-foreground flex items-center gap-1 transition-colors"
                   >
-                    <Pencil className="h-3 w-3" />
-                    {editingIndex === currentSlide ? "Fechar editor" : "Editar texto"}
-                  </Button>
+                    <Pencil className="h-2.5 w-2.5" />
+                    {editingIndex === currentSlide ? "Fechar" : "Editar"}
+                  </button>
                 </div>
 
                 {/* Inline slide editor */}
                 {editingIndex === currentSlide && (
-                  <SlideEditor
-                    slide={slides[currentSlide]}
-                    onSave={(updated) => handleSlideEdit(currentSlide, updated)}
-                    onCancel={() => setEditingIndex(null)}
-                  />
+                  <div className="w-full max-w-lg">
+                    <SlideEditor
+                      slide={slides[currentSlide]}
+                      onSave={(updated) => handleSlideEdit(currentSlide, updated)}
+                      onCancel={() => setEditingIndex(null)}
+                    />
+                  </div>
                 )}
               </div>
 
-              {/* Slide thumbnails */}
-              <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
+              {/* Slide thumbnails — filmstrip */}
+              <div className="mt-6 flex gap-1.5 overflow-x-auto pb-2 justify-center">
                 {slides.map((slide, i) => (
                   <button
                     key={i}
                     onClick={() => setCurrentSlide(i)}
-                    className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`flex-shrink-0 rounded-md overflow-hidden transition-all ${
                       i === currentSlide
-                        ? "border-accent shadow-md"
-                        : "border-transparent opacity-60 hover:opacity-100"
+                        ? "ring-2 ring-accent ring-offset-1 ring-offset-background shadow-sm"
+                        : "opacity-40 hover:opacity-80"
                     }`}
-                    style={{ width: 64, height: 80 }}
+                    style={{ width: 56, height: 70 }}
                   >
                     <div
                       style={{
-                        width: 64,
-                        height: 80,
+                        width: 56,
+                        height: 70,
                         overflow: "hidden",
                         position: "relative",
                       }}
                     >
                       <div
                         style={{
-                          transform: "scale(0.0593)",
+                          transform: "scale(0.0519)",
                           transformOrigin: "top left",
                           position: "absolute",
                           top: 0,
@@ -474,27 +467,30 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                 ))}
               </div>
 
-              {/* Actions */}
-              <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-border">
+              {/* Export actions — minimal */}
+              <div className="flex items-center justify-center gap-3 mt-5 pt-4 border-t border-border/20">
                 <Button
                   onClick={() => exportSlide(currentSlide)}
-                  variant="outline"
-                  className="rounded-xl text-sm"
+                  variant="ghost"
+                  size="sm"
+                  className="text-[11px] h-8 text-muted-foreground/60 hover:text-foreground"
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Baixar slide atual
+                  <Download className="h-3.5 w-3.5 mr-1.5" />
+                  Slide atual
                 </Button>
+                <div className="w-px h-4 bg-border/30" />
                 <Button
                   onClick={exportAll}
                   disabled={exporting}
-                  className="rounded-xl text-sm bg-accent text-accent-foreground hover:bg-accent/90"
+                  size="sm"
+                  className="text-[11px] h-8 bg-accent text-accent-foreground hover:bg-accent/90"
                 >
                   {exporting ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                   ) : (
-                    <Cloud className="h-4 w-4 mr-2" />
+                    <Cloud className="h-3.5 w-3.5 mr-1.5" />
                   )}
-                  {exporting ? "Exportando e salvando na nuvem…" : "Baixar e salvar na nuvem (PNG)"}
+                  {exporting ? "Exportando…" : "Exportar tudo"}
                 </Button>
               </div>
             </motion.div>
