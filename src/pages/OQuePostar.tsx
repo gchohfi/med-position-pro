@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ROUTES } from "@/lib/routes";
+import { mapToObjetivoEnum } from "@/types/inspiration";
 import { BENCHMARK_PRESETS, type BenchmarkPresetId } from "@/lib/benchmark-presets";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -95,11 +96,20 @@ export default function OQuePostar() {
   };
 
   const goToCarousel = (s: Suggestion) => {
-    const params = new URLSearchParams();
-    if (s.preset) params.set("preset", s.preset);
-    if (s.objetivo) params.set("objetivo", s.objetivo);
-    if (s.title) params.set("tema", s.title);
-    navigate(`${ROUTES.carrossel}?${params.toString()}`);
+    navigate(ROUTES.carrossel, {
+      state: {
+        tema: s.title || "",
+        tese: s.strategic_opportunity || "",
+        preset: s.preset || "",
+        objetivoEnum: mapToObjetivoEnum(s.objetivo || ""),
+        objetivoDetalhado: s.why_now || "",
+        visualStyle: s.visual_style || "",
+        cluster: s.cluster || null,
+        campaign: s.campaign || null,
+        persona: s.persona || null,
+        source: "o_que_postar",
+      },
+    });
   };
 
   const current = suggestions?.[selected];
