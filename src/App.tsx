@@ -23,6 +23,7 @@ import ReferenciasVisuais from "./pages/ReferenciasVisuais";
 import Personas from "./pages/Personas";
 import DashboardExecutivo from "./pages/DashboardExecutivo";
 import BrandScore from "./pages/BrandScore";
+import OQuePostar from "./pages/OQuePostar";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ const App = () => (
               <Route path={ROUTES.referenciasVisuais} element={<ProtectedRoute><ReferenciasVisuais /></ProtectedRoute>} />
               <Route path={ROUTES.personas} element={<ProtectedRoute><Personas /></ProtectedRoute>} />
               <Route path={ROUTES.brandScore} element={<ProtectedRoute><BrandScore /></ProtectedRoute>} />
+              <Route path={ROUTES.oQuePostar} element={<ProtectedRoute><OQuePostar /></ProtectedRoute>} />
 
               {/* Redirect old routes to carrossel */}
               <Route path="/dashboard" element={<Navigate to={ROUTES.carrossel} replace />} />
