@@ -142,6 +142,70 @@ export default function OQuePostar() {
     });
   };
 
+  const generateNow = async (s: Suggestion, idx: number) => {
+    if (!user || !profile) {
+      toast.error("Perfil não configurado.");
+      return;
+    }
+    setGenerating(idx);
+    try {
+      const { data, error } = await supabase.functions.invoke("agent-carrossel", {
+        body: {
+          profile: { ...profile, pilares: profile.diferenciais },
+          tese: s.thesis || s.title,
+          objetivo: s.objetivo || "educar",
+          objetivoDetalhado: s.why_now || "",
+          action: "generate",
+          skill: profile.skill,
+          topic: s.title,
+          especialidade: profile.especialidade,
+          subespecialidade: profile.subespecialidade,
+          publico_alvo: profile.publico_alvo,
+          tom_de_voz: profile.tom_de_voz,
+          pilares: profile.diferenciais,
+          medica_nome: profile.nome,
+          medica_handle: profile.instagram_handle || profile.skill?.handle,
+          brand_colors: profile.skill?.estilo_visual ? {
+            bg: profile.skill.estilo_visual.cor_fundo,
+            text: profile.skill.estilo_visual.cor_texto,
+            accent: profile.skill.estilo_visual.cor_destaque,
+          } : undefined,
+          doctor_image_url: profile.foto_url,
+        },
+      });
+      if (error) throw error;
+      // Navigate to Carrossel with ready roteiro
+      navigate(ROUTES.carrossel, {
+        state: {
+          tema: s.title || "",
+          tese: s.thesis || s.strategic_opportunity || "",
+          preset: s.preset || "",
+          objetivoEnum: mapToObjetivoEnum(s.objetivo || ""),
+          objetivoDetalhado: s.why_now || "",
+          visualStyle: s.visual_style || "",
+          cluster: s.cluster || null,
+          campaign: s.campaign || null,
+          persona: s.persona || null,
+          source: "o_que_postar",
+          why_now: s.why_now || "",
+          strategic_opportunity: s.strategic_opportunity || "",
+          risk_repetition: s.risk_repetition || "",
+          hook_angle: s.hook_angle || null,
+          cta_direction: s.cta_direction || null,
+          narrative_rhythm: s.narrative_rhythm || null,
+          confidence: s.confidence || null,
+          recommendation_reasoning: s.recommendation_reasoning || null,
+          readyRoteiro: data,
+        },
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Erro ao gerar carrossel. Tente pelo briefing.");
+    } finally {
+      setGenerating(null);
+    }
+  };
+
   const current = suggestions?.[selected];
   const alternatives = suggestions?.filter((_, i) => i !== selected) || [];
 
