@@ -21,6 +21,7 @@ import {
   Users,
   BarChart3,
   Award,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
@@ -33,6 +34,7 @@ interface NavLinkItem {
 
 const mainLinks: NavLinkItem[] = [
   { label: "Dashboard", icon: BarChart3, path: ROUTES.dashboardExecutivo },
+  { label: "O que postar", icon: Sparkles, path: ROUTES.oQuePostar },
   { label: "Perfil", icon: Settings, path: ROUTES.setup },
   { label: "Carrossel", icon: Layers, path: ROUTES.carrossel },
   { label: "Biblioteca", icon: Archive, path: ROUTES.biblioteca },

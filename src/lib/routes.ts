@@ -45,6 +45,7 @@ export const ROUTES = {
   topicClusters: "/topic-clusters",
   personas: "/personas",
   brandScore: "/brand-score",
+  oQuePostar: "/o-que-postar",
 } as const;
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES];
