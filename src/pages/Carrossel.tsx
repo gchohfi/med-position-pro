@@ -1177,7 +1177,7 @@ const Carrossel = () => {
                         {loading ? (
                           <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Gerando carrossel…</>
                         ) : (
-                          <><Sparkles className="h-4 w-4 mr-2" />Gerar Carrossel</>
+                          <><Sparkles className="h-4 w-4 mr-2" />{showRecommendationBlock ? "Gerar com esta recomendação" : "Gerar Carrossel"}</>
                         )}
                       </Button>
                       <Button
