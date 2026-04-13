@@ -42,6 +42,13 @@ import {
   FlaskConical,
   ChevronDown,
   ChevronUp,
+  Target,
+  Type,
+  Crosshair,
+  MessageSquare,
+  Hash,
+  Copy,
+  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
