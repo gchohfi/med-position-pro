@@ -49,6 +49,8 @@ import {
   Hash,
   Copy,
   Check,
+  TrendingUp,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -1028,6 +1030,75 @@ const Carrossel = () => {
                       )}
                     </AnimatePresence>
                   </section>
+                )}
+
+                {/* Recommendation Context Block */}
+                {showRecommendationBlock && recommendationContext && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-xl border border-accent/15 bg-accent/[0.03] p-4 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-md bg-accent/10 flex items-center justify-center">
+                          <TrendingUp className="h-3 w-3 text-accent" />
+                        </div>
+                        <span className="text-[11px] font-semibold text-foreground/80 tracking-wide">
+                          Recomendação estratégica
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setShowRecommendationBlock(false)}
+                        className="text-muted-foreground/30 hover:text-muted-foreground transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    {recommendationContext.why_now && (
+                      <p className="text-[12px] text-muted-foreground/70 leading-relaxed">
+                        {recommendationContext.why_now}
+                      </p>
+                    )}
+
+                    {recommendationContext.strategic_opportunity && (
+                      <div className="bg-accent/[0.05] rounded-lg px-3 py-2">
+                        <span className="text-[9px] uppercase tracking-[0.15em] text-accent/60 font-semibold">Oportunidade</span>
+                        <p className="text-[12px] text-foreground/70 mt-0.5">{recommendationContext.strategic_opportunity}</p>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {recommendationContext.risk_repetition && (
+                        <Badge variant="outline" className={`text-[10px] border-border/30 ${
+                          recommendationContext.risk_repetition === "baixo" ? "text-emerald-600" :
+                          recommendationContext.risk_repetition === "alto" ? "text-rose-600" : "text-amber-600"
+                        }`}>
+                          Repetição: {recommendationContext.risk_repetition}
+                        </Badge>
+                      )}
+                      {recommendationContext.cluster && (
+                        <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground">
+                          {recommendationContext.cluster}
+                        </Badge>
+                      )}
+                      {recommendationContext.campaign && (
+                        <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground">
+                          {recommendationContext.campaign}
+                        </Badge>
+                      )}
+                      {recommendationContext.persona && (
+                        <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground">
+                          {recommendationContext.persona}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <p className="text-[10px] text-muted-foreground/40 italic">
+                      Edite o briefing abaixo se quiser ajustar antes de gerar.
+                    </p>
+                  </motion.div>
                 )}
 
                 {/* Brief Form */}
