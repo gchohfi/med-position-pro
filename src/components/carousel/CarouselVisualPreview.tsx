@@ -288,7 +288,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
       </div>
 
       {/* Preview area */}
-      <div className="p-6">
+      <div>
         <AnimatePresence mode="wait">
           {compareMode && onPresetChange ? (
             <BenchmarkCompareMode
