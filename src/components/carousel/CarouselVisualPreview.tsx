@@ -16,7 +16,7 @@ import {
   Loader2,
   X,
   RefreshCw,
-  Palette,
+  Maximize2,
   Columns2,
   Eye,
 } from "lucide-react";
