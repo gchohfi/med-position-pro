@@ -127,17 +127,20 @@ const Carrossel = () => {
   const [briefCollapsed, setBriefCollapsed] = useState(false);
   const [suggestionsExpanded, setSuggestionsExpanded] = useState(true);
 
+  // Navigation source tracking
+  const [navigationSource, setNavigationSource] = useState<string | null>(null);
+  const [sourceContext, setSourceContext] = useState<Record<string, any> | null>(null);
+
   // Pre-fill from navigation state
   useEffect(() => {
-    const state = location.state as Record<string, string> | null;
+    const state = location.state as Record<string, any> | null;
     if (!state) return;
 
     if (state.clusterName) setTese(state.clusterName);
-    if (state.preset && state.preset in BENCHMARK_PRESETS) {
-      setActivePreset(state.preset as BenchmarkPresetId);
-    }
     if (state.tese) setTese(state.tese);
     if (state.tema) setTema(state.tema);
+
+    // Objetivo handling with converter→conversao normalization
     if (state.objetivoEnum && objetivoOptions.some((o) => o.value === state.objetivoEnum)) {
       setObjetivo(state.objetivoEnum as ObjetivoEnum);
     } else if (state.objetivo) {
@@ -148,10 +151,30 @@ const Carrossel = () => {
     } else if (state.objetivo) {
       setObjetivoDetalhado(state.objetivo);
     }
+
+    // Preset
     if (state.preset && state.preset in BENCHMARK_PRESETS) {
       setActivePreset(state.preset as BenchmarkPresetId);
       const preset = getPreset(state.preset as BenchmarkPresetId);
       setVisualStyle(preset.preferredVisualStyle);
+    }
+
+    // Visual style override (from OQuePostar)
+    if (state.visualStyle) {
+      const validStyles: PreferredVisualStyle[] = ["travessia", "editorial_black_gold", "ivory_sage"];
+      if (validStyles.includes(state.visualStyle as PreferredVisualStyle)) {
+        setVisualStyle(state.visualStyle as PreferredVisualStyle);
+      }
+    }
+
+    // Source tracking
+    if (state.source) {
+      setNavigationSource(state.source);
+      setSourceContext({
+        cluster: state.cluster || null,
+        campaign: state.campaign || null,
+        persona: state.persona || null,
+      });
     }
   }, [location.state]);
 
