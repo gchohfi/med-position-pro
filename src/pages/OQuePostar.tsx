@@ -555,12 +555,26 @@ export default function OQuePostar() {
                       </div>
 
                       <Button
-                        onClick={() => goToCarousel(current)}
-                        className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2 rounded-xl h-10 px-5 text-[13px] font-semibold shadow-sm shrink-0"
-                      >
-                        Criar carrossel
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
+                          onClick={() => generateNow(current, selected)}
+                          disabled={generating !== null}
+                          className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2 rounded-xl h-10 px-5 text-[13px] font-semibold shadow-sm"
+                        >
+                          {generating === selected ? (
+                            <><Loader2 className="h-4 w-4 animate-spin" /> Gerando carrossel…</>
+                          ) : (
+                            <><Zap className="h-4 w-4" /> Gerar agora</>
+                          )}
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          onClick={() => goToCarousel(current)}
+                          disabled={generating !== null}
+                          className="gap-2 rounded-xl h-10 px-5 text-[13px] font-medium border-border/40 text-muted-foreground hover:text-foreground hover:border-accent/30"
+                        >
+                          Abrir briefing
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
                     </div>
                   </div>
                 </motion.div>
