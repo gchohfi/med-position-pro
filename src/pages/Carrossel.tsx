@@ -49,6 +49,8 @@ import {
   Hash,
   Copy,
   Check,
+  TrendingUp,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -130,6 +132,15 @@ const Carrossel = () => {
   // Navigation source tracking
   const [navigationSource, setNavigationSource] = useState<string | null>(null);
   const [sourceContext, setSourceContext] = useState<Record<string, any> | null>(null);
+  const [recommendationContext, setRecommendationContext] = useState<{
+    why_now?: string;
+    strategic_opportunity?: string;
+    risk_repetition?: string;
+    cluster?: string;
+    campaign?: string;
+    persona?: string;
+  } | null>(null);
+  const [showRecommendationBlock, setShowRecommendationBlock] = useState(false);
 
   // Pre-fill from navigation state
   useEffect(() => {
@@ -159,7 +170,7 @@ const Carrossel = () => {
       setVisualStyle(preset.preferredVisualStyle);
     }
 
-    // Visual style override (from OQuePostar)
+    // Visual style override
     if (state.visualStyle) {
       const validStyles: PreferredVisualStyle[] = ["travessia", "editorial_black_gold", "ivory_sage"];
       if (validStyles.includes(state.visualStyle as PreferredVisualStyle)) {
@@ -167,8 +178,25 @@ const Carrossel = () => {
       }
     }
 
-    // Source tracking
-    if (state.source) {
+    // Source tracking + recommendation context
+    if (state.source === "o_que_postar") {
+      setNavigationSource("o_que_postar");
+      const ctx = {
+        cluster: state.cluster || null,
+        campaign: state.campaign || null,
+        persona: state.persona || null,
+      };
+      setSourceContext(ctx);
+      setRecommendationContext({
+        why_now: state.why_now || undefined,
+        strategic_opportunity: state.strategic_opportunity || undefined,
+        risk_repetition: state.risk_repetition || undefined,
+        cluster: state.cluster || undefined,
+        campaign: state.campaign || undefined,
+        persona: state.persona || undefined,
+      });
+      setShowRecommendationBlock(true);
+    } else if (state.source) {
       setNavigationSource(state.source);
       setSourceContext({
         cluster: state.cluster || null,
@@ -356,6 +384,11 @@ const Carrossel = () => {
             campaign: sourceContext.campaign,
             persona: sourceContext.persona,
           } : {}),
+          ...(recommendationContext ? {
+            why_now: recommendationContext.why_now,
+            strategic_opportunity: recommendationContext.strategic_opportunity,
+            risk_repetition: recommendationContext.risk_repetition,
+          } : {}),
         } as any,
         generated_content: {
           roteiro,
@@ -451,6 +484,10 @@ const Carrossel = () => {
     setGenerateError(null);
     setLabMode(false);
     setBriefCollapsed(false);
+    setNavigationSource(null);
+    setSourceContext(null);
+    setRecommendationContext(null);
+    setShowRecommendationBlock(false);
   };
 
   const hasRoteiro = roteiro && slideDataList.length > 0;
@@ -995,6 +1032,75 @@ const Carrossel = () => {
                   </section>
                 )}
 
+                {/* Recommendation Context Block */}
+                {showRecommendationBlock && recommendationContext && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-xl border border-accent/15 bg-accent/[0.03] p-4 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-md bg-accent/10 flex items-center justify-center">
+                          <TrendingUp className="h-3 w-3 text-accent" />
+                        </div>
+                        <span className="text-[11px] font-semibold text-foreground/80 tracking-wide">
+                          Recomendação estratégica
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setShowRecommendationBlock(false)}
+                        className="text-muted-foreground/30 hover:text-muted-foreground transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    {recommendationContext.why_now && (
+                      <p className="text-[12px] text-muted-foreground/70 leading-relaxed">
+                        {recommendationContext.why_now}
+                      </p>
+                    )}
+
+                    {recommendationContext.strategic_opportunity && (
+                      <div className="bg-accent/[0.05] rounded-lg px-3 py-2">
+                        <span className="text-[9px] uppercase tracking-[0.15em] text-accent/60 font-semibold">Oportunidade</span>
+                        <p className="text-[12px] text-foreground/70 mt-0.5">{recommendationContext.strategic_opportunity}</p>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {recommendationContext.risk_repetition && (
+                        <Badge variant="outline" className={`text-[10px] border-border/30 ${
+                          recommendationContext.risk_repetition === "baixo" ? "text-emerald-600" :
+                          recommendationContext.risk_repetition === "alto" ? "text-rose-600" : "text-amber-600"
+                        }`}>
+                          Repetição: {recommendationContext.risk_repetition}
+                        </Badge>
+                      )}
+                      {recommendationContext.cluster && (
+                        <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground">
+                          {recommendationContext.cluster}
+                        </Badge>
+                      )}
+                      {recommendationContext.campaign && (
+                        <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground">
+                          {recommendationContext.campaign}
+                        </Badge>
+                      )}
+                      {recommendationContext.persona && (
+                        <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground">
+                          {recommendationContext.persona}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <p className="text-[10px] text-muted-foreground/40 italic">
+                      Edite o briefing abaixo se quiser ajustar antes de gerar.
+                    </p>
+                  </motion.div>
+                )}
+
                 {/* Brief Form */}
                 <div className="space-y-5">
                   <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/50 font-semibold">
@@ -1071,7 +1177,7 @@ const Carrossel = () => {
                         {loading ? (
                           <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Gerando carrossel…</>
                         ) : (
-                          <><Sparkles className="h-4 w-4 mr-2" />Gerar Carrossel</>
+                          <><Sparkles className="h-4 w-4 mr-2" />{showRecommendationBlock ? "Gerar com esta recomendação" : "Gerar Carrossel"}</>
                         )}
                       </Button>
                       <Button
