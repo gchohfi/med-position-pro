@@ -32,6 +32,6 @@ export function mapToObjetivoEnum(text: string): ObjetivoEnum {
   const lower = (text || "").toLowerCase();
   if (/salva|bookmark|save|salv/i.test(lower)) return "salvar";
   if (/coment|discuss|engaj|pergunt|conversa/i.test(lower)) return "comentar";
-  if (/convers[ãa]o|vend|agend|consult|captaç/i.test(lower)) return "conversao";
+  if (/convers[ãa]o|converter|vend|agend|consult|captaç/i.test(lower)) return "conversao";
   return "educar";
 }
