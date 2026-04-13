@@ -342,7 +342,21 @@ const Carrossel = () => {
         user_id: user.id,
         content_type: "carrossel",
         title: roteiro.titulo_carrossel || tema || "Carrossel sem título",
-        strategic_input: { tese, objetivo, objetivoDetalhado, formato, tema } as any,
+        strategic_input: {
+          tese,
+          objetivo,
+          objetivoDetalhado,
+          formato,
+          tema,
+          benchmark_preset: activePreset,
+          visual_style: visualStyle,
+          ...(navigationSource === "o_que_postar" && sourceContext ? {
+            source: "o_que_postar",
+            cluster: sourceContext.cluster,
+            campaign: sourceContext.campaign,
+            persona: sourceContext.persona,
+          } : {}),
+        } as any,
         generated_content: {
           roteiro,
           slideDataList,

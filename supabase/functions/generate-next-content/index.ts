@@ -99,7 +99,7 @@ Retorne um JSON com:
       "title": "título do conteúdo sugerido (curto e direto)",
       "why_now": "por que este conteúdo agora (1-2 frases)",
       "preset": "impacto_viral | autoridade_premium | educacao_sofisticada | consultorio_humano",
-      "objetivo": "educar | salvar | comentar | converter",
+      "objetivo": "educar | salvar | comentar | conversao",
       "visual_style": "travessia | editorial_black_gold | ivory_sage",
       "risk_repetition": "baixo | medio | alto",
       "strategic_opportunity": "frase curta sobre a oportunidade",
