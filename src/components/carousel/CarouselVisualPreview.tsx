@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Columns2,
   Eye,
+  Check,
 } from "lucide-react";
 import SlideRenderer, { type SlideData, type ArchetypeStyle, VISUAL_SYSTEMS } from "./SlideRenderer";
 import SlideEditor from "./SlideEditor";
@@ -59,10 +60,8 @@ const CAROUSEL_LOADING_MESSAGES = [
 
 const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   slides,
-  brandColors,
   brandName,
   brandHandle,
-  archetype,
   contentType,
   doctorImageUrl,
   visualStyle,
@@ -80,6 +79,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [styleOverride, setStyleOverride] = useState<ArchetypeStyle | null>(null);
   const [compareMode, setCompareMode] = useState(false);
+  const [exportedSlide, setExportedSlide] = useState<number | null>(null);
   const activeStyle: ArchetypeStyle = styleOverride ?? visualStyle ?? "editorial_black_gold";
 
   const handleSlideEdit = (index: number, updated: SlideData) => {
@@ -105,6 +105,8 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
         link.download = `slide-${index + 1}.png`;
         link.href = dataUrl;
         link.click();
+        setExportedSlide(index);
+        setTimeout(() => setExportedSlide(null), 2000);
       } catch (err) {
         toast.error("Erro ao exportar slide.");
         console.error(err);
@@ -124,7 +126,6 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
         const el = slideRefs.current[i];
         if (!el) continue;
 
-        // 1. Gerar PNG
         let dataUrl: string;
         try {
           dataUrl = await toPng(el, {
@@ -138,7 +139,6 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
           continue;
         }
 
-        // 2. Download local (sempre executa)
         try {
           const link = document.createElement("a");
           link.download = `carrossel-slide-${i + 1}.png`;
@@ -150,7 +150,6 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
           console.warn(`Download local do slide ${i + 1} falhou:`, dlErr);
         }
 
-        // 3. Upload para Storage (isolado)
         if (user) {
           try {
             const blob = dataUrlToBlob(dataUrl);
@@ -183,7 +182,6 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
         }
       }
 
-      // 4. Persistir URLs em content_outputs
       if (contentOutputId && uploadedUrls.length > 0) {
         const { error: updateError } = await supabase
           .from("content_outputs")
@@ -194,7 +192,6 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
         }
       }
 
-      // 5. Toast com 3 variantes
       const total = slides.length;
       const saved = uploadedUrls.length;
 
@@ -217,6 +214,8 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
     }
   }, [slides.length, user, contentOutputId]);
 
+  const visualSystemEntries = Object.entries(VISUAL_SYSTEMS) as [ArchetypeStyle, typeof VISUAL_SYSTEMS[ArchetypeStyle]][];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -224,69 +223,84 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
       exit={{ opacity: 0 }}
       className="overflow-hidden"
     >
-      {/* Toolbar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-muted-foreground/50 font-medium">
-            {slides.length} slides · 1080×1350
-          </span>
+      {/* ── Toolbar ── */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 bg-muted/30 rounded-full px-3 py-1">
+            <span className="text-[10px] font-medium text-muted-foreground/60 tracking-wide">
+              {slides.length} slides
+            </span>
+            <span className="text-[10px] text-muted-foreground/30">·</span>
+            <span className="text-[10px] text-muted-foreground/40">1080×1350</span>
+          </div>
           {onPresetChange && (
-            <>
-              <div className="w-px h-3 bg-border/40" />
-              <button
-                onClick={() => { setCompareMode(!compareMode); setEditingIndex(null); }}
-                className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 ${
-                  compareMode
-                    ? "bg-foreground text-background shadow-sm"
-                    : "text-muted-foreground/60 hover:text-foreground hover:bg-muted/30"
-                }`}
-              >
-                {compareMode ? <Eye className="h-3 w-3" /> : <Columns2 className="h-3 w-3" />}
-                {compareMode ? "Preview" : "Comparar"}
-              </button>
-            </>
+            <button
+              onClick={() => { setCompareMode(!compareMode); setEditingIndex(null); }}
+              className={`h-7 px-3 rounded-full text-[11px] font-medium transition-all flex items-center gap-1.5 ${
+                compareMode
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground/50 hover:text-foreground hover:bg-muted/30"
+              }`}
+            >
+              {compareMode ? <Eye className="h-3 w-3" /> : <Columns2 className="h-3 w-3" />}
+              {compareMode ? "Preview" : "Comparar"}
+            </button>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
-          {!compareMode && (
-            <>
-              {(Object.keys(VISUAL_SYSTEMS) as ArchetypeStyle[]).map((key) => (
-                <button
-                  key={key}
-                  onClick={() => setStyleOverride(key)}
-                  title={VISUAL_SYSTEMS[key].description}
-                  className={`h-6 px-2 rounded text-[10px] font-medium transition-all ${
-                    activeStyle === key
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/30"
-                  }`}
-                >
-                  {VISUAL_SYSTEMS[key].label}
-                </button>
-              ))}
-              <div className="w-px h-3 bg-border/30" />
-            </>
-          )}
+        <div className="flex items-center gap-1">
           {onRegenerate && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onRegenerate}
-              className="text-[11px] h-7 text-muted-foreground/50 hover:text-foreground"
+              className="text-[11px] h-7 text-muted-foreground/40 hover:text-foreground rounded-full px-3"
             >
-              <RefreshCw className="h-3 w-3 mr-1" />
+              <RefreshCw className="h-3 w-3 mr-1.5" />
               Regerar
             </Button>
           )}
           {onClose && (
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7">
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7 rounded-full text-muted-foreground/30 hover:text-foreground">
               <X className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
       </div>
 
-      {/* Preview area */}
+      {/* ── Visual Style Selector ── */}
+      {!compareMode && (
+        <div className="flex items-center gap-1 mb-5">
+          {visualSystemEntries.map(([key, sys]) => {
+            const isActive = activeStyle === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setStyleOverride(key)}
+                title={sys.description}
+                className={`relative flex items-center gap-2 h-8 px-3.5 rounded-full text-[11px] font-medium transition-all ${
+                  isActive
+                    ? "bg-foreground text-background shadow-sm"
+                    : "text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/20"
+                }`}
+              >
+                {/* Color swatch */}
+                <span
+                  className="w-2.5 h-2.5 rounded-full border border-border/20 shrink-0"
+                  style={{ background: sys.colors.accent }}
+                />
+                {sys.label}
+                {sys.premium && (
+                  <span className={`text-[8px] uppercase tracking-wider font-bold ${isActive ? "text-background/60" : "text-accent/40"}`}>
+                    Pro
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Preview Area ── */}
       <div>
         <AnimatePresence mode="wait">
           {compareMode && onPresetChange ? (
@@ -307,146 +321,30 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
             />
           ) : (
             <motion.div key="normal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              {/* Current slide preview — hero size */}
-              <div className="flex flex-col items-center gap-5">
+              <div className="flex flex-col items-center gap-6">
+                {/* ── Hero Preview Frame ── */}
                 <div
-                  className="relative rounded-2xl overflow-hidden flex items-center justify-center bg-neutral-900/[0.03] dark:bg-white/[0.02]"
+                  className="relative group"
                   style={{
-                    maxWidth: expanded ? "100%" : 440,
+                    maxWidth: expanded ? "100%" : 480,
                     width: "100%",
                     margin: "0 auto",
                   }}
                 >
-                  <div
-                    style={{
-                      width: expanded ? 540 : 352,
-                      height: expanded ? 675 : 440,
-                      overflow: "hidden",
-                      position: "relative",
-                    }}
-                  >
+                  {/* Frame container with subtle shadow */}
+                  <div className="rounded-2xl overflow-hidden bg-neutral-950/[0.03] dark:bg-white/[0.02] shadow-[0_1px_3px_rgba(0,0,0,0.04),0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.2),0_8px_32px_rgba(0,0,0,0.3)]">
                     <div
                       style={{
-                        transform: expanded ? "scale(0.5)" : "scale(0.326)",
-                        transformOrigin: "top left",
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                      }}
-                    >
-                      <SlideRenderer
-                        slide={slides[currentSlide]}
-                        visualSystem={activeStyle}
-                        brandName={brandName}
-                        brandHandle={brandHandle}
-                        contentType={contentType}
-                        doctorImageUrl={doctorImageUrl}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Nav arrows */}
-                  {currentSlide > 0 && (
-                    <button
-                      onClick={() => setCurrentSlide((p) => p - 1)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/90 backdrop-blur-sm rounded-full p-2 hover:bg-background transition-colors shadow-sm"
-                    >
-                      <ChevronLeft className="h-4 w-4 text-foreground" />
-                    </button>
-                  )}
-                  {currentSlide < slides.length - 1 && (
-                    <button
-                      onClick={() => setCurrentSlide((p) => p + 1)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/90 backdrop-blur-sm rounded-full p-2 hover:bg-background transition-colors shadow-sm"
-                    >
-                      <ChevronRight className="h-4 w-4 text-foreground" />
-                    </button>
-                  )}
-
-                  {/* Expand/collapse */}
-                  <button
-                    onClick={() => setExpanded(!expanded)}
-                    className="absolute top-3 right-3 bg-background/80 backdrop-blur-sm rounded-full p-1.5 hover:bg-background transition-colors"
-                  >
-                    {expanded ? (
-                      <Minimize2 className="h-3 w-3 text-foreground" />
-                    ) : (
-                      <Maximize2 className="h-3 w-3 text-foreground" />
-                    )}
-                  </button>
-
-                  {/* Slide counter overlay */}
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] text-muted-foreground font-medium">
-                    {currentSlide + 1} / {slides.length}
-                  </div>
-                </div>
-
-                {/* Slide dots */}
-                <div className="flex items-center gap-1.5">
-                  {slides.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentSlide(i)}
-                      className={`h-1.5 rounded-full transition-all ${
-                        i === currentSlide
-                          ? "w-6 bg-accent"
-                          : "w-1.5 bg-muted-foreground/15 hover:bg-muted-foreground/30"
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                {/* Slide label + edit */}
-                <div className="flex items-center gap-3">
-                  <span className="text-[11px] font-medium text-accent/70 uppercase tracking-wider">
-                    {slides[currentSlide]?.label}
-                  </span>
-                  <div className="w-px h-3 bg-border/30" />
-                  <button
-                    onClick={() => setEditingIndex(editingIndex === currentSlide ? null : currentSlide)}
-                    className="text-[11px] text-muted-foreground/50 hover:text-foreground flex items-center gap-1 transition-colors"
-                  >
-                    <Pencil className="h-2.5 w-2.5" />
-                    {editingIndex === currentSlide ? "Fechar" : "Editar"}
-                  </button>
-                </div>
-
-                {/* Inline slide editor */}
-                {editingIndex === currentSlide && (
-                  <div className="w-full max-w-lg">
-                    <SlideEditor
-                      slide={slides[currentSlide]}
-                      onSave={(updated) => handleSlideEdit(currentSlide, updated)}
-                      onCancel={() => setEditingIndex(null)}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Slide thumbnails — filmstrip */}
-              <div className="mt-6 flex gap-1.5 overflow-x-auto pb-2 justify-center">
-                {slides.map((slide, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentSlide(i)}
-                    className={`flex-shrink-0 rounded-md overflow-hidden transition-all ${
-                      i === currentSlide
-                        ? "ring-2 ring-accent ring-offset-1 ring-offset-background shadow-sm"
-                        : "opacity-40 hover:opacity-80"
-                    }`}
-                    style={{ width: 56, height: 70 }}
-                  >
-                    <div
-                      style={{
-                        width: 56,
-                        height: 70,
+                        width: expanded ? 540 : 380,
+                        height: expanded ? 675 : 475,
                         overflow: "hidden",
                         position: "relative",
+                        margin: "0 auto",
                       }}
                     >
                       <div
                         style={{
-                          transform: "scale(0.0519)",
+                          transform: expanded ? "scale(0.5)" : "scale(0.352)",
                           transformOrigin: "top left",
                           position: "absolute",
                           top: 0,
@@ -454,7 +352,7 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                         }}
                       >
                         <SlideRenderer
-                          slide={slide}
+                          slide={slides[currentSlide]}
                           visualSystem={activeStyle}
                           brandName={brandName}
                           brandHandle={brandHandle}
@@ -463,27 +361,171 @@ const CarouselVisualPreview: React.FC<CarouselVisualPreviewProps> = ({
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* Nav arrows — appear on hover */}
+                  {currentSlide > 0 && (
+                    <button
+                      onClick={() => setCurrentSlide((p) => p - 1)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/95 backdrop-blur-md rounded-full p-2 shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-105 border border-border/10"
+                    >
+                      <ChevronLeft className="h-4 w-4 text-foreground" />
+                    </button>
+                  )}
+                  {currentSlide < slides.length - 1 && (
+                    <button
+                      onClick={() => setCurrentSlide((p) => p + 1)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/95 backdrop-blur-md rounded-full p-2 shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-105 border border-border/10"
+                    >
+                      <ChevronRight className="h-4 w-4 text-foreground" />
+                    </button>
+                  )}
+
+                  {/* Expand toggle — top right, subtle */}
+                  <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="absolute top-3 right-3 bg-background/70 backdrop-blur-md rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-background border border-border/10"
+                  >
+                    {expanded ? (
+                      <Minimize2 className="h-3 w-3 text-foreground/70" />
+                    ) : (
+                      <Maximize2 className="h-3 w-3 text-foreground/70" />
+                    )}
                   </button>
-                ))}
+                </div>
+
+                {/* ── Slide Indicator ── */}
+                <div className="flex flex-col items-center gap-3">
+                  {/* Progress dots */}
+                  <div className="flex items-center gap-1">
+                    {slides.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCurrentSlide(i)}
+                        className={`rounded-full transition-all duration-300 ${
+                          i === currentSlide
+                            ? "w-7 h-1.5 bg-accent"
+                            : "w-1.5 h-1.5 bg-muted-foreground/10 hover:bg-muted-foreground/25"
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Slide info row */}
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[10px] font-medium text-muted-foreground/30 tabular-nums">
+                      {String(currentSlide + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+                    </span>
+                    <div className="w-px h-3 bg-border/20" />
+                    <span className="text-[10px] font-medium text-accent/50 uppercase tracking-[0.15em]">
+                      {slides[currentSlide]?.label}
+                    </span>
+                    <div className="w-px h-3 bg-border/20" />
+                    <button
+                      onClick={() => setEditingIndex(editingIndex === currentSlide ? null : currentSlide)}
+                      className={`text-[10px] font-medium flex items-center gap-1 transition-colors ${
+                        editingIndex === currentSlide
+                          ? "text-accent"
+                          : "text-muted-foreground/30 hover:text-foreground"
+                      }`}
+                    >
+                      <Pencil className="h-2.5 w-2.5" />
+                      {editingIndex === currentSlide ? "Fechar" : "Editar"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── Inline Editor ── */}
+                <AnimatePresence>
+                  {editingIndex === currentSlide && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="w-full max-w-lg overflow-hidden"
+                    >
+                      <div className="rounded-xl border border-border/20 bg-muted/10 p-4">
+                        <SlideEditor
+                          slide={slides[currentSlide]}
+                          onSave={(updated) => handleSlideEdit(currentSlide, updated)}
+                          onCancel={() => setEditingIndex(null)}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
-              {/* Export actions — minimal */}
-              <div className="flex items-center justify-center gap-3 mt-5 pt-4 border-t border-border/20">
+              {/* ── Thumbnail Filmstrip ── */}
+              <div className="mt-8 relative">
+                <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+                <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+                <div className="flex gap-2 overflow-x-auto pb-2 px-2 justify-center scrollbar-none">
+                  {slides.map((slide, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentSlide(i)}
+                      className={`group/thumb flex-shrink-0 rounded-lg overflow-hidden transition-all duration-200 ${
+                        i === currentSlide
+                          ? "ring-[1.5px] ring-accent ring-offset-2 ring-offset-background shadow-sm scale-100"
+                          : "opacity-30 hover:opacity-70 scale-[0.96] hover:scale-100"
+                      }`}
+                      style={{ width: 60, height: 75 }}
+                    >
+                      <div
+                        style={{
+                          width: 60,
+                          height: 75,
+                          overflow: "hidden",
+                          position: "relative",
+                        }}
+                      >
+                        <div
+                          style={{
+                            transform: "scale(0.0556)",
+                            transformOrigin: "top left",
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                          }}
+                        >
+                          <SlideRenderer
+                            slide={slide}
+                            visualSystem={activeStyle}
+                            brandName={brandName}
+                            brandHandle={brandHandle}
+                            contentType={contentType}
+                            doctorImageUrl={doctorImageUrl}
+                          />
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Export Actions ── */}
+              <div className="flex items-center justify-center gap-2 mt-6 pt-5 border-t border-border/10">
                 <Button
                   onClick={() => exportSlide(currentSlide)}
                   variant="ghost"
                   size="sm"
-                  className="text-[11px] h-8 text-muted-foreground/60 hover:text-foreground"
+                  className="text-[11px] h-8 text-muted-foreground/40 hover:text-foreground rounded-full px-4"
                 >
-                  <Download className="h-3.5 w-3.5 mr-1.5" />
-                  Slide atual
+                  {exportedSlide === currentSlide ? (
+                    <Check className="h-3.5 w-3.5 mr-1.5 text-accent" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  {exportedSlide === currentSlide ? "Baixado" : "Slide atual"}
                 </Button>
-                <div className="w-px h-4 bg-border/30" />
+                <div className="w-px h-4 bg-border/15" />
                 <Button
                   onClick={exportAll}
                   disabled={exporting}
                   size="sm"
-                  className="text-[11px] h-8 bg-accent text-accent-foreground hover:bg-accent/90"
+                  className="text-[11px] h-8 bg-foreground text-background hover:bg-foreground/90 rounded-full px-5 shadow-sm"
                 >
                   {exporting ? (
                     <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
