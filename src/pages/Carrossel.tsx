@@ -139,6 +139,11 @@ const Carrossel = () => {
     cluster?: string;
     campaign?: string;
     persona?: string;
+    hook_angle?: string;
+    cta_direction?: string;
+    narrative_rhythm?: string;
+    confidence?: string;
+    recommendation_reasoning?: string;
   } | null>(null);
   const [showRecommendationBlock, setShowRecommendationBlock] = useState(false);
 
