@@ -1084,7 +1084,45 @@ const Carrossel = () => {
                       </div>
                     )}
 
+                    {/* Editorial direction details */}
+                    {(recommendationContext.hook_angle || recommendationContext.narrative_rhythm || recommendationContext.cta_direction) && (
+                      <div className="grid grid-cols-1 gap-1.5">
+                        {recommendationContext.hook_angle && (
+                          <div className="flex items-center gap-2 text-[11px]">
+                            <span className="text-muted-foreground/40 font-medium shrink-0">Hook:</span>
+                            <span className="text-foreground/60">{recommendationContext.hook_angle}</span>
+                          </div>
+                        )}
+                        {recommendationContext.narrative_rhythm && (
+                          <div className="flex items-center gap-2 text-[11px]">
+                            <span className="text-muted-foreground/40 font-medium shrink-0">Ritmo:</span>
+                            <span className="text-foreground/60">{recommendationContext.narrative_rhythm}</span>
+                          </div>
+                        )}
+                        {recommendationContext.cta_direction && (
+                          <div className="flex items-center gap-2 text-[11px]">
+                            <span className="text-muted-foreground/40 font-medium shrink-0">CTA:</span>
+                            <span className="text-foreground/60">{recommendationContext.cta_direction}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {recommendationContext.recommendation_reasoning && (
+                      <p className="text-[11px] text-muted-foreground/50 italic leading-relaxed border-l-2 border-accent/15 pl-2.5">
+                        {recommendationContext.recommendation_reasoning}
+                      </p>
+                    )}
+
                     <div className="flex flex-wrap gap-1.5">
+                      {recommendationContext.confidence && (
+                        <Badge variant="outline" className={`text-[10px] border-border/30 ${
+                          recommendationContext.confidence === "alta" ? "text-emerald-600" :
+                          recommendationContext.confidence === "baixa" ? "text-rose-600" : "text-amber-600"
+                        }`}>
+                          Confiança: {recommendationContext.confidence}
+                        </Badge>
+                      )}
                       {recommendationContext.risk_repetition && (
                         <Badge variant="outline" className={`text-[10px] border-border/30 ${
                           recommendationContext.risk_repetition === "baixo" ? "text-emerald-600" :
