@@ -398,6 +398,11 @@ const Carrossel = () => {
             why_now: recommendationContext.why_now,
             strategic_opportunity: recommendationContext.strategic_opportunity,
             risk_repetition: recommendationContext.risk_repetition,
+            hook_angle: recommendationContext.hook_angle,
+            cta_direction: recommendationContext.cta_direction,
+            narrative_rhythm: recommendationContext.narrative_rhythm,
+            confidence: recommendationContext.confidence,
+            recommendation_reasoning: recommendationContext.recommendation_reasoning,
           } : {}),
         } as any,
         generated_content: {
