@@ -168,7 +168,7 @@ const Carrossel = () => {
       setVisualStyle(preset.preferredVisualStyle);
     }
 
-    // Visual style override (from OQuePostar)
+    // Visual style override
     if (state.visualStyle) {
       const validStyles: PreferredVisualStyle[] = ["travessia", "editorial_black_gold", "ivory_sage"];
       if (validStyles.includes(state.visualStyle as PreferredVisualStyle)) {
@@ -176,8 +176,25 @@ const Carrossel = () => {
       }
     }
 
-    // Source tracking
-    if (state.source) {
+    // Source tracking + recommendation context
+    if (state.source === "o_que_postar") {
+      setNavigationSource("o_que_postar");
+      const ctx = {
+        cluster: state.cluster || null,
+        campaign: state.campaign || null,
+        persona: state.persona || null,
+      };
+      setSourceContext(ctx);
+      setRecommendationContext({
+        why_now: state.why_now || undefined,
+        strategic_opportunity: state.strategic_opportunity || undefined,
+        risk_repetition: state.risk_repetition || undefined,
+        cluster: state.cluster || undefined,
+        campaign: state.campaign || undefined,
+        persona: state.persona || undefined,
+      });
+      setShowRecommendationBlock(true);
+    } else if (state.source) {
       setNavigationSource(state.source);
       setSourceContext({
         cluster: state.cluster || null,
