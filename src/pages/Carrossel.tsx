@@ -382,6 +382,11 @@ const Carrossel = () => {
             campaign: sourceContext.campaign,
             persona: sourceContext.persona,
           } : {}),
+          ...(recommendationContext ? {
+            why_now: recommendationContext.why_now,
+            strategic_opportunity: recommendationContext.strategic_opportunity,
+            risk_repetition: recommendationContext.risk_repetition,
+          } : {}),
         } as any,
         generated_content: {
           roteiro,
@@ -477,6 +482,10 @@ const Carrossel = () => {
     setGenerateError(null);
     setLabMode(false);
     setBriefCollapsed(false);
+    setNavigationSource(null);
+    setSourceContext(null);
+    setRecommendationContext(null);
+    setShowRecommendationBlock(false);
   };
 
   const hasRoteiro = roteiro && slideDataList.length > 0;
