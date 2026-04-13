@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDoctor } from "@/contexts/DoctorContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,13 +26,6 @@ import {
   Shield,
   MessageCircle,
   Crosshair,
-  CalendarPlus,
-  Bookmark,
-  Megaphone,
-  Layers,
-  CalendarX,
-  Users,
-  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -97,22 +91,18 @@ const OBJETIVO_LABELS: Record<string, string> = {
 
 export default function OQuePostar() {
   const { user } = useAuth();
+  const { profile } = useDoctor();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [selected, setSelected] = useState(0);
-  const [savingCalendar, setSavingCalendar] = useState<number | null>(null);
-  const [savingIdea, setSavingIdea] = useState<number | null>(null);
-  const [savedCalendar, setSavedCalendar] = useState<Set<number>>(new Set());
-  const [savedIdea, setSavedIdea] = useState<Set<number>>(new Set());
+  const [generating, setGenerating] = useState<number | null>(null);
 
   const generate = async () => {
     if (!user) return;
     setLoading(true);
     setSuggestions(null);
-    setSavedCalendar(new Set());
-    setSavedIdea(new Set());
     try {
       const { data, error } = await supabase.functions.invoke("generate-next-content", {});
       if (error) throw error;
@@ -152,81 +142,72 @@ export default function OQuePostar() {
     });
   };
 
-  const addToCalendar = async (s: Suggestion, idx: number) => {
-    if (!user) return;
-    setSavingCalendar(idx);
-    try {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const dateStr = tomorrow.toISOString().split("T")[0];
-
-      const { error } = await supabase.from("calendar_items").insert({
-        user_id: user.id,
-        title: s.title,
-        content_type: "carrossel",
-        date: dateStr,
-        status: "planejado",
-        benchmark_preset: s.preset || null,
-        objetivo: s.objetivo || null,
-        thesis: s.thesis || null,
-        visual_direction: s.visual_style || null,
-        strategic_objective: s.strategic_opportunity || null,
-      });
-      if (error) throw error;
-      setSavedCalendar((prev) => new Set(prev).add(idx));
-      toast.success("Adicionado ao calendário");
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao adicionar ao calendário");
-    } finally {
-      setSavingCalendar(null);
+  const generateNow = async (s: Suggestion, idx: number) => {
+    if (!user || !profile) {
+      toast.error("Perfil não configurado.");
+      return;
     }
-  };
-
-  const saveAsIdea = async (s: Suggestion, idx: number) => {
-    if (!user) return;
-    setSavingIdea(idx);
+    setGenerating(idx);
     try {
-      const { error } = await supabase.from("content_outputs").insert({
-        user_id: user.id,
-        content_type: "ideia",
-        title: s.title,
-        strategic_input: {
-          tema: s.title,
-          tese: s.thesis,
-          preset: s.preset,
-          objetivo: s.objetivo,
-          visual_style: s.visual_style,
-          cluster: s.cluster,
-          campaign: s.campaign,
-          persona: s.persona,
-          why_now: s.why_now,
-          strategic_opportunity: s.strategic_opportunity,
-          hook_angle: s.hook_angle,
-          cta_direction: s.cta_direction,
-          narrative_rhythm: s.narrative_rhythm,
-          recommendation_source: "o_que_postar",
+      const { data, error } = await supabase.functions.invoke("agent-carrossel", {
+        body: {
+          profile: { ...profile, pilares: profile.diferenciais },
+          tese: s.thesis || s.title,
+          objetivo: s.objetivo || "educar",
+          objetivoDetalhado: s.why_now || "",
+          action: "generate",
+          skill: profile.skill,
+          topic: s.title,
+          especialidade: profile.especialidade,
+          subespecialidade: profile.subespecialidade,
+          publico_alvo: profile.publico_alvo,
+          tom_de_voz: profile.tom_de_voz,
+          pilares: profile.diferenciais,
+          medica_nome: profile.nome,
+          medica_handle: profile.instagram_handle || profile.skill?.handle,
+          brand_colors: profile.skill?.estilo_visual ? {
+            bg: profile.skill.estilo_visual.cor_fundo,
+            text: profile.skill.estilo_visual.cor_texto,
+            accent: profile.skill.estilo_visual.cor_destaque,
+          } : undefined,
+          doctor_image_url: profile.foto_url,
         },
-        generated_content: { status: "idea_saved", thesis: s.thesis },
       });
       if (error) throw error;
-      setSavedIdea((prev) => new Set(prev).add(idx));
-      toast.success("Salvo como ideia na biblioteca");
+      // Navigate to Carrossel with ready roteiro
+      navigate(ROUTES.carrossel, {
+        state: {
+          tema: s.title || "",
+          tese: s.thesis || s.strategic_opportunity || "",
+          preset: s.preset || "",
+          objetivoEnum: mapToObjetivoEnum(s.objetivo || ""),
+          objetivoDetalhado: s.why_now || "",
+          visualStyle: s.visual_style || "",
+          cluster: s.cluster || null,
+          campaign: s.campaign || null,
+          persona: s.persona || null,
+          source: "o_que_postar",
+          why_now: s.why_now || "",
+          strategic_opportunity: s.strategic_opportunity || "",
+          risk_repetition: s.risk_repetition || "",
+          hook_angle: s.hook_angle || null,
+          cta_direction: s.cta_direction || null,
+          narrative_rhythm: s.narrative_rhythm || null,
+          confidence: s.confidence || null,
+          recommendation_reasoning: s.recommendation_reasoning || null,
+          readyRoteiro: data,
+        },
+      });
     } catch (err: any) {
-      toast.error(err.message || "Erro ao salvar ideia");
+      console.error(err);
+      toast.error(err.message || "Erro ao gerar carrossel. Tente pelo briefing.");
     } finally {
-      setSavingIdea(null);
+      setGenerating(null);
     }
   };
 
   const current = suggestions?.[selected];
   const alternatives = suggestions?.filter((_, i) => i !== selected) || [];
-
-  // Derived context signals
-  const hasActiveCampaigns = meta && meta.active_campaigns > 0;
-  const hasUnusedClusters = meta && meta.unused_clusters > 0;
-  const calendarSparse = meta && meta.calendar_next_14d < 3;
-  const currentIsCampaign = !!current?.campaign;
-  const currentIsUnusedCluster = !!current?.cluster && hasUnusedClusters;
 
   return (
     <AppLayout>
@@ -314,6 +295,37 @@ export default function OQuePostar() {
           </motion.div>
         )}
 
+        {/* ═══ Generating Overlay ═══ */}
+        {generating !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center"
+          >
+            <div className="relative mb-6">
+              <div className="w-20 h-20 rounded-3xl bg-accent/[0.08] flex items-center justify-center">
+                <Loader2 className="h-9 w-9 text-accent animate-spin" />
+              </div>
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
+                {[0, 1, 2, 3].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full bg-accent/40"
+                    animate={{ opacity: [0.2, 1, 0.2] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                  />
+                ))}
+              </div>
+            </div>
+            <p className="text-[15px] text-foreground font-semibold mb-1">
+              Gerando carrossel…
+            </p>
+            <p className="text-[12px] text-muted-foreground/50 max-w-xs text-center">
+              O roteiro está sendo criado com a recomendação estratégica. Isso pode levar alguns segundos.
+            </p>
+          </motion.div>
+        )}
+
         {/* ═══ Results ═══ */}
         <AnimatePresence mode="wait">
           {suggestions && suggestions.length > 0 && !loading && (
@@ -321,58 +333,39 @@ export default function OQuePostar() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35 }}
-              className="space-y-6"
+              className="space-y-8"
             >
-              {/* ── Context Signals Bar ── */}
+              {/* Meta insights — subtle top bar */}
               {meta && (
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Base stats */}
-                  <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50">
+                <div className="flex items-center gap-4 text-[11px] text-muted-foreground/50">
+                  <span className="flex items-center gap-1.5">
                     <BarChart3 className="h-3 w-3" />
                     {meta.total_contents} conteúdos
                   </span>
-
-                  {/* Calendar signal */}
-                  {calendarSparse ? (
-                    <Badge variant="outline" className="text-[10px] gap-1 border-amber-300/40 text-amber-700/70 bg-amber-500/[0.04] font-medium">
-                      <CalendarX className="h-3 w-3" />
-                      Calendário com lacunas ({meta.calendar_next_14d}/14 dias)
-                    </Badge>
-                  ) : (
-                    <span className="flex items-center gap-1 text-[11px] text-muted-foreground/50">
+                  <span className="w-px h-3 bg-border/40" />
+                  <span>{meta.calendar_next_14d} agendados</span>
+                  {meta.unused_clusters > 0 && (
+                    <>
                       <span className="w-px h-3 bg-border/40" />
-                      {meta.calendar_next_14d} agendados
-                    </span>
+                      <span className="text-accent/70 font-medium">
+                        {meta.unused_clusters} clusters inexplorados
+                      </span>
+                    </>
                   )}
-
-                  {/* Active campaigns */}
-                  {hasActiveCampaigns && (
-                    <Badge variant="outline" className="text-[10px] gap-1 border-purple-300/40 text-purple-700/70 bg-purple-500/[0.04] font-medium">
-                      <Megaphone className="h-3 w-3" />
-                      {meta.active_campaigns} campanha{meta.active_campaigns > 1 ? "s" : ""} ativa{meta.active_campaigns > 1 ? "s" : ""}
-                    </Badge>
-                  )}
-
-                  {/* Unused clusters */}
-                  {hasUnusedClusters && (
-                    <Badge variant="outline" className="text-[10px] gap-1 border-accent/30 text-accent/70 bg-accent/[0.04] font-medium">
-                      <Layers className="h-3 w-3" />
-                      {meta.unused_clusters} cluster{meta.unused_clusters > 1 ? "s" : ""} inexplorado{meta.unused_clusters > 1 ? "s" : ""}
-                    </Badge>
-                  )}
-
-                  {/* Dominant preset warning */}
                   {meta.dominant_preset && (
-                    <Badge variant="outline" className="text-[10px] gap-1 border-amber-300/40 text-amber-700/70 bg-amber-500/[0.04] font-medium">
-                      ⚠ {BENCHMARK_PRESETS[meta.dominant_preset as BenchmarkPresetId]?.label || meta.dominant_preset} dominante
-                    </Badge>
+                    <>
+                      <span className="w-px h-3 bg-border/40" />
+                      <span className="text-amber-600/70">
+                        ⚠ {BENCHMARK_PRESETS[meta.dominant_preset as BenchmarkPresetId]?.label || meta.dominant_preset} dominante
+                      </span>
+                    </>
                   )}
                 </div>
               )}
 
               {/* ── Recommendation Tabs ── */}
               <div className="flex items-center gap-1.5">
-                {suggestions.map((s, i) => (
+                {suggestions.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setSelected(i)}
@@ -382,11 +375,7 @@ export default function OQuePostar() {
                         : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/40"
                     }`}
                   >
-                    <span className="flex items-center gap-1.5">
-                      {i === 0 ? "Principal" : `Alternativa ${i}`}
-                      {s.campaign && <Megaphone className="h-3 w-3 opacity-60" />}
-                      {s.cluster && <Layers className="h-3 w-3 opacity-60" />}
-                    </span>
+                    {i === 0 ? "Principal" : `Alternativa ${i}`}
                     {i === 0 && selected === 0 && (
                       <motion.div
                         layoutId="tab-dot"
@@ -410,40 +399,10 @@ export default function OQuePostar() {
                       ? "border-accent/20 bg-gradient-to-b from-accent/[0.03] to-transparent"
                       : "border-border/40 bg-card/50"
                   }`}>
-
-                    {/* Campaign/cluster context banner */}
-                    {(currentIsCampaign || currentIsUnusedCluster || calendarSparse) && (
-                      <div className="px-6 pt-4 flex flex-wrap gap-2">
-                        {currentIsCampaign && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/[0.06] border border-purple-200/30">
-                            <Megaphone className="h-3 w-3 text-purple-600/70" />
-                            <span className="text-[11px] text-purple-700/80 font-medium">
-                              Campanha: {current.campaign}
-                            </span>
-                          </div>
-                        )}
-                        {currentIsUnusedCluster && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent/[0.06] border border-accent/20">
-                            <Layers className="h-3 w-3 text-accent/70" />
-                            <span className="text-[11px] text-accent/80 font-medium">
-                              Cluster inexplorado: {current.cluster}
-                            </span>
-                          </div>
-                        )}
-                        {calendarSparse && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/[0.06] border border-amber-200/30">
-                            <CalendarX className="h-3 w-3 text-amber-600/70" />
-                            <span className="text-[11px] text-amber-700/80 font-medium">
-                              Calendário com espaços livres
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     {/* Card header */}
                     <div className="p-6 pb-0">
                       <div className="flex items-start gap-5">
+                        {/* Preset icon */}
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
                           selected === 0 ? "bg-accent/10" : "bg-muted/60"
                         }`}>
@@ -454,6 +413,7 @@ export default function OQuePostar() {
                         </div>
 
                         <div className="flex-1 min-w-0">
+                          {/* Confidence + preset label */}
                           <div className="flex items-center gap-2 mb-1.5">
                             {current.confidence && (
                               <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
@@ -470,16 +430,19 @@ export default function OQuePostar() {
                             </span>
                           </div>
 
+                          {/* Title */}
                           <h2 className="font-heading text-xl sm:text-[22px] text-foreground leading-tight font-semibold mb-2">
                             {current.title}
                           </h2>
 
+                          {/* Thesis */}
                           {current.thesis && (
                             <p className="text-[13px] text-foreground/70 leading-relaxed mb-2 italic">
                               "{current.thesis}"
                             </p>
                           )}
 
+                          {/* Why now */}
                           <p className="text-[12px] text-muted-foreground/50 leading-relaxed">
                             {current.why_now}
                           </p>
@@ -487,11 +450,14 @@ export default function OQuePostar() {
                       </div>
                     </div>
 
-                    {/* Strategic details grid */}
+                    {/* Strategic details */}
                     <div className="px-6 pt-5 pb-1">
                       <div className="grid grid-cols-3 gap-px bg-border/20 rounded-xl overflow-hidden">
+                        {/* Objetivo */}
                         <div className="bg-background p-3.5 space-y-1">
-                          <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/40 font-semibold">Objetivo</span>
+                          <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/40 font-semibold">
+                            Objetivo
+                          </span>
                           <div className="flex items-center gap-1.5">
                             {(() => {
                               const ObjIcon = OBJETIVO_ICONS[current.objetivo] || Target;
@@ -502,8 +468,12 @@ export default function OQuePostar() {
                             </span>
                           </div>
                         </div>
+
+                        {/* Visual */}
                         <div className="bg-background p-3.5 space-y-1">
-                          <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/40 font-semibold">Visual</span>
+                          <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/40 font-semibold">
+                            Visual
+                          </span>
                           <div className="flex items-center gap-1.5">
                             <Palette className="h-3.5 w-3.5 text-accent/60" />
                             <span className="text-[12px] font-semibold text-foreground capitalize">
@@ -511,8 +481,12 @@ export default function OQuePostar() {
                             </span>
                           </div>
                         </div>
+
+                        {/* Risk */}
                         <div className="bg-background p-3.5 space-y-1">
-                          <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/40 font-semibold">Repetição</span>
+                          <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/40 font-semibold">
+                            Repetição
+                          </span>
                           <div className="flex items-center gap-1.5">
                             <span className={`w-2 h-2 rounded-full ${
                               current.risk_repetition === "baixo" ? "bg-emerald-500" :
@@ -591,69 +565,47 @@ export default function OQuePostar() {
                       </div>
                     )}
 
-                    {/* Bottom: context tags + actions */}
-                    <div className="p-6 pt-4">
-                      {/* Context tags */}
-                      <div className="flex flex-wrap gap-1.5 mb-4">
-                        {current.cluster && !currentIsUnusedCluster && (
-                          <Badge variant="outline" className="text-[10px] gap-1 border-border/30 text-muted-foreground/60 font-normal">
-                            <Layers className="h-2.5 w-2.5" /> {current.cluster}
+                    {/* Bottom: tags + CTA */}
+                    <div className="p-6 pt-4 flex items-end justify-between gap-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        {current.cluster && (
+                          <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground/60 font-normal">
+                            {current.cluster}
                           </Badge>
                         )}
-                        {current.campaign && !currentIsCampaign && (
-                          <Badge variant="outline" className="text-[10px] gap-1 border-border/30 text-muted-foreground/60 font-normal">
-                            <Megaphone className="h-2.5 w-2.5" /> {current.campaign}
+                        {current.campaign && (
+                          <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground/60 font-normal">
+                            {current.campaign}
                           </Badge>
                         )}
                         {current.persona && (
-                          <Badge variant="outline" className="text-[10px] gap-1 border-border/30 text-muted-foreground/60 font-normal">
-                            <Users className="h-2.5 w-2.5" /> {current.persona}
+                          <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground/60 font-normal">
+                            {current.persona}
                           </Badge>
                         )}
                       </div>
 
-                      {/* Quick actions row */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Button
-                          onClick={() => goToCarousel(current)}
+                      <Button
+                          onClick={() => generateNow(current, selected)}
+                          disabled={generating !== null}
                           className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2 rounded-xl h-10 px-5 text-[13px] font-semibold shadow-sm"
                         >
-                          Criar carrossel
+                          {generating === selected ? (
+                            <><Loader2 className="h-4 w-4 animate-spin" /> Gerando carrossel…</>
+                          ) : (
+                            <><Zap className="h-4 w-4" /> Gerar agora</>
+                          )}
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          onClick={() => goToCarousel(current)}
+                          disabled={generating !== null}
+                          className="gap-2 rounded-xl h-10 px-5 text-[13px] font-medium border-border/40 text-muted-foreground hover:text-foreground hover:border-accent/30"
+                        >
+                          Abrir briefing
                           <ArrowRight className="h-4 w-4" />
                         </Button>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={savingCalendar === selected || savedCalendar.has(selected)}
-                          onClick={() => addToCalendar(current, selected)}
-                          className="h-9 gap-1.5 rounded-xl text-[12px] border-border/40 text-muted-foreground hover:text-foreground hover:border-accent/30"
-                        >
-                          {savedCalendar.has(selected) ? (
-                            <><Check className="h-3.5 w-3.5 text-emerald-600" /> Agendado</>
-                          ) : savingCalendar === selected ? (
-                            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando…</>
-                          ) : (
-                            <><CalendarPlus className="h-3.5 w-3.5" /> Adicionar ao calendário</>
-                          )}
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={savingIdea === selected || savedIdea.has(selected)}
-                          onClick={() => saveAsIdea(current, selected)}
-                          className="h-9 gap-1.5 rounded-xl text-[12px] border-border/40 text-muted-foreground hover:text-foreground hover:border-accent/30"
-                        >
-                          {savedIdea.has(selected) ? (
-                            <><Check className="h-3.5 w-3.5 text-emerald-600" /> Salvo</>
-                          ) : savingIdea === selected ? (
-                            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando…</>
-                          ) : (
-                            <><Bookmark className="h-3.5 w-3.5" /> Salvar como ideia</>
-                          )}
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -691,7 +643,7 @@ export default function OQuePostar() {
                                   {alt.thesis}
                                 </p>
                               )}
-                              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              <div className="flex items-center gap-2 mt-2">
                                 <span className="text-[10px] text-muted-foreground/30 font-medium">
                                   {OBJETIVO_LABELS[alt.objetivo] || alt.objetivo}
                                 </span>
@@ -699,22 +651,6 @@ export default function OQuePostar() {
                                 <span className="text-[10px] text-muted-foreground/30 capitalize">
                                   {alt.visual_style?.replace(/_/g, " ")}
                                 </span>
-                                {alt.campaign && (
-                                  <>
-                                    <span className="w-px h-2.5 bg-border/30" />
-                                    <span className="flex items-center gap-1 text-[10px] text-purple-600/60">
-                                      <Megaphone className="h-2.5 w-2.5" /> {alt.campaign}
-                                    </span>
-                                  </>
-                                )}
-                                {alt.cluster && (
-                                  <>
-                                    <span className="w-px h-2.5 bg-border/30" />
-                                    <span className="flex items-center gap-1 text-[10px] text-accent/50">
-                                      <Layers className="h-2.5 w-2.5" />
-                                    </span>
-                                  </>
-                                )}
                                 {alt.confidence && (
                                   <>
                                     <span className="w-px h-2.5 bg-border/30" />

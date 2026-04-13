@@ -206,6 +206,17 @@ const Carrossel = () => {
         recommendation_reasoning: state.recommendation_reasoning || undefined,
       });
       setShowRecommendationBlock(true);
+
+      // If a ready roteiro was passed (quick generate from OQuePostar)
+      if (state.readyRoteiro) {
+        try {
+          applyRoteiro(state.readyRoteiro as TravessIARoteiro);
+          toast.success("Carrossel gerado via recomendação!");
+        } catch {
+          // Fallback: user can generate manually with pre-filled briefing
+          toast.info("Briefing preenchido. Clique em Gerar para criar o carrossel.");
+        }
+      }
     } else if (state.source) {
       setNavigationSource(state.source);
       setSourceContext({
