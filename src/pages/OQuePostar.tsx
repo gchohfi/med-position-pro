@@ -295,6 +295,37 @@ export default function OQuePostar() {
           </motion.div>
         )}
 
+        {/* ═══ Generating Overlay ═══ */}
+        {generating !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center"
+          >
+            <div className="relative mb-6">
+              <div className="w-20 h-20 rounded-3xl bg-accent/[0.08] flex items-center justify-center">
+                <Loader2 className="h-9 w-9 text-accent animate-spin" />
+              </div>
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
+                {[0, 1, 2, 3].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full bg-accent/40"
+                    animate={{ opacity: [0.2, 1, 0.2] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                  />
+                ))}
+              </div>
+            </div>
+            <p className="text-[15px] text-foreground font-semibold mb-1">
+              Gerando carrossel…
+            </p>
+            <p className="text-[12px] text-muted-foreground/50 max-w-xs text-center">
+              O roteiro está sendo criado com a recomendação estratégica. Isso pode levar alguns segundos.
+            </p>
+          </motion.div>
+        )}
+
         {/* ═══ Results ═══ */}
         <AnimatePresence mode="wait">
           {suggestions && suggestions.length > 0 && !loading && (
