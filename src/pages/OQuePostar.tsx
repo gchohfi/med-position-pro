@@ -30,6 +30,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface Suggestion {
   title: string;
+  thesis: string;
   why_now: string;
   preset: string;
   objetivo: string;
@@ -39,6 +40,11 @@ interface Suggestion {
   cluster?: string | null;
   campaign?: string | null;
   persona?: string | null;
+  hook_angle?: string | null;
+  cta_direction?: string | null;
+  narrative_rhythm?: string | null;
+  confidence?: string | null;
+  recommendation_reasoning?: string | null;
 }
 
 interface Meta {
@@ -99,7 +105,7 @@ export default function OQuePostar() {
     navigate(ROUTES.carrossel, {
       state: {
         tema: s.title || "",
-        tese: s.strategic_opportunity || "",
+        tese: s.thesis || s.strategic_opportunity || "",
         preset: s.preset || "",
         objetivoEnum: mapToObjetivoEnum(s.objetivo || ""),
         objetivoDetalhado: s.why_now || "",
@@ -111,6 +117,11 @@ export default function OQuePostar() {
         why_now: s.why_now || "",
         strategic_opportunity: s.strategic_opportunity || "",
         risk_repetition: s.risk_repetition || "",
+        hook_angle: s.hook_angle || null,
+        cta_direction: s.cta_direction || null,
+        narrative_rhythm: s.narrative_rhythm || null,
+        confidence: s.confidence || null,
+        recommendation_reasoning: s.recommendation_reasoning || null,
       },
     });
   };
